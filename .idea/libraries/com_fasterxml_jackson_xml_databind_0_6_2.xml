@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="com.fasterxml:jackson-xml-databind:0.6.2" type="repository">
+    <properties maven-id="com.fasterxml:jackson-xml-databind:0.6.2" />
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.m2/repository/com/fasterxml/jackson-xml-databind/0.6.2/jackson-xml-databind-0.6.2.jar!/" />
+      <root url="jar://$USER_HOME$/.m2/repository/org/codehaus/jackson/jackson-mapper-asl/1.9.2/jackson-mapper-asl-1.9.2.jar!/" />
+      <root url="jar://$USER_HOME$/.m2/repository/org/codehaus/jackson/jackson-core-asl/1.9.2/jackson-core-asl-1.9.2.jar!/" />
+      <root url="jar://$USER_HOME$/.m2/repository/org/codehaus/jackson/jackson-xc/1.9.2/jackson-xc-1.9.2.jar!/" />
+      <root url="jar://$USER_HOME$/.m2/repository/org/codehaus/woodstox/stax2-api/3.1.0/stax2-api-3.1.0.jar!/" />
+      <root url="jar://$USER_HOME$/.m2/repository/javax/xml/stream/stax-api/1.0-2/stax-api-1.0-2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
