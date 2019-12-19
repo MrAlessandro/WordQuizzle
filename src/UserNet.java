@@ -9,7 +9,12 @@ public class UserNet
     private UserNet()
     {}
 
-    protected boolean RegisterUser(String userName, char[] passwd)
+    protected static UserNet getNet()
+    {
+        return Net;
+    }
+
+    protected static boolean registerUser(String userName, char[] passwd)
     {
         boolean test;
 
@@ -18,7 +23,7 @@ public class UserNet
         return test;
     }
 
-    protected boolean AddFriendship(String userName1, String userName2) throws InconsistentRelationshipException
+    protected static boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException
     {
         boolean test;
 
@@ -27,4 +32,8 @@ public class UserNet
         return test;
     }
 
+    protected static void printNet()
+    {
+        Map.print();
+    }
 }

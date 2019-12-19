@@ -1,3 +1,4 @@
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -11,7 +12,7 @@ public class UserMap
 
     private int hash(String toHash)
     {
-        return toHash.hashCode() % TableSize;
+        return Math.abs(toHash.hashCode() % TableSize);
     }
 
     public UserMap()
@@ -114,6 +115,35 @@ public class UserMap
             Keychain[lockIndex2].writeLock().unlock();
 
         return retValue;
+    }
+
+    public void print()
+    {
+        int counter = 1;
+        for (int i = 0; i < TableSize/BunchSize; i++)
+        {
+            Keychain[i].readLock().lock();
+            for (int j = 0; j < BunchSize; j++)
+            {
+                for( User user : Table[i*BunchSize+j])
+                {
+                    System.out.println("User N° " + counter);
+                    System.out.println("    Usename: " + user.getUserName());
+                    System.out.println("    Passowrd: " + new String(user.getPassword()));
+                    System.out.println("    Friends list: ");
+
+                    Iterator<String> iter = user.getFriendListIterator();
+                    while (iter.hasNext())
+                    {
+                        String friend = iter.next();
+                        System.out.println("        " + friend);
+                    }
+
+                    counter++;
+                }
+            }
+            Keychain[i].readLock().unlock();
+        }
     }
 
 }

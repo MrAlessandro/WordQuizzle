@@ -1,4 +1,4 @@
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 public class User
@@ -16,17 +16,22 @@ public class User
         this.Score = 0;
     }
 
-    public String getUserName()
+    protected String getUserName()
     {
         return this.UserName;
     }
 
-    public boolean isFriendOf(String userName)
+    protected char[] getPassword()
+    {
+        return  this.Password;
+    }
+
+    protected boolean isFriendOf(String userName)
     {
         return this.Friends.contains(userName);
     }
 
-    public boolean addFriend(String userName)
+    protected boolean addFriend(String userName)
     {
         boolean retValue = true;
 
@@ -43,5 +48,10 @@ public class User
             this.Friends.addFirst(userName);
 
         return retValue;
+    }
+
+    public Iterator<String> getFriendListIterator()
+    {
+        return this.Friends.iterator();
     }
 }
