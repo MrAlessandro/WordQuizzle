@@ -1,13 +1,14 @@
-import java.io.IOException;
-
-public class WordQuizzle
+class WordQuizzle
 {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args)
+    {
         UserNet Net = UserNet.getNet();
 
         Net.restoreNet();
 
         Net.printNet();
+
+        Net.backUpNet();
 
     }
 }

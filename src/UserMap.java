@@ -1,10 +1,13 @@
 import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class UserMap
+class UserMap
 {
     private static final LinkedList<User>[] Table = new LinkedList[Constants.UserMapSize];
     private static final ReentrantReadWriteLock[] Keychain = new ReentrantReadWriteLock[Constants.UserMapSize/Constants.UserMapBunchSize];
@@ -147,6 +150,34 @@ public class UserMap
         }
 
         return mapArray;
+    }
+
+    public void JSONdeserialize(String json) throws ParseException
+    {
+        JSONParser parser = new JSONParser();
+        JSONObject map = (JSONObject) parser.parse(json);
+        JSONArray mapArray = (JSONArray) map.get("Map");
+        Iterator<JSONObject> iterator = mapArray.iterator();
+        while (iterator.hasNext())
+        {
+            JSONObject currentUser = iterator.next();
+            String currentUsername = (String) currentUser.get("UserName");
+            Long currentScore = (Long) currentUser.get("Score");
+            JSONObject currentPassword = (JSONObject) currentUser.get("Password");
+            JSONArray currentFriendList = (JSONArray) currentUser.get("Friends");
+
+            Password password = new Password((String) currentPassword.get("Password"), ((String) currentPassword.get("Salt")).getBytes());
+            LinkedList<String> friendList = new LinkedList<String>();
+
+            Iterator<String> iter2 = currentFriendList.iterator();
+            while (iter2.hasNext())
+            {
+                String friend = iter2.next();
+                friendList.addFirst(friend);
+            }
+
+            put(new User(currentUsername, password, currentScore.intValue(), friendList));
+        }
     }
 
     public void print()

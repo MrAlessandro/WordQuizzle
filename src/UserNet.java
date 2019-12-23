@@ -1,16 +1,12 @@
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.nio.file.StandardOpenOption;
 
-public class UserNet
+class UserNet
 {
     private final static UserNet Net = new UserNet();
     private final static UserMap Map = new UserMap();
@@ -40,49 +36,47 @@ public class UserNet
         return test;
     }
 
-    protected static String backUpNet()
+    protected static void backUpNet()
     {
-        return Map.JSONserialize().toJSONString();
+        byte[] jsonBytes = Map.JSONserialize().toJSONString().getBytes();
+
+        try
+        {
+            Files.write(Constants.UserNetBackUpPath, jsonBytes, StandardOpenOption.CREATE);
+        }
+        catch (IOException e)
+        {
+            System.err.println("Error writing the backup file");
+            e.printStackTrace();
+        }
     }
 
     protected static void restoreNet()
     {
+        byte[] read = null;
         try
         {
-            byte[] read = Files.readAllBytes(Constants.UserNetBackUpPath);
-            String json = new String(read, Charset.defaultCharset());
-
-            JSONParser parser = new JSONParser();
-
-            JSONObject map = (JSONObject) parser.parse(json);
-            JSONArray mapArray = (JSONArray) map.get("Map");
-            Iterator<JSONObject> iterator = mapArray.iterator();
-            while (iterator.hasNext())
-            {
-                JSONObject currentUser = iterator.next();
-                String currentUsername = (String) currentUser.get("UserName");
-                Long currentScore = (Long) currentUser.get("Score");
-                JSONObject currentPassword = (JSONObject) currentUser.get("Password");
-                JSONArray currentFriendList = (JSONArray) currentUser.get("Friends");
-
-                Password password = new Password((String) currentPassword.get("Password"), ((String) currentPassword.get("Salt")).getBytes());
-                LinkedList<String> friendList = new LinkedList<String>();
-
-                Iterator<String> iter2 = currentFriendList.iterator();
-                while (iter2.hasNext())
-                {
-                    String friend = iter2.next();
-                    friendList.addFirst(friend);
-                }
-
-                Map.put(new User(currentUsername, password, currentScore.intValue(), friendList));
-            }
+             read = Files.readAllBytes(Constants.UserNetBackUpPath);
         }
-        catch (ParseException | FileNotFoundException e)
+        catch (FileNotFoundException e)
+        {
+            System.err.println("Warning. No back up file found.");
+            return;
+        } catch (IOException e)
+        {
+            System.err.println("Error reading server's users database.");
+            e.printStackTrace();
+        }
+
+        String json = new String(read, Charset.defaultCharset());
+
+        try
+        {
+            Map.JSONdeserialize(json);
+        }
+        catch (ParseException e)
         {
             System.err.println("Error parsing server's users database.");
-            e.printStackTrace();
-        } catch (IOException e) {
             e.printStackTrace();
         }
 

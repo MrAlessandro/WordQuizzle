@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 
-public class User
+class User
 {
     private String UserName;
     private Password Password;

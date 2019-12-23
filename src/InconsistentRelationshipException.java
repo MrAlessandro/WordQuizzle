@@ -1,4 +1,4 @@
-public class InconsistentRelationshipException extends Exception
+class InconsistentRelationshipException extends Exception
 {
     public InconsistentRelationshipException(String message)
     {
