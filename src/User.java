@@ -1,14 +1,18 @@
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 
+
 public class User
 {
-    final private String UserName;
-    private char[] Password;
+    private String UserName;
+    private Password Password;
     private int Score;
     private LinkedList<String> Friends;
 
-    public User(String userName, char[] password)
+    public User(String userName, Password password)
     {
         this.UserName = userName;
         this.Password = password;
@@ -16,20 +20,34 @@ public class User
         this.Score = 0;
     }
 
+    public User(String userName, Password password, int score, LinkedList<String> friends)
+    {
+        this.UserName = userName;
+        this.Password = password;
+        this.Friends = friends;
+        this.Score = score;
+    }
+
     protected String getUserName()
     {
         return this.UserName;
     }
 
-    protected char[] getPassword()
+    protected String getPassword()
     {
-        return  this.Password;
+        return this.Password.getEncodedPassword();
+    }
+
+    protected Iterator<String> getFriendListIterator()
+    {
+        return this.Friends.iterator();
     }
 
     protected boolean isFriendOf(String userName)
     {
         return this.Friends.contains(userName);
     }
+
 
     protected boolean addFriend(String userName)
     {
@@ -50,8 +68,22 @@ public class User
         return retValue;
     }
 
-    public Iterator<String> getFriendListIterator()
+    protected JSONObject JSONserilize()
     {
-        return this.Friends.iterator();
+        JSONObject retValue = new JSONObject();
+        JSONArray friendList = new JSONArray();
+
+        retValue.put("UserName", this.UserName);
+        retValue.put("Password", this.Password.JSONserialize());
+        retValue.put("Score", this.Score);
+
+        for (String friend : this.Friends)
+        {
+            friendList.add(friend);
+        }
+
+        retValue.put("Friends", friendList);
+
+        return retValue;
     }
 }

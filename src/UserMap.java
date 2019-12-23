@@ -1,44 +1,46 @@
+import org.json.simple.JSONArray;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class UserMap
 {
-    private static final int TableSize = 16384;
-    private static final short BunchSize = 16;
-    private static final LinkedList<User>[] Table = new LinkedList[TableSize];
-    private static final ReentrantReadWriteLock[] Keychain = new ReentrantReadWriteLock[TableSize/BunchSize];
+    private static final LinkedList<User>[] Table = new LinkedList[Constants.UserMapSize];
+    private static final ReentrantReadWriteLock[] Keychain = new ReentrantReadWriteLock[Constants.UserMapSize/Constants.UserMapBunchSize];
     private static long Load;
 
     private int hash(String toHash)
     {
-        return Math.abs(toHash.hashCode() % TableSize);
+        return Math.abs(toHash.hashCode() % Constants.UserMapSize);
     }
 
     public UserMap()
     {
         Load = 0;
 
-        for (int i = 0; i < TableSize/BunchSize; i++)
+        for (int i = 0; i < Constants.UserMapSize/Constants.UserMapBunchSize; i++)
         {
             Table[i] = new LinkedList<User>();
             Keychain[i] = new ReentrantReadWriteLock();
         }
 
-        for (int i = TableSize/BunchSize; i < TableSize; i++)
+        for (int i = Constants.UserMapSize/Constants.UserMapBunchSize; i < Constants.UserMapSize; i++)
         {
             Table[i] = new LinkedList<User>();
         }
 
     }
 
-    public boolean put(String username, char[] passwd)
+    // It generates an instance of User with given username and password,
+    // then it insert it in a thread-safe way within the users table
+    public boolean insert(String username, Password passwd)
     {
         User newUser = new User(username, passwd);
         int index = hash(username);
         boolean retValue = true;
 
-        Keychain[index/BunchSize].writeLock().lock();
+        Keychain[index/Constants.UserMapBunchSize].writeLock().lock();
         for(User current : Table[index])
         {
             if (current.getUserName().equals(username))
@@ -53,17 +55,27 @@ public class UserMap
             Table[index].addFirst(newUser);
             Load ++;
         }
-        Keychain[index/BunchSize].writeLock().unlock();
+        Keychain[index/Constants.UserMapBunchSize].writeLock().unlock();
 
         return retValue;
+    }
+
+    // It insert a given User instance within the users table in a not thread-safe way
+    protected void put(User user)
+    {
+        int index = hash(user.getUserName());
+        boolean retValue = true;
+
+        Table[index].addFirst(user);
+        Load ++;
     }
 
     public boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException
     {
         int index1 = hash(userName1);
         int index2 = hash(userName2);
-        int lockIndex1 = index1/BunchSize;
-        int lockIndex2 = index1/BunchSize;
+        int lockIndex1 = index1/Constants.UserMapBunchSize;
+        int lockIndex2 = index1/Constants.UserMapBunchSize;
         User user1 = null;
         User user2 = null;
         boolean retValue = false;
@@ -117,19 +129,39 @@ public class UserMap
         return retValue;
     }
 
+    public JSONArray JSONserialize()
+    {
+        JSONArray mapArray = new JSONArray();
+
+        for (int i = 0; i < Constants.UserMapSize/Constants.UserMapBunchSize; i++)
+        {
+            Keychain[i].readLock().lock();
+            for (int j = 0; j < Constants.UserMapBunchSize; j++)
+            {
+                for( User user : Table[i*Constants.UserMapBunchSize+j])
+                {
+                    mapArray.add(user.JSONserilize());
+                }
+            }
+            Keychain[i].readLock().unlock();
+        }
+
+        return mapArray;
+    }
+
     public void print()
     {
         int counter = 1;
-        for (int i = 0; i < TableSize/BunchSize; i++)
+        for (int i = 0; i < Constants.UserMapSize/Constants.UserMapBunchSize; i++)
         {
             Keychain[i].readLock().lock();
-            for (int j = 0; j < BunchSize; j++)
+            for (int j = 0; j < Constants.UserMapBunchSize; j++)
             {
-                for( User user : Table[i*BunchSize+j])
+                for( User user : Table[i*Constants.UserMapBunchSize+j])
                 {
                     System.out.println("User N° " + counter);
-                    System.out.println("    Usename: " + user.getUserName());
-                    System.out.println("    Passowrd: " + new String(user.getPassword()));
+                    System.out.println("    Username: " + user.getUserName());
+                    System.out.println("    Password: " + new String(user.getPassword()));
                     System.out.println("    Friends list: ");
 
                     Iterator<String> iter = user.getFriendListIterator();
