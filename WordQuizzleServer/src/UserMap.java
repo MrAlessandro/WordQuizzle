@@ -37,30 +37,27 @@ class UserMap
 
     // It generates an instance of User with given username and password,
     // then it insert it in a thread-safe way within the users table
-    public boolean insert(String username, Password passwd)
+    public boolean insert(String username, Password passwd) throws NameNotUniqueException
     {
         User newUser = new User(username, passwd);
         int index = hash(username);
-        boolean retValue = true;
 
         Keychain[index/Constants.UserMapBunchSize].writeLock().lock();
         for(User current : Table[index])
         {
             if (current.getUserName().equals(username))
             {
-                retValue = false;
-                break;
+                Keychain[index/Constants.UserMapBunchSize].writeLock().unlock();
+                throw new NameNotUniqueException("Username \"" + username + "\" already present in the system");
             }
         }
 
-        if (retValue)
-        {
-            Table[index].addFirst(newUser);
-            Load ++;
-        }
+        Table[index].addFirst(newUser);
+        Load ++;
+
         Keychain[index/Constants.UserMapBunchSize].writeLock().unlock();
 
-        return retValue;
+        return true;
     }
 
     // It insert a given User instance within the users table in a not thread-safe way
@@ -73,8 +70,7 @@ class UserMap
         Load ++;
     }
 
-    public boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException
-    {
+    public boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException, UnknownFirstUserException, UnknownSecondUserException {
         int index1 = hash(userName1);
         int index2 = hash(userName2);
         int lockIndex1 = index1/Constants.UserMapBunchSize;
@@ -98,32 +94,43 @@ class UserMap
             }
         }
 
-        if (user1 != null)
+        if (user1 == null)
+        {// If first user does not exist
+            Keychain[lockIndex1].writeLock().unlock();
+            if (lockIndex2 != lockIndex1)
+                Keychain[lockIndex2].writeLock().unlock();
+
+            throw new UnknownFirstUserException("Unknown user \"" + userName1 + "\", impossible to generate the relationship");
+        }
+
+        // Looking for second user
+        for (User current2 : Table[index2])
         {
-            // Looking for second user
-            for (User current2 : Table[index2])
+            if (current2.getUserName().equals(userName2))
             {
-                if (current2.getUserName().equals(userName2))
-                {
-                    user2 = current2;
-                    break;
-                }
-            }
-
-            if (user2 != null)
-            {
-                boolean test1;
-                boolean test2;
-                test1 = user1.addFriend(userName2);
-                test2 = user2.addFriend(userName1);
-
-
-                if (test1 == test2)
-                    retValue = test1;
-                else
-                    throw new InconsistentRelationshipException("Inconsistent relationship between " + userName1 + " and " + userName2);
+                user2 = current2;
+                break;
             }
         }
+
+        if (user2 == null)
+        {// If second user does not exist
+            Keychain[lockIndex1].writeLock().unlock();
+            if (lockIndex2 != lockIndex1)
+                Keychain[lockIndex2].writeLock().unlock();
+
+            throw new UnknownSecondUserException("Unknown user \"" + userName2 + "\", impossible to generate the relationship");
+        }
+
+        boolean test1;
+        boolean test2;
+        test1 = user1.addFriend(userName2);
+        test2 = user2.addFriend(userName1);
+
+        if (test1 == test2 == true)
+            retValue = test1;
+        else
+            throw new InconsistentRelationshipException("Inconsistent relationship between " + userName1 + " and " + userName2);
 
         Keychain[lockIndex1].writeLock().unlock();
         if (lockIndex2 != lockIndex1)

@@ -1,10 +1,9 @@
-
 import java.util.concurrent.LinkedBlockingQueue;
 
 class TokenPile
 {
     private static final TokenPile Pile = new TokenPile();
-    private static final LinkedBlockingQueue<Token> CommunicationLine = new LinkedBlockingQueue<Token>();
+    private static final LinkedBlockingQueue<Token> CommunicationLine = new LinkedBlockingQueue<>();
 
     public TokenPile(){}
 
@@ -18,7 +17,8 @@ class TokenPile
         CommunicationLine.add(token);
     }
 
-    public static Token get() throws InterruptedException {
+    public static Token get() throws InterruptedException
+    {
         return CommunicationLine.take();
     }
 }

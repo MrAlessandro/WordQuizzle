@@ -21,11 +21,20 @@ class UserNet extends RemoteServer implements Registrable
 
     public boolean registerUser(String userName, String passwd)
     {
-        boolean test;
+        System.out.print("Registering user \"" + userName + "\" at the service...");
 
-        test = Map.insert(userName, new Password(passwd));
+        try
+        {
+            Map.insert(userName, new Password(passwd));
+        }
+        catch (NameNotUniqueException e)
+        {
+            AnsiColors.printRed(" FAILED");
+            return false;
+        }
 
-        return test;
+        AnsiColors.printGreen(" REGISTERED");
+        return true;
     }
 
     protected static boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException
