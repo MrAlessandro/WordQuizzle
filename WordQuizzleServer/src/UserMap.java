@@ -155,8 +155,7 @@ class UserMap
     public void JSONdeserialize(String json) throws ParseException
     {
         JSONParser parser = new JSONParser();
-        JSONObject map = (JSONObject) parser.parse(json);
-        JSONArray mapArray = (JSONArray) map.get("Map");
+        JSONArray mapArray = (JSONArray) parser.parse(json);
         Iterator<JSONObject> iterator = mapArray.iterator();
         while (iterator.hasNext())
         {

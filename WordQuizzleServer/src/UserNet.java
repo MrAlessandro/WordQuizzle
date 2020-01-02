@@ -5,8 +5,9 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.rmi.server.RemoteServer;
 
-class UserNet
+class UserNet extends RemoteServer implements Registrable
 {
     private final static UserNet Net = new UserNet();
     private final static UserMap Map = new UserMap();
@@ -18,7 +19,7 @@ class UserNet
         return Net;
     }
 
-    protected static boolean registerUser(String userName, String passwd)
+    public boolean registerUser(String userName, String passwd)
     {
         boolean test;
 
