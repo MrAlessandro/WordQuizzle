@@ -70,7 +70,7 @@ class UserMap
         Load ++;
     }
 
-    public boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException, UnknownFirstUserException, UnknownSecondUserException {
+    public boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException, UnknownFirstUserException, UnknownSecondUserException, AlreadyExistingRelationshipException {
         int index1 = hash(userName1);
         int index2 = hash(userName2);
         int lockIndex1 = index1/Constants.UserMapBunchSize;
@@ -127,16 +127,17 @@ class UserMap
         test1 = user1.addFriend(userName2);
         test2 = user2.addFriend(userName1);
 
-        if (test1 == test2 == true)
-            retValue = test1;
-        else
-            throw new InconsistentRelationshipException("Inconsistent relationship between " + userName1 + " and " + userName2);
-
         Keychain[lockIndex1].writeLock().unlock();
         if (lockIndex2 != lockIndex1)
             Keychain[lockIndex2].writeLock().unlock();
 
-        return retValue;
+        if (test1 && test2)
+            return true;
+        else if (!test1 && !test2)
+            throw new AlreadyExistingRelationshipException("Relationship already exists between \"" + userName1 + "\" and \"" + userName2 +"\"");
+        else
+            throw new InconsistentRelationshipException("Inconsistent relationship between " + userName1 + " and " + userName2);
+
     }
 
     public JSONArray JSONserialize()

@@ -21,7 +21,7 @@ class UserNet extends RemoteServer implements Registrable
 
     public boolean registerUser(String userName, String passwd)
     {
-        System.out.print("Registering user \"" + userName + "\" at the service...");
+        System.out.print("Registering user \"" + userName + "\" at the service... ");
 
         try
         {
@@ -29,21 +29,38 @@ class UserNet extends RemoteServer implements Registrable
         }
         catch (NameNotUniqueException e)
         {
-            AnsiColors.printRed(" FAILED");
+            AnsiColors.printRed("FAILED");
+            AnsiColors.printRed(e.getMessage());
             return false;
         }
 
-        AnsiColors.printGreen(" REGISTERED");
+        AnsiColors.printGreen("REGISTERED");
         return true;
     }
 
     protected static boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException
     {
-        boolean test;
+        System.out.print("Making \"" + userName1 + "\" and \"" + userName2 + "\" friends...");
 
-        test = Map.addFriendship(userName1, userName2);
+        try
+        {
+            Map.addFriendship(userName1, userName2);
+        }
+        catch (UnknownFirstUserException | UnknownSecondUserException | AlreadyExistingRelationshipException e)
+        {
+            AnsiColors.printRed("FAILED");
+            AnsiColors.printRed(e.getMessage());
+            return false;
+        }
+        catch (InconsistentRelationshipException e)
+        {
+            AnsiColors.printRed("FAILED");
+            e.printStackTrace();
+            System.exit(1);
+        }
 
-        return test;
+        AnsiColors.printGreen("MADE");
+        return true;
     }
 
     protected static void backUpNet()
