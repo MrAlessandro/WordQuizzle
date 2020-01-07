@@ -1,19 +1,15 @@
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 class WelcomeFrame extends JFrame
 {
     private JLayeredPane LayeredPane;
     private ImageIcon BackgroundImage;
     private JLabel BackgroundLabel;
-    //private JPanel MessageZone;
     private ActionPanel MessageZone;
     private JButton LogInButton;
     private JButton SignUpButton;
-    private JPlaceholderTextField UsernameTextField;
-    private JLabel UsernameLabel;
-    private JPlaceholderTextField PasswordTextField;
-    private JLabel PasswordLabel;
-    private JButton ActionButton;
 
     protected WelcomeFrame()
     {
@@ -37,33 +33,6 @@ class WelcomeFrame extends JFrame
         this.BackgroundLabel.setSize(700, 440);
         this.LayeredPane.add(this.BackgroundLabel, JLayeredPane.DEFAULT_LAYER);
 
-        // Setting message zone
-        this.MessageZone = new ActionPanel(ActionPanel.ActionLogInPanel);
-        /*this.MessageZone = new JPanel();
-        this.MessageZone.setBackground(Constants.ForegroundColor);
-        this.MessageZone.setLocation(248, 140);
-        this.MessageZone.setSize(241, 115);
-        this.MessageZone.setLayout(null);
-        this.MessageZone.setOpaque(true);
-        this.MessageZone.setBorder(BorderFactory.createLineBorder(Constants.MainColor));
-        this.MessageZone.setVisible(false);*/
-        this.LayeredPane.add(this.MessageZone, JLayeredPane.PALETTE_LAYER);
-
-        // Setting message zone components
-        // Text fields
-        this.UsernameTextField = new JPlaceholderTextField("Username");
-        this.UsernameTextField.setColumns(10);
-        this.UsernameTextField.setToolTipText("Username");
-        this.PasswordTextField = new JPlaceholderTextField("Password");
-        this.PasswordTextField.setColumns(10);
-        this.PasswordTextField.setToolTipText("Password");
-        // Label fields
-        this.UsernameLabel = new JLabel();
-        this.UsernameLabel.setText("Username: ");
-        this.UsernameLabel.setLocation(10,10);
-        this.PasswordLabel = new JLabel();
-        this.PasswordLabel.setText("Password: ");
-
         // Setting logIn button
         this.LogInButton = new JButton("Log In");
         this.LogInButton.setSize(this.LogInButton.getPreferredSize());
@@ -77,6 +46,7 @@ class WelcomeFrame extends JFrame
         this.SignUpButton.setSize(this.LogInButton.getPreferredSize());
         this.SignUpButton.setLocation(this.BackgroundImage.getIconWidth() - this.SignUpButton.getWidth() - 10 , 10);
         this.SignUpButton.setVisible(true);
+        this.SignUpButton.addActionListener(new SignUpButtonListener());
         this.LayeredPane.add(this.SignUpButton, JLayeredPane.MODAL_LAYER);
 
         // Adding panel at the frame
@@ -91,10 +61,49 @@ class WelcomeFrame extends JFrame
 
     protected void loggingIn()
     {
-        /*this.MessageZone.add(this.UsernameLabel);
-        this.MessageZone.add(this.UsernameTextField);
-        this.MessageZone.add(this.PasswordLabel);
-        this.MessageZone.add(this.PasswordTextField);*/
+        if (this.LayeredPane.isAncestorOf(this.MessageZone))
+            this.LayeredPane.remove(this.MessageZone);
+        this.MessageZone = new ActionPanel(ActionPanel.ActionLogInPanel);
+        this.LayeredPane.add(this.MessageZone, JLayeredPane.PALETTE_LAYER);
         this.MessageZone.setVisible(true);
+    }
+
+    protected void signingUp()
+    {
+        if (this.LayeredPane.isAncestorOf(this.MessageZone))
+            this.LayeredPane.remove(this.MessageZone);
+        this.MessageZone = new ActionPanel(ActionPanel.ActionSignUpPanel);
+        this.LayeredPane.add(this.MessageZone, JLayeredPane.PALETTE_LAYER);
+        this.MessageZone.setVisible(true);
+    }
+
+    protected void reset()
+    {
+        if (this.LayeredPane.isAncestorOf(this.MessageZone))
+            this.LayeredPane.remove(this.MessageZone);
+        this.repaint();
+    }
+
+    private static class SignUpButtonListener implements ActionListener
+    {
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+            JButton button = (JButton) e.getSource();
+            WelcomeFrame frame = (WelcomeFrame) SwingUtilities.getRoot(button);
+            frame.signingUp();
+        }
+    }
+
+    private static class LogInButtonListener implements ActionListener
+    {
+
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+            JButton button = (JButton) e.getSource();
+            WelcomeFrame frame = (WelcomeFrame) SwingUtilities.getRoot(button);
+            frame.loggingIn();
+        }
     }
 }

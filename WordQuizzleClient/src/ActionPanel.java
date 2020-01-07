@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 class ActionPanel extends JPanel
 {
@@ -30,11 +32,20 @@ class ActionPanel extends JPanel
         this.PasswordLabel = new JLabel("Password: ");
         this.WarningLabel = new JLabel("<html><u><font color='red'>Username already in use, change it!</font></u></html>");
         this.WarningLabel.setForeground(Color.red);
+
         if (action == ActionLogInPanel)
+        {
             this.ActionButton = new JButton("LogIn");
+            this.ActionButton.addActionListener(new LogInButtonListener());
+        }
         else if (action == ActionSignUpPanel)
+        {
             this.ActionButton = new JButton("SignUp");
+            this.ActionButton.addActionListener(new SignUpButtonListener());
+        }
+
         this.CancelButton = new JButton("Cancel");
+        this.CancelButton.addActionListener(new CancelButtonListener());
 
         this.UsernameTextField.setColumns(10);
         this.PasswordTextField.setColumns(10);
@@ -65,6 +76,7 @@ class ActionPanel extends JPanel
         constraints.gridy = 2;
         constraints.gridwidth = 2;
         constraints.insets = new Insets(5, 0,0,0);
+        this.WarningLabel.setVisible(false);
         this.add(this.WarningLabel, constraints);
 
         constraints.gridx = 0;
@@ -79,5 +91,59 @@ class ActionPanel extends JPanel
         constraints.insets = new Insets(5, 60,0,0);
         this.add(this.ActionButton, constraints);
 
+    }
+
+    private class LogInButtonListener implements ActionListener
+    {
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+            ActionPanel panel = (ActionPanel) ((JButton) e.getSource()).getParent();
+
+            if(panel.UsernameTextField.getText().equals("") && panel.PasswordTextField.getPassword().length == 0)
+            {
+                panel.UsernameTextField.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, Color.red));
+                panel.PasswordTextField.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, Color.red));
+                panel.WarningLabel.setText("<html><u><font color='red'>Empty fields!</font></u></html>");
+                panel.WarningLabel.setVisible(true);
+            }
+            else if(panel.PasswordTextField.getPassword().length == 0 && !(panel.UsernameTextField.getText().equals("")))
+            {
+                panel.PasswordTextField.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, Color.red));
+                panel.WarningLabel.setText("<html><u><font color='red'>Password field is empty!</font></u></html>");
+                panel.WarningLabel.setVisible(true);
+            }
+            else if(!(panel.PasswordTextField.getPassword().length == 0) && (panel.UsernameTextField.getText().equals("")))
+            {
+                panel.UsernameTextField.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, Color.red));
+                panel.WarningLabel.setText("<html><u><font color='red'>Username field is empty!</font></u></html>");
+                panel.WarningLabel.setVisible(true);
+            }
+            else if(!(panel.PasswordTextField.getPassword().length == 0) && !(panel.PasswordTextField.getPassword().length == 0))
+            {
+
+            }
+
+        }
+    }
+
+    private class SignUpButtonListener implements ActionListener
+    {
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+
+        }
+    }
+
+    private class CancelButtonListener implements ActionListener
+    {
+        @Override
+        public void actionPerformed(ActionEvent e)
+        {
+            JButton button = (JButton) e.getSource();
+            WelcomeFrame frame = (WelcomeFrame) SwingUtilities.getRoot(button);
+            frame.reset();
+        }
     }
 }

@@ -18,19 +18,6 @@ public class JPlaceholderPasswordField extends JPasswordField
         this.ph = null;
     }
 
-    /**
-     * Gets text, returns placeholder if nothing specified
-     */
-    @Override
-    public String getText() {
-        String text = super.getText();
-
-        if (text.trim().length() == 0 && ph != null) {
-            text = ph;
-        }
-
-        return text;
-    }
 
     @Override
     public void paintComponent(Graphics g) {

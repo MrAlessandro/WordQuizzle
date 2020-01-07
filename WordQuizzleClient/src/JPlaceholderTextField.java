@@ -25,7 +25,7 @@ public class JPlaceholderTextField extends JTextField {
         String text = super.getText();
 
         if (text.trim().length() == 0 && ph != null) {
-            text = ph;
+            text = "";
         }
 
         return text;
