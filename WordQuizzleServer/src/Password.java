@@ -12,9 +12,9 @@ class Password
     private String Password;
     private byte[] Salt;
 
-    protected Password(String passwd)
+    protected Password(char[] passwd)
     {
-        char[] chars = passwd.toCharArray();
+        char[] chars = passwd;
 
         try
         {

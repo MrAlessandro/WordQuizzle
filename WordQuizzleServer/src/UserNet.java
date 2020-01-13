@@ -19,7 +19,7 @@ class UserNet extends RemoteServer implements Registrable
         return Net;
     }
 
-    public boolean registerUser(String userName, String passwd)
+    public boolean registerUser(String userName, char[] passwd)
     {
         System.out.print("Registering user \"" + userName + "\" at the service... ");
 

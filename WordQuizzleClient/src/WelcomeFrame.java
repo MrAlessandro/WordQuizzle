@@ -2,7 +2,7 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-class WelcomeFrame extends JFrame
+class WelcomeFrame extends JFrame implements Runnable
 {
     private JLayeredPane LayeredPane;
     private ImageIcon BackgroundImage;
@@ -43,7 +43,7 @@ class WelcomeFrame extends JFrame
 
         // Setting singUp button
         this.SignUpButton = new JButton("Sign Up");
-        this.SignUpButton.setSize(this.LogInButton.getPreferredSize());
+        this.SignUpButton.setSize(this.SignUpButton.getPreferredSize());
         this.SignUpButton.setLocation(this.BackgroundImage.getIconWidth() - this.SignUpButton.getWidth() - 10 , 10);
         this.SignUpButton.setVisible(true);
         this.SignUpButton.addActionListener(new SignUpButtonListener());
@@ -54,24 +54,32 @@ class WelcomeFrame extends JFrame
 
         // Adjusting size of frame
         this.setSize(this.BackgroundImage.getIconWidth(), this.BackgroundImage.getIconHeight() + 20);
+    }
 
+    @Override
+    public void run()
+    {
         // Making frame visible
         this.setVisible(true);
     }
 
-    protected void loggingIn()
+    protected void setUpLogIn()
     {
         if (this.LayeredPane.isAncestorOf(this.MessageZone))
             this.LayeredPane.remove(this.MessageZone);
+        this.SignUpButton.setVisible(false);
+        this.LogInButton.setVisible(false);
         this.MessageZone = new ActionPanel(ActionPanel.ActionLogInPanel);
         this.LayeredPane.add(this.MessageZone, JLayeredPane.PALETTE_LAYER);
         this.MessageZone.setVisible(true);
     }
 
-    protected void signingUp()
+    protected void setUpSignUp()
     {
         if (this.LayeredPane.isAncestorOf(this.MessageZone))
             this.LayeredPane.remove(this.MessageZone);
+        this.SignUpButton.setVisible(false);
+        this.LogInButton.setVisible(false);
         this.MessageZone = new ActionPanel(ActionPanel.ActionSignUpPanel);
         this.LayeredPane.add(this.MessageZone, JLayeredPane.PALETTE_LAYER);
         this.MessageZone.setVisible(true);
@@ -81,6 +89,8 @@ class WelcomeFrame extends JFrame
     {
         if (this.LayeredPane.isAncestorOf(this.MessageZone))
             this.LayeredPane.remove(this.MessageZone);
+        this.SignUpButton.setVisible(true);
+        this.LogInButton.setVisible(true);
         this.repaint();
     }
 
@@ -91,7 +101,7 @@ class WelcomeFrame extends JFrame
         {
             JButton button = (JButton) e.getSource();
             WelcomeFrame frame = (WelcomeFrame) SwingUtilities.getRoot(button);
-            frame.signingUp();
+            frame.setUpSignUp();
         }
     }
 
@@ -103,7 +113,7 @@ class WelcomeFrame extends JFrame
         {
             JButton button = (JButton) e.getSource();
             WelcomeFrame frame = (WelcomeFrame) SwingUtilities.getRoot(button);
-            frame.loggingIn();
+            frame.setUpLogIn();
         }
     }
 }
