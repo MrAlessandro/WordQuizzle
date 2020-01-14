@@ -1,6 +1,5 @@
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -41,19 +40,20 @@ class WordQuizzleServer
             e.printStackTrace();
         }
 
+        Thread t = new Thread(new Executor());
+        t.start();
 
         try
         {
             selector = Selector.open();
             connectionSocket = ServerSocketChannel.open();
-
             connectionSocket.bind(serverAddress);
             connectionSocket.configureBlocking(false);
             connectionSocket.register(selector, SelectionKey.OP_ACCEPT);
 
             while (true)
             {
-                selector.select();
+                selector.select(10);
                 Set<SelectionKey> selectedKeys = selector.selectedKeys();
 
                 for (SelectionKey currentKey : selectedKeys)
@@ -70,10 +70,8 @@ class WordQuizzleServer
 
                         if (client != null)
                         {
-                            ByteBuffer linkBuffer = ByteBuffer.allocate(2048);
-
                             client.configureBlocking(false);
-                            client.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, linkBuffer);
+                            client.register(selector, SelectionKey.OP_READ).attach(null);
 
                             AnsiColors.printGreen("ACCEPTED");
                         }
@@ -84,16 +82,35 @@ class WordQuizzleServer
                     if (currentKey.isReadable())
                     {
                         SocketChannel client = (SocketChannel) currentKey.channel();
-                        ByteBuffer linkBuffer = (ByteBuffer) currentKey.attachment();
+                        Session session = (Session) currentKey.attachment();
                         currentKey.interestOps(0);
+                        TokenStack.add(new Token(client, session, currentKey, OperationType.READ));
+                    }
 
-                        selector.
+                    if (currentKey.isWritable())
+                    {
+                        SocketChannel client = (SocketChannel) currentKey.channel();
+                        Session session = (Session) currentKey.attachment();
+                        currentKey.interestOps(0);
+                        client.configureBlocking(true);
+
+                        TokenStack.add(new Token(client, session, currentKey, OperationType.WRITE));
                     }
                 }
+
+                /*Token putBack = null;
+                while ((putBack = TokenBackStack.get()) != null)
+                {
+                    if(putBack.OpType == OperationType.READ)
+                        putBack.Key.interestOps(SelectionKey.OP_READ);
+                    else if (putBack.OpType == OperationType.WRITE)
+                        putBack.Key.interestOps(SelectionKey.OP_WRITE);
+                }*/
+
             }
 
-            selector.close();
-            connectionSocket.close();
+            //selector.close();
+            //connectionSocket.close();
         }
         catch (IOException e)
         {

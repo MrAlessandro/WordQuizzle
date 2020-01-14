@@ -1,15 +1,15 @@
 import java.util.concurrent.LinkedBlockingQueue;
 
-class TokenPile
+class TokenStack
 {
-    private static final TokenPile Pile = new TokenPile();
+    private static final TokenStack Stack = new TokenStack();
     private static final LinkedBlockingQueue<Token> CommunicationLine = new LinkedBlockingQueue<>();
 
-    public TokenPile(){}
+    public TokenStack(){}
 
-    public static TokenPile getChain()
+    public static TokenStack getTokenPileInstance()
     {
-        return Pile;
+        return Stack;
     }
 
     public static void add(Token token)

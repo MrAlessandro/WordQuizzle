@@ -38,6 +38,31 @@ class UserNet extends RemoteServer implements Registrable
         return true;
     }
 
+    protected static boolean logInUser(String userName, char[] password)
+    {
+        boolean checked = false;
+
+        System.out.print("Logging in user \"" + userName + "\"... ");
+        try
+        {
+            checked = Map.setLogIn(userName, password);
+
+        }
+        catch (UnknownUserException | InconsistentRelationshipException e)
+        {
+            AnsiColors.printRed("FAILED");
+            AnsiColors.printRed(e.getMessage());
+            return false;
+        }
+
+        if(checked)
+            AnsiColors.printGreen("LOGGED");
+        else
+            AnsiColors.printRed("WRONG PASSWORD");
+
+        return checked;
+    }
+
     protected static boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException
     {
         System.out.print("Making \"" + userName1 + "\" and \"" + userName2 + "\" friends...");

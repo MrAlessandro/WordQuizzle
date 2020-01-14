@@ -6,11 +6,13 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Iterator;
 
 class Password
 {
     private String Password;
     private byte[] Salt;
+    private static final int Iterations = 1000;
 
     protected Password(char[] passwd)
     {
@@ -20,10 +22,10 @@ class Password
         {
             this.Salt = generateSalt();
 
-            PBEKeySpec spec = new PBEKeySpec(chars, this.Salt, 1000, 64 * 8);
+            PBEKeySpec spec = new PBEKeySpec(chars, this.Salt, Iterations, 64 * 8);
             SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
             byte[] hash = skf.generateSecret(spec).getEncoded();
-            this.Password = toHex(this.Salt) + ":" + toHex(hash);
+            this.Password = toHex(hash);
         }
         catch (NoSuchAlgorithmException | InvalidKeySpecException e)
         {
@@ -37,6 +39,33 @@ class Password
         this.Password = passwd;
         this.Salt = salt;
     }
+
+    protected boolean checkPassword(char[] toCheck)
+    {
+        byte[] stored = fromHex(this.Password);
+
+        try
+        {
+            PBEKeySpec spec = new PBEKeySpec(toCheck, this.Salt, Iterations, 64 * 8);
+            SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+            byte[] testHash = skf.generateSecret(spec).getEncoded();
+
+            int diff = stored.length ^ testHash.length;
+            for(int i = 0; i < stored.length /*&& i < testHash.length*/; i++)
+            {
+                diff |= stored[i] ^ testHash[i];
+            }
+
+            return diff == 0;
+        }
+        catch (NoSuchAlgorithmException | InvalidKeySpecException e)
+        {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
 
     protected String getEncodedPassword()
     {

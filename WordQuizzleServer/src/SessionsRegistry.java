@@ -7,5 +7,4 @@ class SessionsRegistry
     private static final ConcurrentHashMap<String, SocketChannel> Registry = new ConcurrentHashMap<>();
 
     protected SessionsRegistry() {}
-
 }

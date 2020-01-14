@@ -9,6 +9,7 @@ class User
 {
     private String UserName;
     private Password Password;
+    private boolean Logged;
     private int Score;
     private LinkedList<String> Friends;
 
@@ -18,6 +19,7 @@ class User
         this.Password = password;
         this.Friends = new LinkedList<>();
         this.Score = 0;
+        this.Logged = false;
     }
 
     public User(String userName, Password password, int score, LinkedList<String> friends)
@@ -48,6 +50,21 @@ class User
         return this.Friends.contains(userName);
     }
 
+    protected boolean logIn(char[] password) throws InconsistentLogActionException
+    {
+        if (this.Logged)
+            throw new InconsistentLogActionException("Trying to set an invalid 'Logged' value for user " + this.UserName);
+        else
+        {
+            if(this.Password.checkPassword(password))
+            {
+                this.Logged = true;
+                return true;
+            }
+            else
+                return false;
+        }
+    }
 
     protected boolean addFriend(String userName)
     {

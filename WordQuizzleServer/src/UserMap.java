@@ -37,7 +37,7 @@ class UserMap
 
     // It generates an instance of User with given username and password,
     // then it insert it in a thread-safe way within the users table
-    public boolean insert(String username, Password passwd) throws NameNotUniqueException
+    protected boolean insert(String username, Password passwd) throws NameNotUniqueException
     {
         User newUser = new User(username, passwd);
         int index = hash(username);
@@ -58,6 +58,41 @@ class UserMap
         Keychain[index/Constants.UserMapBunchSize].writeLock().unlock();
 
         return true;
+    }
+
+    protected boolean setLogIn(String username, char[] password) throws InconsistentRelationshipException, UnknownUserException
+    {
+        int index = hash(username);
+        boolean found = false;
+        boolean returnValue = false;
+
+        Keychain[index/Constants.UserMapBunchSize].writeLock().lock();
+        for(User current : Table[index])
+        {
+            if (current.getUserName().equals(username))
+            {
+                found = true;
+
+                try
+                {
+                    if (current.logIn(password))
+                        returnValue = true;
+                    else
+                        returnValue = false;
+                }
+                catch (InconsistentLogActionException e)
+                {
+                    Keychain[index/Constants.UserMapBunchSize].writeLock().unlock();
+                    throw new InconsistentRelationshipException(e.getMessage());
+                }
+            }
+        }
+        Keychain[index/Constants.UserMapBunchSize].writeLock().unlock();
+
+        if (!found)
+            throw new UnknownUserException("User " + username + " does not exist");
+
+        return returnValue;
     }
 
     // It insert a given User instance within the users table in a not thread-safe way

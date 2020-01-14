@@ -4,16 +4,16 @@ import java.nio.channels.SocketChannel;
 
 class Token
 {
-    protected String Request;
     protected SocketChannel ClientSocket;
-    protected ByteBuffer BufferLink;
+    protected Session clientSession;
     protected SelectionKey Key;
+    protected OperationType OpType;
 
-    protected Token(String request, SocketChannel clientSocket, ByteBuffer bufferLink, SelectionKey key)
+    protected Token(SocketChannel clientSocket, Session session, SelectionKey key, OperationType opType)
     {
-        this.Request = request;
         this.ClientSocket = clientSocket;
-        this.BufferLink = bufferLink;
+        this.clientSession = session;
         this.Key = key;
+        this.OpType = opType;
     }
 }
