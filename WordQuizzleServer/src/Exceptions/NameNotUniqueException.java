@@ -1,4 +1,6 @@
-class NameNotUniqueException extends Exception
+package Exceptions;
+
+public class NameNotUniqueException extends Exception
 {
     public NameNotUniqueException(String message)
     {

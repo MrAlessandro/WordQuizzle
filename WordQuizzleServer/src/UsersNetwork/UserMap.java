@@ -1,3 +1,9 @@
+package UsersNetwork;
+
+import Exceptions.*;
+import Messages.Message;
+import Messages.MessageType;
+import Utility.Constants;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -10,7 +16,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 class UserMap
 {
     private static final LinkedList<User>[] Table = new LinkedList[Constants.UserMapSize];
-    private static final ReentrantReadWriteLock[] Keychain = new ReentrantReadWriteLock[Constants.UserMapSize/Constants.UserMapBunchSize];
+    private static final ReentrantReadWriteLock[] Keychain = new ReentrantReadWriteLock[Constants.UserMapSize/ Constants.UserMapBunchSize];
     private static long Load;
 
     private int hash(String toHash)
@@ -22,32 +28,32 @@ class UserMap
     {
         Load = 0;
 
-        for (int i = 0; i < Constants.UserMapSize/Constants.UserMapBunchSize; i++)
+        for (int i = 0; i < Constants.UserMapSize/ Constants.UserMapBunchSize; i++)
         {
             Table[i] = new LinkedList<User>();
             Keychain[i] = new ReentrantReadWriteLock();
         }
 
-        for (int i = Constants.UserMapSize/Constants.UserMapBunchSize; i < Constants.UserMapSize; i++)
+        for (int i = Constants.UserMapSize/ Constants.UserMapBunchSize; i < Constants.UserMapSize; i++)
         {
             Table[i] = new LinkedList<User>();
         }
 
     }
 
-    // It generates an instance of User with given username and password,
+    // It generates an instance of UsersNetwork.User with given username and password,
     // then it insert it in a thread-safe way within the users table
     protected boolean insert(String username, Password passwd) throws NameNotUniqueException
     {
         User newUser = new User(username, passwd);
         int index = hash(username);
 
-        Keychain[index/Constants.UserMapBunchSize].writeLock().lock();
+        Keychain[index/ Constants.UserMapBunchSize].writeLock().lock();
         for(User current : Table[index])
         {
             if (current.getUserName().equals(username))
             {
-                Keychain[index/Constants.UserMapBunchSize].writeLock().unlock();
+                Keychain[index/ Constants.UserMapBunchSize].writeLock().unlock();
                 throw new NameNotUniqueException("Username \"" + username + "\" already present in the system");
             }
         }
@@ -55,47 +61,35 @@ class UserMap
         Table[index].addFirst(newUser);
         Load ++;
 
-        Keychain[index/Constants.UserMapBunchSize].writeLock().unlock();
+        Keychain[index/ Constants.UserMapBunchSize].writeLock().unlock();
 
         return true;
     }
 
-    protected boolean setLogIn(String username, char[] password) throws InconsistentRelationshipException, UnknownUserException
+    protected boolean checkPassword(String username, char[] password) throws UnknownUserException
     {
         int index = hash(username);
         boolean found = false;
         boolean returnValue = false;
 
-        Keychain[index/Constants.UserMapBunchSize].writeLock().lock();
+        Keychain[index/ Constants.UserMapBunchSize].readLock().lock();
         for(User current : Table[index])
         {
             if (current.getUserName().equals(username))
             {
                 found = true;
-
-                try
-                {
-                    if (current.logIn(password))
-                        returnValue = true;
-                    else
-                        returnValue = false;
-                }
-                catch (InconsistentLogActionException e)
-                {
-                    Keychain[index/Constants.UserMapBunchSize].writeLock().unlock();
-                    throw new InconsistentRelationshipException(e.getMessage());
-                }
+                returnValue = current.checkPassword(password);
             }
         }
-        Keychain[index/Constants.UserMapBunchSize].writeLock().unlock();
+        Keychain[index/ Constants.UserMapBunchSize].readLock().unlock();
 
         if (!found)
-            throw new UnknownUserException("User " + username + " does not exist");
+            throw new UnknownUserException("UsersNetwork.User " + username + " does not exist");
 
         return returnValue;
     }
 
-    // It insert a given User instance within the users table in a not thread-safe way
+    // It insert a given UsersNetwork.User instance within the users table in a not thread-safe way
     protected void put(User user)
     {
         int index = hash(user.getUserName());
@@ -105,11 +99,12 @@ class UserMap
         Load ++;
     }
 
-    public boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException, UnknownFirstUserException, UnknownSecondUserException, AlreadyExistingRelationshipException {
+    public boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException, UnknownFirstUserException, UnknownSecondUserException, AlreadyExistingRelationshipException
+    {
         int index1 = hash(userName1);
         int index2 = hash(userName2);
-        int lockIndex1 = index1/Constants.UserMapBunchSize;
-        int lockIndex2 = index1/Constants.UserMapBunchSize;
+        int lockIndex1 = index1/ Constants.UserMapBunchSize;
+        int lockIndex2 = index1/ Constants.UserMapBunchSize;
         User user1 = null;
         User user2 = null;
         boolean retValue = false;
@@ -179,14 +174,14 @@ class UserMap
     {
         JSONArray mapArray = new JSONArray();
 
-        for (int i = 0; i < Constants.UserMapSize/Constants.UserMapBunchSize; i++)
+        for (int i = 0; i < Constants.UserMapSize/ Constants.UserMapBunchSize; i++)
         {
             Keychain[i].readLock().lock();
             for (int j = 0; j < Constants.UserMapBunchSize; j++)
             {
-                for( User user : Table[i*Constants.UserMapBunchSize+j])
+                for( User user : Table[i* Constants.UserMapBunchSize+j])
                 {
-                    mapArray.add(user.JSONserilize());
+                    mapArray.add(user.JSONserialize());
                 }
             }
             Keychain[i].readLock().unlock();
@@ -199,40 +194,46 @@ class UserMap
     {
         JSONParser parser = new JSONParser();
         JSONArray mapArray = (JSONArray) parser.parse(json);
-        Iterator<JSONObject> iterator = mapArray.iterator();
-        while (iterator.hasNext())
+        for (JSONObject currentUser : (Iterable<JSONObject>) mapArray)
         {
-            JSONObject currentUser = iterator.next();
             String currentUsername = (String) currentUser.get("UserName");
             Long currentScore = (Long) currentUser.get("Score");
             JSONObject currentPassword = (JSONObject) currentUser.get("Password");
             JSONArray currentFriendList = (JSONArray) currentUser.get("Friends");
+            JSONArray currentBackLog = (JSONArray) currentUser.get("BackLogsMessages");
 
             Password password = new Password((String) currentPassword.get("Password"), ((String) currentPassword.get("Salt")).getBytes());
-            LinkedList<String> friendList = new LinkedList<String>();
+            LinkedList<String> friendList = new LinkedList<>();
+            LinkedList<Message> backLogMessages = new LinkedList<>();
 
-            Iterator<String> iter2 = currentFriendList.iterator();
-            while (iter2.hasNext())
+            for (String friend : (Iterable<String>) currentFriendList)
             {
-                String friend = iter2.next();
                 friendList.addFirst(friend);
             }
 
-            put(new User(currentUsername, password, currentScore.intValue(), friendList));
+            for (JSONObject mex : (Iterable<JSONObject>) currentBackLog)
+            {
+                MessageType resType =  MessageType.valueOf((int) mex.get("Type"));
+                String field1 = (String) mex.get("Field1");
+                String field2 = (String) mex.get("Field2");
+                backLogMessages.addFirst(new Message(resType, field1, field2));
+            }
+
+            put(new User(currentUsername, password, currentScore.intValue(), friendList, backLogMessages));
         }
     }
 
     public void print()
     {
         int counter = 1;
-        for (int i = 0; i < Constants.UserMapSize/Constants.UserMapBunchSize; i++)
+        for (int i = 0; i < Constants.UserMapSize/ Constants.UserMapBunchSize; i++)
         {
             Keychain[i].readLock().lock();
             for (int j = 0; j < Constants.UserMapBunchSize; j++)
             {
-                for( User user : Table[i*Constants.UserMapBunchSize+j])
+                for( User user : Table[i* Constants.UserMapBunchSize+j])
                 {
-                    System.out.println("User N° " + counter);
+                    System.out.println("UsersNetwork.User N° " + counter);
                     System.out.println("    Username: " + user.getUserName());
                     System.out.println("    Password: " + new String(user.getPassword()));
                     System.out.println("    Friends list: ");
@@ -242,6 +243,13 @@ class UserMap
                     {
                         String friend = iter.next();
                         System.out.println("        " + friend);
+                    }
+
+                    Iterator<Message> iter2 = user.getBackLogMessageIterator();
+                    while (iter.hasNext())
+                    {
+                        Message mex = (Message) iter2.next();
+                        System.out.println("        " + mex.toString());
                     }
 
                     counter++;

@@ -1,3 +1,5 @@
+package UsersNetwork;
+
 import org.json.simple.JSONObject;
 
 import javax.crypto.SecretKeyFactory;

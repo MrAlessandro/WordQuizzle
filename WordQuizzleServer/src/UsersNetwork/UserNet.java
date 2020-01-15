@@ -1,3 +1,8 @@
+package UsersNetwork;
+
+import Exceptions.*;
+import Utility.AnsiColors;
+import Utility.Constants;
 import org.json.simple.parser.ParseException;
 
 import java.io.FileNotFoundException;
@@ -7,14 +12,14 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.rmi.server.RemoteServer;
 
-class UserNet extends RemoteServer implements Registrable
+public class UserNet extends RemoteServer implements Registrable
 {
     private final static UserNet Net = new UserNet();
     private final static UserMap Map = new UserMap();
 
     private UserNet() {}
 
-    protected static UserNet getNet()
+    public static UserNet getNet()
     {
         return Net;
     }
@@ -29,41 +34,23 @@ class UserNet extends RemoteServer implements Registrable
         }
         catch (NameNotUniqueException e)
         {
-            AnsiColors.printRed("FAILED");
-            AnsiColors.printRed(e.getMessage());
+            AnsiColors.printlnRed("FAILED");
+            AnsiColors.printlnRed(e.getMessage());
             return false;
         }
 
-        AnsiColors.printGreen("REGISTERED");
+        AnsiColors.printlnGreen("REGISTERED");
         return true;
     }
 
-    protected static boolean logInUser(String userName, char[] password)
+    public static boolean checkUserPassword(String userName, char[] password) throws UnknownUserException
     {
-        boolean checked = false;
-
-        System.out.print("Logging in user \"" + userName + "\"... ");
-        try
-        {
-            checked = Map.setLogIn(userName, password);
-
-        }
-        catch (UnknownUserException | InconsistentRelationshipException e)
-        {
-            AnsiColors.printRed("FAILED");
-            AnsiColors.printRed(e.getMessage());
-            return false;
-        }
-
-        if(checked)
-            AnsiColors.printGreen("LOGGED");
-        else
-            AnsiColors.printRed("WRONG PASSWORD");
+        boolean checked = Map.checkPassword(userName, password);
 
         return checked;
     }
 
-    protected static boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException
+    public static boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException
     {
         System.out.print("Making \"" + userName1 + "\" and \"" + userName2 + "\" friends...");
 
@@ -73,22 +60,22 @@ class UserNet extends RemoteServer implements Registrable
         }
         catch (UnknownFirstUserException | UnknownSecondUserException | AlreadyExistingRelationshipException e)
         {
-            AnsiColors.printRed("FAILED");
-            AnsiColors.printRed(e.getMessage());
+            AnsiColors.printlnRed("FAILED");
+            AnsiColors.printlnRed(e.getMessage());
             return false;
         }
         catch (InconsistentRelationshipException e)
         {
-            AnsiColors.printRed("FAILED");
+            AnsiColors.printlnRed("FAILED");
             e.printStackTrace();
             System.exit(1);
         }
 
-        AnsiColors.printGreen("MADE");
+        AnsiColors.printlnGreen("MADE");
         return true;
     }
 
-    protected static void backUpNet()
+    public static void backUpNet()
     {
         byte[] jsonBytes = Map.JSONserialize().toJSONString().getBytes();
 
@@ -103,7 +90,7 @@ class UserNet extends RemoteServer implements Registrable
         }
     }
 
-    protected static void restoreNet()
+    public static void restoreNet()
     {
         byte[] read = null;
         try
@@ -134,7 +121,7 @@ class UserNet extends RemoteServer implements Registrable
 
     }
 
-    protected static void printNet()
+    public static void printNet()
     {
         Map.print();
     }

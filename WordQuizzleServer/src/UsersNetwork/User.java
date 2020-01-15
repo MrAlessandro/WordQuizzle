@@ -1,3 +1,6 @@
+package UsersNetwork;
+
+import Messages.Message;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -9,24 +12,25 @@ class User
 {
     private String UserName;
     private Password Password;
-    private boolean Logged;
     private int Score;
     private LinkedList<String> Friends;
+    private LinkedList<Message> BackLogMessages;
 
     public User(String userName, Password password)
     {
         this.UserName = userName;
         this.Password = password;
-        this.Friends = new LinkedList<>();
         this.Score = 0;
-        this.Logged = false;
+        this.Friends = new LinkedList<>();
+        this.BackLogMessages = new LinkedList<>();
     }
 
-    public User(String userName, Password password, int score, LinkedList<String> friends)
+    public User(String userName, Password password, int score, LinkedList<String> friends, LinkedList<Message> backLog)
     {
         this.UserName = userName;
         this.Password = password;
         this.Friends = friends;
+        this.BackLogMessages = backLog;
         this.Score = score;
     }
 
@@ -45,25 +49,19 @@ class User
         return this.Friends.iterator();
     }
 
+    protected Iterator<Message> getBackLogMessageIterator()
+    {
+        return this.BackLogMessages.iterator();
+    }
+
     protected boolean isFriendOf(String userName)
     {
         return this.Friends.contains(userName);
     }
 
-    protected boolean logIn(char[] password) throws InconsistentLogActionException
+    protected boolean checkPassword(char[] password)
     {
-        if (this.Logged)
-            throw new InconsistentLogActionException("Trying to set an invalid 'Logged' value for user " + this.UserName);
-        else
-        {
-            if(this.Password.checkPassword(password))
-            {
-                this.Logged = true;
-                return true;
-            }
-            else
-                return false;
-        }
+        return this.Password.checkPassword(password);
     }
 
     protected boolean addFriend(String userName)
@@ -85,10 +83,11 @@ class User
         return retValue;
     }
 
-    protected JSONObject JSONserilize()
+    protected JSONObject JSONserialize()
     {
         JSONObject retValue = new JSONObject();
         JSONArray friendList = new JSONArray();
+        JSONArray backLogs = new JSONArray();
 
         retValue.put("UserName", this.UserName);
         retValue.put("Password", this.Password.JSONserialize());
@@ -99,7 +98,14 @@ class User
             friendList.add(friend);
         }
 
+        for (Message mex : this.BackLogMessages)
+        {
+            backLogs.add(mex);
+        }
+
         retValue.put("Friends", friendList);
+
+        retValue.put("BackLogsMessages", backLogs);
 
         return retValue;
     }

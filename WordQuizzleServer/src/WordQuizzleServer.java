@@ -1,5 +1,14 @@
+import CommunicationDispatching.Delegation;
+import CommunicationDispatching.DelegationsDispenser;
+import CommunicationDispatching.OperationType;
+import UsersNetwork.Registrable;
+import UsersNetwork.UserNet;
+import Utility.AnsiColors;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketOptions;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -16,7 +25,7 @@ class WordQuizzleServer
     private final static int CONNECTION_PORT = 50500;
     private final static String HOST_NAME = "localhost";
 
-    public static void main(String[] args)
+    public static void main(String[] args) throws IOException
     {
         Registrable stub;
         Registry registry ;
@@ -28,6 +37,7 @@ class WordQuizzleServer
         UserNet.restoreNet();
 
         // Enabling RMI support for registration operation
+        /*
         try
         {
             stub = (Registrable) UnicastRemoteObject.exportObject(UserNet.getNet(), 0);
@@ -38,7 +48,8 @@ class WordQuizzleServer
         catch (AlreadyBoundException | RemoteException e)
         {
             e.printStackTrace();
-        }
+        }*/
+
 
         Thread t = new Thread(new Executor());
         t.start();
@@ -73,37 +84,32 @@ class WordQuizzleServer
                             client.configureBlocking(false);
                             client.register(selector, SelectionKey.OP_READ).attach(null);
 
-                            AnsiColors.printGreen("ACCEPTED");
+                            AnsiColors.printlnGreen("ACCEPTED");
                         }
                         else
-                            AnsiColors.printRed("REFUSED");
+                            AnsiColors.printlnRed("REFUSED");
                     }
 
                     if (currentKey.isReadable())
                     {
-                        SocketChannel client = (SocketChannel) currentKey.channel();
-                        Session session = (Session) currentKey.attachment();
                         currentKey.interestOps(0);
-                        TokenStack.add(new Token(client, session, currentKey, OperationType.READ));
+                        DelegationsDispenser.add(new Delegation(currentKey, OperationType.READ));
                     }
 
                     if (currentKey.isWritable())
                     {
-                        SocketChannel client = (SocketChannel) currentKey.channel();
-                        Session session = (Session) currentKey.attachment();
                         currentKey.interestOps(0);
-                        client.configureBlocking(true);
-
-                        TokenStack.add(new Token(client, session, currentKey, OperationType.WRITE));
+                        DelegationsDispenser.add(new Delegation(currentKey, OperationType.WRITE));
                     }
                 }
 
-                /*Token putBack = null;
-                while ((putBack = TokenBackStack.get()) != null)
+                /*
+                CommunicationDispatching.Token putBack = null;
+                while ((putBack = CommunicationDispatching.TokenBackStack.get()) != null)
                 {
-                    if(putBack.OpType == OperationType.READ)
+                    if(putBack.OpType == CommunicationDispatching.OperationType.READ)
                         putBack.Key.interestOps(SelectionKey.OP_READ);
-                    else if (putBack.OpType == OperationType.WRITE)
+                    else if (putBack.OpType == CommunicationDispatching.OperationType.WRITE)
                         putBack.Key.interestOps(SelectionKey.OP_WRITE);
                 }*/
 
@@ -111,6 +117,7 @@ class WordQuizzleServer
 
             //selector.close();
             //connectionSocket.close();
+
         }
         catch (IOException e)
         {
@@ -118,5 +125,6 @@ class WordQuizzleServer
         }
 
         UserNet.printNet();
+
     }
 }

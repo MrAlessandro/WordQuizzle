@@ -1,5 +1,0 @@
-enum OperationType
-{
-    READ,
-    WRITE
-}

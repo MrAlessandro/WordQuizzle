@@ -1,50 +1,88 @@
-import org.omg.IOP.Encoding;
+import CommunicationDispatching.Delegation;
+import CommunicationDispatching.OperationType;
+import CommunicationDispatching.DelegationsDispenser;
+import Exceptions.UnknownUserException;
+import Messages.MessageType;
+import Sessions.SessionsMap;
+import UsersNetwork.UserNet;
+import Utility.AnsiColors;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.IntBuffer;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 class Executor implements Runnable
 {
-    private ByteBuffer buffer = ByteBuffer.allocate(2048);
-    private ByteBuffer intBuffer = ByteBuffer.allocate(4);
+    private ByteBuffer buffer = ByteBuffer.allocateDirect(2048);
+    private ByteBuffer intBuffer = ByteBuffer.allocateDirect(4);
 
     @Override
     public void run()
     {
-        SocketChannel client;
-        MessageType type;
-        Token token;
+        SocketChannel clientSocket;
+        OperationType operationType;
+        MessageType messageType;
+        Delegation delegation;
         boolean stop = false;
 
         while (!stop)
         {
             try
             {
-                token = TokenStack.get();
-                client = token.ClientSocket;
+                // Gets the SocketChannel and relative details from the inter-thread communication structure
+                delegation = DelegationsDispenser.get();
+                clientSocket = (SocketChannel) delegation.getKey().channel();
+                operationType = delegation.getOpType();
 
-                if (token.OpType == OperationType.READ)
+                // Discern between write/read operations
+                if (operationType == OperationType.READ)
                 {
-                    type = readMessageType(client);
+                    // Read the message header containing the type of the incoming message
+                    messageType = readMessageType(clientSocket);
 
-                    switch (type)
+                    // Discern between the various types of messages
+                    switch (messageType)
                     {
                         case LOG_IN:
-                        {
-                            byte[] read = readMessage(client);
+                        {// LogIn operation
+                            boolean check = false;
+
+                            // Read the rest of the message
+                            byte[] read = readMessage(clientSocket);
+                            // Decode message contents: Username and Password
                             UserLogInInfo userInfo = decodeLoginMessage(read);
 
-                            System.out.println("Username: " + userInfo.username + "; Password: " + userInfo.password.toString());
+                            System.out.print("Check password for user \"" + userInfo.username + "\"... ");
 
-                            UserNet.logInUser(userInfo.username, userInfo.password);
+                            try
+                            {
+                                check = UserNet.checkUserPassword(userInfo.username, userInfo.password);
+
+                                if (check)
+                                {
+                                    AnsiColors.printlnGreen("VERIFIED");
+
+                                    /*TODO
+                                    if (SessionsMap.createSession(clientSocket, userInfo.username) != null)
+                                    {
+
+                                    }*/
+                                }
+                                else
+                                {
+                                    AnsiColors.printlnRed("WRONG");
+
+                                }
+                            }
+                            catch (UnknownUserException e)
+                            {
+                                AnsiColors.printlnRed("FAILED");
+                                AnsiColors.printlnRed(e.getMessage());
+                            }
+
                         }
                     }
+
                 }
 
             }
@@ -110,7 +148,7 @@ class Executor implements Runnable
 
         while (i < raw.length)
         {
-            if (raw[i] == '\n')
+            if (raw[i] == '\0')
             {
                 if(mark == 0)
                 {
@@ -129,12 +167,10 @@ class Executor implements Runnable
             i++;
         }
 
-        UserLogInInfo info = new UserLogInInfo(byteUsername, bytePassword);
-
-        return info;
+        return new UserLogInInfo(byteUsername, bytePassword);
     }
 
-    private class UserLogInInfo
+    private static class UserLogInInfo
     {
         private String username;
         private char[] password;

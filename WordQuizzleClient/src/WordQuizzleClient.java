@@ -40,14 +40,14 @@ class WordQuizzleClient
 
 
         buffer.clear();
-        String username = new String("Paolino\n");
+        String username = new String("Paolino\0");
         buffer.put(username.getBytes());
         buffer.flip();
         while (buffer.hasRemaining())
             server.write(buffer);
 
         buffer.clear();
-        password = new char[]{'1', '2', '3', '4', '\n'};
+        password = new char[]{'1', '2', '3', '4', '\0'};
         buffer.put(toBytes(password));
         buffer.flip();
         while (buffer.hasRemaining())

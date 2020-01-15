@@ -1,4 +1,6 @@
-class AnsiColors 
+package Utility;
+
+public class AnsiColors
 {
     protected static final String ANSI_RESET = "\u001B[0m";
     protected static final String ANSI_BLACK = "\u001B[30m";
@@ -10,17 +12,17 @@ class AnsiColors
     protected static final String ANSI_CYAN = "\u001B[36m";
     protected static final String ANSI_WHITE = "\u001B[37m";
 
-    protected static void printGreen(String str)
+    public static void printlnGreen(String str)
     {
         System.out.println(ANSI_GREEN + str + ANSI_RESET);
     }
 
-    protected static void printRed(String str)
+    public static void printlnRed(String str)
     {
         System.out.println(ANSI_RED + str + ANSI_RESET);
     }
 
-    protected static void printYellow(String str)
+    protected static void printlnYellow(String str)
     {
         System.out.println(ANSI_YELLOW + str + ANSI_RESET);
     }
