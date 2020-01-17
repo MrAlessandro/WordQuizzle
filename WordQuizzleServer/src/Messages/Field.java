@@ -2,7 +2,7 @@ package Messages;
 
 import org.json.simple.JSONObject;
 
-class Field
+public class Field
 {
     private short length;
     private char[] body;
@@ -13,7 +13,7 @@ class Field
         this.body = content;
     }
 
-    protected char[] getBody()
+    public char[] getBody()
     {
         return this.body;
     }

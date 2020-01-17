@@ -19,7 +19,7 @@ public class Message
 {
     private static final ByteBuffer buffer = ByteBuffer.allocateDirect(2048);
 
-    public MessageType type;
+    protected MessageType type;
     private LinkedList<Field> fields;
 
     private Message(MessageType type)
@@ -45,6 +45,11 @@ public class Message
         this.fields = fields;
     }
 
+    public MessageType getType()
+    {
+        return this.type;
+    }
+
     private void addField(char[] field)
     {
         if (this.fields == null)
@@ -53,13 +58,12 @@ public class Message
         this.fields.addLast(new Field(field));
     }
 
-    private Iterator<Field> getFieldsIterator()
+    public Iterator<Field> getFieldsIterator()
     {
         return this.fields.iterator();
     }
 
-
-    private static Message readMessage(SocketChannel client) throws InvalidMessageFormatException, IOException
+    public static Message readMessage(SocketChannel client) throws InvalidMessageFormatException, IOException
     {
         Message readMessage;
         int numReadBytes;
@@ -128,50 +132,25 @@ public class Message
         return readMessage;
     }
 
-    /*TODO*/
-    private static int writeMessage(SocketChannel client, Message toSend)
+    private static int writeMessage(SocketChannel client, Message toSend) throws IOException
     {
-        byte[] bytesToWrite;
-        int length = 6; // sizeof(MessageType)=4 + sizeof(\0)=1 + .... + sizeof(\0)=1
-        // Calculate length for every field
-        Iterator<char[]> iter = toSend.getFieldsIterator();
-        while (iter.hasNext())
+        int writtenBytes = 0;
+
+        buffer.clear();
+        buffer.putShort(toSend.type.getValue());
+        buffer.flip();
+
+        writtenBytes += client.write(buffer);
+
+        for (Field field : toSend.fields)
         {
-            char[] current = iter.next();
-            length += current.length + 1;
+            buffer.clear();
+            buffer.put(String.valueOf(field.getBody()).getBytes());
+            buffer.flip();
+            writtenBytes += client.write(buffer);
         }
 
-        // Allocate array to write
-        bytesToWrite = new byte[length];
-
-        // Set message type
-        System.arraycopy(Constants.intToByteArray(toSend.type.getValue()), 0, bytesToWrite, 0, 4);
-        bytesToWrite[4] = '\0';
-
-        // Write down field within the array
-        int position = 5;
-        iter = toSend.getFieldsIterator();
-        while (iter.hasNext())
-        {
-            char[] current = iter.next();
-            for (int i = 0; i < current.length; i++)
-            {
-                bytesToWrite[position] = (byte) current[i];
-                position++;
-            }
-
-            bytesToWrite[position] = '\0';
-            position++;
-        }
-
-        //
-        bytesToWrite[position] = '\0';
-
-        /*TODO
-        *  Bytes array to write is ready, writing part missing
-        *       Volendo, aggiustare la traduzione dei char in bytes e viceversa (2 bytes per char piuttosto che 1) */
-
-        return 0;
+        return writtenBytes;
     }
 
     public JSONObject JSONserialize()
