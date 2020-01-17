@@ -1,6 +1,7 @@
-package UsersNetwork;
+package Users;
 
 import Exceptions.*;
+import Messages.Message;
 import Utility.AnsiColors;
 import Utility.Constants;
 import org.json.simple.parser.ParseException;
@@ -11,15 +12,17 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.rmi.server.RemoteServer;
+import java.util.Arrays;
+import java.util.LinkedList;
 
-public class UserNet extends RemoteServer implements Registrable
+public class UsersManager extends RemoteServer implements Registrable
 {
-    private final static UserNet Net = new UserNet();
-    private final static UserMap Map = new UserMap();
+    private final static UsersManager Net = new UsersManager();
+    private final static UsersArchive Archive = new UsersArchive();
 
-    private UserNet() {}
+    private UsersManager() {}
 
-    public static UserNet getNet()
+    public static UsersManager getNet()
     {
         return Net;
     }
@@ -30,7 +33,7 @@ public class UserNet extends RemoteServer implements Registrable
 
         try
         {
-            Map.insert(userName, new Password(passwd));
+            Archive.insert(userName, new Password(passwd));
         }
         catch (NameNotUniqueException e)
         {
@@ -43,11 +46,9 @@ public class UserNet extends RemoteServer implements Registrable
         return true;
     }
 
-    public static boolean checkUserPassword(String userName, char[] password) throws UnknownUserException
+    public static LinkedList<Message> checkUserPasswordRetrieveBackLog(String userName, char[] password) throws UnknownUserException
     {
-        boolean checked = Map.checkPassword(userName, password);
-
-        return checked;
+        return Archive.checkUserPasswordRetrieveBackLog(userName, password);
     }
 
     public static boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException
@@ -56,7 +57,7 @@ public class UserNet extends RemoteServer implements Registrable
 
         try
         {
-            Map.addFriendship(userName1, userName2);
+            Archive.addFriendship(userName1, userName2);
         }
         catch (UnknownFirstUserException | UnknownSecondUserException | AlreadyExistingRelationshipException e)
         {
@@ -77,7 +78,7 @@ public class UserNet extends RemoteServer implements Registrable
 
     public static void backUpNet()
     {
-        byte[] jsonBytes = Map.JSONserialize().toJSONString().getBytes();
+        byte[] jsonBytes = Archive.JSONserialize().toJSONString().getBytes();
 
         try
         {
@@ -111,7 +112,7 @@ public class UserNet extends RemoteServer implements Registrable
 
         try
         {
-            Map.JSONdeserialize(json);
+            Archive.JSONdeserialize(json);
         }
         catch (ParseException e)
         {
@@ -123,6 +124,6 @@ public class UserNet extends RemoteServer implements Registrable
 
     public static void printNet()
     {
-        Map.print();
+        Archive.print();
     }
 }

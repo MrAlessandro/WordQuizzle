@@ -3,37 +3,34 @@ package Sessions;
 import Messages.Message;
 
 import java.nio.channels.DatagramChannel;
+import java.util.LinkedList;
 import java.util.concurrent.LinkedBlockingDeque;
 
 class Session
 {
-    private String SessionUser;
-    private LinkedBlockingDeque<Message> SessionMessageBuffer;
-    private DatagramChannel NotificationChannel;
+    private String sessionUser;
+    private LinkedList<Message> sessionMessageBuffer;
+    private DatagramChannel notificationChannel;
 
-    protected Session(String user)
+    protected Session(String username)
     {
-        this.SessionUser = user;
-        this.SessionMessageBuffer = new LinkedBlockingDeque<>();
+        this.sessionUser = username;
+        this.sessionMessageBuffer = new LinkedList<>();
     }
 
-    protected Message consumeMessage()
+    protected Session(String username, LinkedList<Message> backLog)
     {
-        Message taken = null;
-        try
-        {
-            taken = this.SessionMessageBuffer.take();
-        }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-
-        return taken;
+        this.sessionUser = username;
+        this.sessionMessageBuffer = backLog;
     }
 
-    protected void appendMessage(Message message)
+    protected Message getPendingMessage()
     {
-        this.SessionMessageBuffer.add(message);
+        return this.sessionMessageBuffer.pollFirst();
+    }
+
+    protected void storePendingMessage(Message message)
+    {
+        this.sessionMessageBuffer.addLast(message);
     }
 }

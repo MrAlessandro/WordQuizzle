@@ -5,21 +5,21 @@ import java.util.HashMap;
 public enum MessageType
 {
     // Request messages
-    LOG_IN(1, "LogIn"),
-    LOG_OUT(2, "LogOut"),
-    ADD_FRIEND(3, "AddFriend"),
-    FRIENDS_LIST(4, "FriendList"),
-    CHALLENGE(5, "Challenge"),
+    LOG_IN((short) 1, "LogIn"),
+    LOG_OUT((short) 2, "LogOut"),
+    ADD_FRIEND((short) 3, "AddFriend"),
+    FRIENDS_LIST((short) 4, "FriendList"),
+    CHALLENGE((short) 5, "Challenge"),
 
     // Response messages
-    OK(6, "Ok"),
-    YOUR_FRIENDS_LIST(7, "YourFriendList"),
-    USERNAME_USED(8, "UsernameUsed"),
-    ALREADY_FRIENDS(9, "AlreadyFriends"),
-    USERNAME_UNKNOWN(10, "UsernameUnknown"),
-    PASSWORD_WRONG(11, "PasswordWrong");
+    OK((short) 6, "Ok"),
+    YOUR_FRIENDS_LIST((short) 7, "YourFriendList"),
+    USERNAME_USED((short) 8, "UsernameUsed"),
+    ALREADY_FRIENDS((short) 9, "AlreadyFriends"),
+    USERNAME_UNKNOWN((short) 10, "UsernameUnknown"),
+    PASSWORD_WRONG((short) 11, "PasswordWrong");
 
-    private int value;
+    private short value;
     private String name;
     private static HashMap Map = new HashMap<>();
 
@@ -30,17 +30,19 @@ public enum MessageType
         }
     }
 
-    MessageType(int value, String name)
+    MessageType(short value, String name)
     {
         this.value = value;
         this.name = name;
     }
 
-    public static MessageType valueOf(int type) {
+    public static MessageType valueOf(short type)
+    {
         return (MessageType) Map.get(type);
     }
 
-    public int getValue() {
+    public short getValue()
+    {
         return value;
     }
 

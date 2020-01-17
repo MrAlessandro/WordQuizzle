@@ -1,6 +1,7 @@
-package UsersNetwork;
+package Users;
 
 import Messages.Message;
+import Messages.MessageType;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -64,6 +65,17 @@ class User
         return this.Password.checkPassword(password);
     }
 
+    protected LinkedList<Message> retrieveBackLog()
+    {
+        LinkedList<Message> returnList = new LinkedList<>();
+        for (Message mex : this.BackLogMessages)
+        {
+            returnList.addLast(this.BackLogMessages.pollFirst());
+        }
+
+        return returnList;
+    }
+
     protected boolean addFriend(String userName)
     {
         boolean retValue = true;
@@ -100,7 +112,7 @@ class User
 
         for (Message mex : this.BackLogMessages)
         {
-            backLogs.add(mex);
+            backLogs.add(mex.JSONserialize());
         }
 
         retValue.put("Friends", friendList);
@@ -108,5 +120,30 @@ class User
         retValue.put("BackLogsMessages", backLogs);
 
         return retValue;
+    }
+
+    protected static User JSONdeserialize(JSONObject serializedUser)
+    {
+        String currentUsername = (String) serializedUser.get("UserName");
+        int currentScore = (int) serializedUser.get("Score");
+        JSONObject currentPassword = (JSONObject) serializedUser.get("Password");
+        JSONArray currentFriendList = (JSONArray) serializedUser.get("Friends");
+        JSONArray currentBackLog = (JSONArray) serializedUser.get("BackLogsMessages");
+
+        Password DEpassword = new Password((String) currentPassword.get("Password"), ((String) currentPassword.get("Salt")).getBytes());
+
+        LinkedList<String> DEfriendList = new LinkedList<>();
+        for (String friend : (Iterable<String>) currentFriendList)
+        {
+            DEfriendList.addLast(friend);
+        }
+
+        LinkedList<Message> DEbackLogMessages = new LinkedList<>();
+        for (JSONObject mex : (Iterable<JSONObject>) currentBackLog)
+        {
+            DEbackLogMessages.addLast(Message.JSONdeserialize(mex));
+        }
+
+        return new User(currentUsername, DEpassword, currentScore, DEfriendList, DEbackLogMessages);
     }
 }

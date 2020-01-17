@@ -1,11 +1,10 @@
-import Exceptions.InconsistentRelationshipException;
-import UsersNetwork.UserNet;
+import Users.UsersManager;
 
 public class SerializationTest
 {
     public static void main(String[] args)
     {
-        UserNet Net = UserNet.getNet();
+        UsersManager Net = UsersManager.getNet();
         char[] password = new char[]{'1','2','3','4'};
 
         // Put some users and their friendships

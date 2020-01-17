@@ -22,5 +22,10 @@ public class Delegation
     {
         return this.OpType;
     }
+
+    public void setOpType(OperationType type)
+    {
+        this.OpType = type;
+    }
 }
 

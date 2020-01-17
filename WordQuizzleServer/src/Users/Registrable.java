@@ -1,4 +1,4 @@
-package UsersNetwork;
+package Users;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;

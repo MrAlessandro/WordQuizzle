@@ -1,4 +1,4 @@
-package UsersNetwork;
+package Users;
 
 import Exceptions.*;
 import Messages.Message;
@@ -13,7 +13,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-class UserMap
+class UsersArchive
 {
     private static final LinkedList<User>[] Table = new LinkedList[Constants.UserMapSize];
     private static final ReentrantReadWriteLock[] Keychain = new ReentrantReadWriteLock[Constants.UserMapSize/ Constants.UserMapBunchSize];
@@ -24,7 +24,7 @@ class UserMap
         return Math.abs(toHash.hashCode() % Constants.UserMapSize);
     }
 
-    public UserMap()
+    public UsersArchive()
     {
         Load = 0;
 
@@ -66,11 +66,11 @@ class UserMap
         return true;
     }
 
-    protected boolean checkPassword(String username, char[] password) throws UnknownUserException
+    protected LinkedList<Message> checkUserPasswordRetrieveBackLog(String username, char[] password) throws UnknownUserException
     {
         int index = hash(username);
+        LinkedList<Message> backLog = null;
         boolean found = false;
-        boolean returnValue = false;
 
         Keychain[index/ Constants.UserMapBunchSize].readLock().lock();
         for(User current : Table[index])
@@ -78,7 +78,8 @@ class UserMap
             if (current.getUserName().equals(username))
             {
                 found = true;
-                returnValue = current.checkPassword(password);
+                if(current.checkPassword(password))
+                    backLog = current.retrieveBackLog();
             }
         }
         Keychain[index/ Constants.UserMapBunchSize].readLock().unlock();
@@ -86,7 +87,7 @@ class UserMap
         if (!found)
             throw new UnknownUserException("UsersNetwork.User " + username + " does not exist");
 
-        return returnValue;
+        return backLog;
     }
 
     // It insert a given UsersNetwork.User instance within the users table in a not thread-safe way
@@ -196,30 +197,7 @@ class UserMap
         JSONArray mapArray = (JSONArray) parser.parse(json);
         for (JSONObject currentUser : (Iterable<JSONObject>) mapArray)
         {
-            String currentUsername = (String) currentUser.get("UserName");
-            Long currentScore = (Long) currentUser.get("Score");
-            JSONObject currentPassword = (JSONObject) currentUser.get("Password");
-            JSONArray currentFriendList = (JSONArray) currentUser.get("Friends");
-            JSONArray currentBackLog = (JSONArray) currentUser.get("BackLogsMessages");
-
-            Password password = new Password((String) currentPassword.get("Password"), ((String) currentPassword.get("Salt")).getBytes());
-            LinkedList<String> friendList = new LinkedList<>();
-            LinkedList<Message> backLogMessages = new LinkedList<>();
-
-            for (String friend : (Iterable<String>) currentFriendList)
-            {
-                friendList.addFirst(friend);
-            }
-
-            for (JSONObject mex : (Iterable<JSONObject>) currentBackLog)
-            {
-                MessageType resType =  MessageType.valueOf((int) mex.get("Type"));
-                String field1 = (String) mex.get("Field1");
-                String field2 = (String) mex.get("Field2");
-                backLogMessages.addFirst(new Message(resType, field1, field2));
-            }
-
-            put(new User(currentUsername, password, currentScore.intValue(), friendList, backLogMessages));
+            put(User.JSONdeserialize(currentUser));
         }
     }
 

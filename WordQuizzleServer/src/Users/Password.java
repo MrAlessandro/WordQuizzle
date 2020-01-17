@@ -1,4 +1,4 @@
-package UsersNetwork;
+package Users;
 
 import org.json.simple.JSONObject;
 
@@ -8,7 +8,7 @@ import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Iterator;
+import java.util.Arrays;
 
 class Password
 {
@@ -28,6 +28,7 @@ class Password
             SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
             byte[] hash = skf.generateSecret(spec).getEncoded();
             this.Password = toHex(hash);
+            Arrays.fill(chars, '\0');
         }
         catch (NoSuchAlgorithmException | InvalidKeySpecException e)
         {
@@ -57,6 +58,8 @@ class Password
             {
                 diff |= stored[i] ^ testHash[i];
             }
+
+            Arrays.fill(toCheck, '\0');
 
             return diff == 0;
         }

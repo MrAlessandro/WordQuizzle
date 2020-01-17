@@ -1,23 +1,17 @@
 import CommunicationDispatching.Delegation;
 import CommunicationDispatching.DelegationsDispenser;
 import CommunicationDispatching.OperationType;
-import UsersNetwork.Registrable;
-import UsersNetwork.UserNet;
+import Users.Registrable;
+import Users.UsersManager;
 import Utility.AnsiColors;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketOptions;
-import java.net.StandardSocketOptions;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.rmi.AlreadyBoundException;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.Set;
 
 class WordQuizzleServer
@@ -34,7 +28,7 @@ class WordQuizzleServer
         InetSocketAddress serverAddress = new InetSocketAddress(HOST_NAME, CONNECTION_PORT);
 
         // Restoring previous server state
-        UserNet.restoreNet();
+        UsersManager.restoreNet();
 
         // Enabling RMI support for registration operation
         /*
@@ -124,7 +118,7 @@ class WordQuizzleServer
             e.printStackTrace();
         }
 
-        UserNet.printNet();
+        UsersManager.printNet();
 
     }
 }
