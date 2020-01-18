@@ -1,9 +1,9 @@
-import CommunicationDispatching.Delegation;
-import CommunicationDispatching.DelegationsDispenser;
-import CommunicationDispatching.OperationType;
-import Users.Registrable;
-import Users.UsersManager;
-import Utility.AnsiColors;
+import dispatching.Delegation;
+import dispatching.DelegationsDispenser;
+import dispatching.OperationType;
+import users.Registrable;
+import users.UsersManager;
+import util.AnsiColors;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

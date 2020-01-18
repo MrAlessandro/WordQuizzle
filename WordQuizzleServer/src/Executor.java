@@ -1,16 +1,16 @@
-import CommunicationDispatching.Delegation;
-import CommunicationDispatching.DelegationsBackDispenser;
-import CommunicationDispatching.OperationType;
-import CommunicationDispatching.DelegationsDispenser;
-import Exceptions.InvalidMessageFormatException;
-import Exceptions.SessionsArchiveInconsistanceException;
-import Exceptions.UnexpectedMessageException;
-import Exceptions.UnknownUserException;
-import Messages.Message;
-import Messages.MessageType;
-import Sessions.SessionsManager;
-import Users.UsersManager;
-import Utility.AnsiColors;
+import dispatching.Delegation;
+import dispatching.DelegationsBackDispenser;
+import dispatching.OperationType;
+import dispatching.DelegationsDispenser;
+import exceptions.InvalidMessageFormatException;
+import exceptions.SessionsArchiveInconsistanceException;
+import exceptions.UnexpectedMessageException;
+import exceptions.UnknownUserException;
+import messages.Message;
+import messages.MessageType;
+import sessions.SessionsManager;
+import users.UsersManager;
+import util.AnsiColors;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -59,7 +59,7 @@ class Executor implements Runnable
                         // LogIn operation
                         case LOG_IN:
                         {
-                            Iterator<Messages.Field> iter = message.getFieldsIterator();
+                            Iterator<messages.Field> iter = message.getFieldsIterator();
                             username = String.valueOf(iter.next().getBody());
                             char[] password = iter.next().getBody();
 
