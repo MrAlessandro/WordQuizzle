@@ -1,9 +1,5 @@
 package messages;
 
-import exceptions.InvalidMessageFormatException;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -44,7 +40,7 @@ public class Message
         return this.type;
     }
 
-    private void addField(char[] field)
+    public void addField(char[] field)
     {
         if (this.fields == null)
             this.fields = new LinkedList<>();
@@ -67,6 +63,7 @@ public class Message
         Message readMessage;
         int numReadBytes;
 
+        buffer.clear();
         buffer.position(buffer.capacity()-2-1);
         numReadBytes = client.read(buffer);
         if(numReadBytes < 2)
@@ -150,37 +147,6 @@ public class Message
         }
 
         return writtenBytes;
-    }
-
-    public JSONObject JSONserialize()
-    {
-        JSONObject retValue = new JSONObject();
-        JSONArray fieldsList = new JSONArray();
-
-        retValue.put("Type", this.type.getValue());
-
-        for (Field current : this.fields)
-        {
-            fieldsList.add(current.JSONserialize());
-        }
-
-        retValue.put("Fields", fieldsList);
-
-        return retValue;
-    }
-
-    public static Message JSONdeserialize(JSONObject serializedMessage)
-    {
-        MessageType resType =  MessageType.valueOf((short) serializedMessage.get("Type"));
-        LinkedList<Field> DEfields = new LinkedList<>();
-
-        JSONArray messageFiledList = (JSONArray) serializedMessage.get("Fields");
-        for (JSONObject field : (Iterable<JSONObject>) messageFiledList)
-        {
-            DEfields.addLast(Field.JSONdeserialize(field));
-        }
-
-        return new Message(resType, DEfields);
     }
 
     @Override

@@ -16,15 +16,10 @@ import java.util.LinkedList;
 
 public class UsersManager extends RemoteServer implements Registrable
 {
-    private final static UsersManager Net = new UsersManager();
-    private final static UsersArchive Archive = new UsersArchive();
+    private final static UsersManager INSTANCE = new UsersManager();
+    private final static UsersArchive ARCHIVE = new UsersArchive();
 
     private UsersManager() {}
-
-    public static UsersManager getNet()
-    {
-        return Net;
-    }
 
     public boolean registerUser(String userName, char[] passwd)
     {
@@ -32,7 +27,7 @@ public class UsersManager extends RemoteServer implements Registrable
 
         try
         {
-            Archive.insert(userName, new Password(passwd));
+            ARCHIVE.insert(userName, new Password(passwd));
         }
         catch (NameNotUniqueException e)
         {
@@ -45,9 +40,19 @@ public class UsersManager extends RemoteServer implements Registrable
         return true;
     }
 
-    public static LinkedList<Message> checkUserPasswordRetrieveBackLog(String userName, char[] password) throws UnknownUserException
+    public static boolean checkUserPassword(String userName, char[] password) throws UnknownUserException
     {
-        return Archive.checkUserPasswordRetrieveBackLog(userName, password);
+        return ARCHIVE.checkUserPassword(userName, password);
+    }
+
+    public static LinkedList<Message> retrieveUserBackLog(String userName) throws UnknownUserException
+    {
+        return ARCHIVE.retrieveUserBackLog(userName);
+    }
+
+    public static LinkedList<Message> validatePasswordRetrieveBackLog(String username, char[] password) throws UnknownUserException
+    {
+        return ARCHIVE.validateUserPasswordRetrieveBacklog(username, password);
     }
 
     public static boolean addFriendship(String userName1, String userName2) throws InconsistentRelationshipException
@@ -56,7 +61,7 @@ public class UsersManager extends RemoteServer implements Registrable
 
         try
         {
-            Archive.addFriendship(userName1, userName2);
+            ARCHIVE.addFriendship(userName1, userName2);
         }
         catch (UnknownFirstUserException | UnknownSecondUserException | AlreadyExistingRelationshipException e)
         {
@@ -77,7 +82,7 @@ public class UsersManager extends RemoteServer implements Registrable
 
     public static void backUpNet()
     {
-        byte[] jsonBytes = Archive.JSONserialize().toJSONString().getBytes();
+        byte[] jsonBytes = ARCHIVE.JSONserialize().toJSONString().getBytes();
 
         try
         {
@@ -111,7 +116,7 @@ public class UsersManager extends RemoteServer implements Registrable
 
         try
         {
-            Archive.JSONdeserialize(json);
+            ARCHIVE.JSONdeserialize(json);
         }
         catch (ParseException e)
         {
@@ -123,6 +128,6 @@ public class UsersManager extends RemoteServer implements Registrable
 
     public static void printNet()
     {
-        Archive.print();
+        ARCHIVE.print();
     }
 }

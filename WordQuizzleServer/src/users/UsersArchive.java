@@ -65,11 +65,58 @@ class UsersArchive
         return true;
     }
 
-    protected LinkedList<Message> checkUserPasswordRetrieveBackLog(String username, char[] password) throws UnknownUserException
+    protected boolean checkUserPassword(String username, char[] password) throws UnknownUserException
     {
         int index = hash(username);
-        LinkedList<Message> backLog = null;
         boolean found = false;
+        boolean check = false;
+
+        Keychain[index/ Constants.UserMapBunchSize].readLock().lock();
+        for(User current : Table[index])
+        {
+            if (current.getUserName().equals(username))
+            {
+                check = current.checkPassword(password);
+                Keychain[index/ Constants.UserMapBunchSize].readLock().unlock();
+                found = true;
+
+            }
+        }
+        Keychain[index/ Constants.UserMapBunchSize].readLock().unlock();
+
+        if (!found)
+            throw new UnknownUserException("UsersNetwork.User " + username + " does not exist");
+        else
+            return check;
+    }
+
+    protected LinkedList<Message> retrieveUserBackLog(String username) throws UnknownUserException
+    {
+        int index = hash(username);
+        LinkedList<Message> returnList = null;
+
+        Keychain[index/ Constants.UserMapBunchSize].readLock().lock();
+        for(User current : Table[index])
+        {
+            if (current.getUserName().equals(username))
+            {
+                returnList = current.retrieveBackLog();
+                Keychain[index/ Constants.UserMapBunchSize].readLock().unlock();
+            }
+        }
+        Keychain[index/ Constants.UserMapBunchSize].readLock().unlock();
+
+        if (returnList == null)
+            throw new UnknownUserException("UsersNetwork.User " + username + " does not exist");
+        else
+            return returnList;
+    }
+
+    protected LinkedList<Message> validateUserPasswordRetrieveBacklog(String username, char[] password) throws UnknownUserException {
+        int index = hash(username);
+        boolean found = false;
+        LinkedList<Message> returnList = null;
+
 
         Keychain[index/ Constants.UserMapBunchSize].readLock().lock();
         for(User current : Table[index])
@@ -77,16 +124,20 @@ class UsersArchive
             if (current.getUserName().equals(username))
             {
                 found = true;
-                if(current.checkPassword(password))
-                    backLog = current.retrieveBackLog();
+
+                if (current.checkPassword(password))
+                    returnList = current.retrieveBackLog();
+
+                Keychain[index/ Constants.UserMapBunchSize].readLock().unlock();
+                break;
             }
         }
         Keychain[index/ Constants.UserMapBunchSize].readLock().unlock();
 
         if (!found)
             throw new UnknownUserException("UsersNetwork.User " + username + " does not exist");
-
-        return backLog;
+        else
+            return returnList;
     }
 
     // It insert a given UsersNetwork.User instance within the users table in a not thread-safe way

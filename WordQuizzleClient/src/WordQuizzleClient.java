@@ -1,3 +1,7 @@
+import messages.InvalidMessageFormatException;
+import messages.Message;
+import messages.MessageType;
+
 import javax.swing.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -17,13 +21,12 @@ class WordQuizzleClient
     private final static int CONNECTION_PORT = 50500;
     private final static String HOST_NAME = "localhost";
 
-    public static void main(String[] args) throws IOException
-    {
+    public static void main(String[] args) throws IOException, InvalidMessageFormatException {
         //WelcomeFrame gui = new WelcomeFrame();
         //SwingUtilities.invokeLater(gui);
 
         char[] password = {'1', '2', '3', '4'};
-        register("Paolino", password);
+        //register("Paolino", password);
 
         ByteBuffer buffer = ByteBuffer.allocate(2048);
 
@@ -32,28 +35,14 @@ class WordQuizzleClient
         server.configureBlocking(true);
         buffer.putInt(MessageType.LOG_IN.getValue());
 
-        int written = 0;
-        buffer.flip();
+        Message message = new Message(MessageType.LOG_IN, "Alessandro");
+        message.addField(password);
 
-        while (buffer.hasRemaining())
-            written += server.write(buffer);
+        Message.writeMessage(server, buffer, message);
 
+        message = Message.readMessage(server, buffer);
 
-        buffer.clear();
-        String username = new String("Paolino\0");
-        buffer.put(username.getBytes());
-        buffer.flip();
-        while (buffer.hasRemaining())
-            server.write(buffer);
-
-        buffer.clear();
-        password = new char[]{'1', '2', '3', '4', '\0'};
-        buffer.put(toBytes(password));
-        buffer.flip();
-        while (buffer.hasRemaining())
-            server.write(buffer);
-
-        buffer.clear();
+        message.toString();
 
         server.close();
 

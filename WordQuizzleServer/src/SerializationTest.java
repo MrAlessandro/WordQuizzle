@@ -4,8 +4,8 @@ public class SerializationTest
 {
     public static void main(String[] args)
     {
-        UsersManager Net = UsersManager.getNet();
-        char[] password = new char[]{'1','2','3','4'};
+/*        UsersManager Net = UsersManager.getNet();
+        char[] password = new char[]{'1','2','3','4'};*/
 
         // Put some users and their friendships
         /*
@@ -46,7 +46,7 @@ public class SerializationTest
         }
         */
 
-        Net.restoreNet();
-        Net.printNet();
+/*        Net.restoreNet();
+        Net.printNet();*/
     }
 }

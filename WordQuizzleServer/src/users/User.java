@@ -66,10 +66,12 @@ class User
 
     protected LinkedList<Message> retrieveBackLog()
     {
+        Message current;
         LinkedList<Message> returnList = new LinkedList<>();
-        for (Message mex : this.BackLogMessages)
+
+        while ((current = this.BackLogMessages.remove()) != null)
         {
-            returnList.addLast(this.BackLogMessages.pollFirst());
+            returnList.addLast(current);
         }
 
         return returnList;
@@ -124,7 +126,7 @@ class User
     protected static User JSONdeserialize(JSONObject serializedUser)
     {
         String currentUsername = (String) serializedUser.get("UserName");
-        int currentScore = (int) serializedUser.get("Score");
+        int currentScore = ((Long) serializedUser.get("Score")).intValue();
         JSONObject currentPassword = (JSONObject) serializedUser.get("Password");
         JSONArray currentFriendList = (JSONArray) serializedUser.get("Friends");
         JSONArray currentBackLog = (JSONArray) serializedUser.get("BackLogsMessages");

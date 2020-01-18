@@ -1,10 +1,11 @@
 import java.nio.ByteBuffer;
+import java.util.LinkedList;
 
 public class BytesToIntTest
 {
     public static void main(String[] args)
     {
-        byte[] bytes = ByteBuffer.allocate(4).putInt(6).array();;
+/*        byte[] bytes = ByteBuffer.allocate(4).putInt(6).array();;
         int val = 0;
 
         if(bytes.length>4)
@@ -16,7 +17,7 @@ public class BytesToIntTest
             val=val|(bytes[i] & 0xFF);
         }
 
-        System.out.println(val);
+        System.out.println(val);*/
 
 /*        Message toSend = new Message(MessageType.OK, "Field1", "Field2", "Field3");
 
@@ -50,6 +51,16 @@ public class BytesToIntTest
         }
 
         bytesToWrite[position] = '\0';*/
+
+        LinkedList<String> list = new LinkedList<>();
+
+        list.addLast("Prima");
+        list.addLast("Seconda");
+        list.addLast("Terza");
+
+        System.out.println(list.get(0));
+        System.out.println(list.get(1));
+        System.out.println(list.get(2));
 
     }
 }

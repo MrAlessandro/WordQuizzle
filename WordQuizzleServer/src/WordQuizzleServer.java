@@ -1,6 +1,4 @@
-import dispatching.Delegation;
 import dispatching.DelegationsDispenser;
-import dispatching.OperationType;
 import users.Registrable;
 import users.UsersManager;
 import util.AnsiColors;
@@ -45,8 +43,8 @@ class WordQuizzleServer
         }*/
 
 
-        Thread t = new Thread(new Executor());
-        t.start();
+        /*Thread t = new Thread(new Executor());
+        t.start();*/
 
         try
         {
@@ -87,25 +85,21 @@ class WordQuizzleServer
                     if (currentKey.isReadable())
                     {
                         currentKey.interestOps(0);
-                        DelegationsDispenser.add(new Delegation(currentKey, OperationType.READ));
+                        DelegationsDispenser.delegateRead(currentKey);
                     }
 
                     if (currentKey.isWritable())
                     {
                         currentKey.interestOps(0);
-                        DelegationsDispenser.add(new Delegation(currentKey, OperationType.WRITE));
+                        DelegationsDispenser.delegateWrite(currentKey);
                     }
                 }
 
-                /*
-                CommunicationDispatching.Token putBack = null;
-                while ((putBack = CommunicationDispatching.TokenBackStack.get()) != null)
+                SelectionKey delegatedBack = null;
+                while ((delegatedBack = DelegationsDispenser.getDelegationBack()) != null)
                 {
-                    if(putBack.OpType == CommunicationDispatching.OperationType.READ)
-                        putBack.Key.interestOps(SelectionKey.OP_READ);
-                    else if (putBack.OpType == CommunicationDispatching.OperationType.WRITE)
-                        putBack.Key.interestOps(SelectionKey.OP_WRITE);
-                }*/
+                    delegatedBack.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                }
 
             }
 
@@ -113,7 +107,7 @@ class WordQuizzleServer
             //connectionSocket.close();
 
         }
-        catch (IOException e)
+        catch (IOException | InterruptedException e)
         {
             e.printStackTrace();
         }
