@@ -103,25 +103,29 @@ public class Message
             buffer.flip();
             short fieldLength = buffer.getShort();
             buffer.clear();
-            if (fieldLength < 0)
+
+            if (fieldLength == 0 || fieldLength < -1)
                 throw new InvalidMessageFormatException("Invalid field size");
-            else if (fieldLength == 0)
+            else if (fieldLength == -1)
+                // End of message
                 break;
-
-            buffer.limit(fieldLength * 2);
-            numReadBytes = client.read(buffer);
-            if(numReadBytes < fieldLength * 2)
+            else
             {
+                buffer.limit(fieldLength * 2);
+                numReadBytes = client.read(buffer);
+                if(numReadBytes < fieldLength * 2)
+                {
+                    buffer.clear();
+                    throw new InvalidMessageFormatException("Too few bytes read");
+                }
+                buffer.flip();
+                charView = buffer.asCharBuffer();
+                char[] charBuffer = new char[fieldLength];
+                charView.get(charBuffer);
                 buffer.clear();
-                throw new InvalidMessageFormatException("Too few bytes read");
-            }
-            buffer.flip();
-            charView = buffer.asCharBuffer();
-            char[] charBuffer = new char[fieldLength];
-            charView.get(charBuffer);
-            buffer.clear();
 
-            readMessage.addField(charBuffer);
+                readMessage.addField(charBuffer);
+            }
         }
 
         return readMessage;
@@ -145,19 +149,20 @@ public class Message
             buffer.flip();
             writtenBytes += client.write(buffer);
 
-            if (field.size() > 0)
-            {
-                // Write field's body
-                buffer.clear();
-                CharBuffer charView = buffer.asCharBuffer();
-                charView.put(field.getBody());
-                buffer.position(buffer.position() + charView.position()*2);
-                buffer.flip();
-                writtenBytes += client.write(buffer);
-            }
-            else
-                break;
+             // Write field's body
+            buffer.clear();
+            CharBuffer charView = buffer.asCharBuffer();
+            charView.put(field.getBody());
+            buffer.position(buffer.position() + charView.position()*2);
+            buffer.flip();
+            writtenBytes += client.write(buffer);
         }
+
+        // Write end of message
+        buffer.clear();
+        buffer.putShort((short) -1);
+        buffer.flip();
+        writtenBytes += client.write(buffer);
 
         return writtenBytes;
     }
