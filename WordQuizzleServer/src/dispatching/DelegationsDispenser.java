@@ -6,38 +6,38 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class DelegationsDispenser
 {
     private static final DelegationsDispenser INSTANCE = new DelegationsDispenser();
-    private static final LinkedBlockingQueue<SelectionKey> READ_DISPENSER = new LinkedBlockingQueue<>();
-    private static final LinkedBlockingQueue<SelectionKey> WRITE_DISPENSER = new LinkedBlockingQueue<>();
-    private static final LinkedBlockingQueue<SelectionKey> BACK_DISPENSER = new LinkedBlockingQueue<>();
+    private static final LinkedBlockingQueue<Delegation> DISPENSER = new LinkedBlockingQueue<>();
+    private static final LinkedBlockingQueue<Delegation> BACK_DISPENSER = new LinkedBlockingQueue<>();
 
     public DelegationsDispenser(){}
 
     public static void delegateRead(SelectionKey delegation)
     {
-        READ_DISPENSER.add(delegation);
-    }
-
-    public static SelectionKey getReadDelegation() throws InterruptedException
-    {
-        return READ_DISPENSER.take();
+        DISPENSER.add(new Delegation(delegation, OperationType.READ));
     }
 
     public static void delegateWrite(SelectionKey delegation)
     {
-        WRITE_DISPENSER.add(delegation);
+        DISPENSER.add(new Delegation(delegation, OperationType.WRITE));
     }
 
-    public static SelectionKey getWriteDelegation() throws InterruptedException
+    public static Delegation getDelegation() throws InterruptedException
     {
-        return WRITE_DISPENSER.take();
+        return DISPENSER.take();
     }
 
-    public static void backDelegate(SelectionKey delegation)
+
+    public static void delegateBack(SelectionKey delegation, OperationType type)
+    {
+        BACK_DISPENSER.add(new Delegation(delegation, type));
+    }
+
+    public static void delegateBack(Delegation delegation)
     {
         BACK_DISPENSER.add(delegation);
     }
 
-    public static SelectionKey getDelegationBack() throws InterruptedException
+    public static Delegation getDelegationBack() throws InterruptedException
     {
         return BACK_DISPENSER.poll();
     }

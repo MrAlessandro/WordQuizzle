@@ -26,7 +26,6 @@ class WordQuizzleClient
         //SwingUtilities.invokeLater(gui);
 
         char[] password = {'1', '2', '3', '4'};
-        //register("Paolino", password);
 
         ByteBuffer buffer = ByteBuffer.allocate(2048);
 
@@ -38,14 +37,13 @@ class WordQuizzleClient
         Message message = new Message(MessageType.LOG_IN, "Alessandro");
         message.addField(password);
 
+        System.out.println("Sending message: " + message.toString());
         Message.writeMessage(server, buffer, message);
 
         message = Message.readMessage(server, buffer);
-
-        message.toString();
+        System.out.println("Received message: "+ message.toString());
 
         server.close();
-
     }
 
     protected static boolean register(String username, char[] password)

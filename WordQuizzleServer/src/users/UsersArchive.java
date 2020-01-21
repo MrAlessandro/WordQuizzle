@@ -79,7 +79,7 @@ class UsersArchive
                 check = current.checkPassword(password);
                 Keychain[index/ Constants.UserMapBunchSize].readLock().unlock();
                 found = true;
-
+                break;
             }
         }
         Keychain[index/ Constants.UserMapBunchSize].readLock().unlock();
@@ -128,7 +128,6 @@ class UsersArchive
                 if (current.checkPassword(password))
                     returnList = current.retrieveBackLog();
 
-                Keychain[index/ Constants.UserMapBunchSize].readLock().unlock();
                 break;
             }
         }

@@ -1,6 +1,5 @@
 package messages;
 
-
 public class Field
 {
     private short length;
@@ -8,8 +7,8 @@ public class Field
 
     protected Field(char[] content)
     {
-        this.length = (short) content.length;
         this.body = content;
+        this.length = (short) content.length;
     }
 
     public char[] getBody()

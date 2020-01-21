@@ -1,4 +1,6 @@
+import dispatching.Delegation;
 import dispatching.DelegationsDispenser;
+import dispatching.OperationType;
 import users.Registrable;
 import users.UsersManager;
 import util.AnsiColors;
@@ -43,9 +45,9 @@ class WordQuizzleServer
         }*/
 
 
-        Thread r = new Thread(new Reader());
+        Thread r = new Thread(new Executor());
         r.start();
-        Thread w = new Thread(new Reader());
+        Thread w = new Thread(new Executor());
         w.start();
 
         try
@@ -97,10 +99,14 @@ class WordQuizzleServer
                     }
                 }
 
-                SelectionKey delegatedBack = null;
+
+                Delegation delegatedBack = null;
                 while ((delegatedBack = DelegationsDispenser.getDelegationBack()) != null)
                 {
-                    delegatedBack.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                    if (delegatedBack.getType() == OperationType.READ)
+                        delegatedBack.getDelegation().interestOps(SelectionKey.OP_READ);
+                    else if (delegatedBack.getType() == OperationType.WRITE)
+                        delegatedBack.getDelegation().interestOps(SelectionKey.OP_WRITE);
                 }
 
             }

@@ -22,6 +22,12 @@ public class SessionsManager
         usernameTOsession.put(username, index);
     }
 
+    protected SessionCompartment getSession(String username)
+    {
+        int index = usernameTOsession.get(username);
+        return SessionsArchive.getCompartment(index);
+    }
+
 
     public static void openSession(SocketChannel socket, String username, LinkedList<Message> backLog) throws SessionsArchiveInconsistanceException
     {

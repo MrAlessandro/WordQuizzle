@@ -13,7 +13,7 @@ import java.util.Arrays;
 class Password
 {
     private String Password;
-    private byte[] Salt;
+    private String Salt;
     private static final int Iterations = 1000;
 
     protected Password(char[] passwd)
@@ -22,12 +22,13 @@ class Password
 
         try
         {
-            this.Salt = generateSalt();
+            byte[] salt = generateSalt();
 
-            PBEKeySpec spec = new PBEKeySpec(chars, this.Salt, Iterations, 64 * 8);
+            PBEKeySpec spec = new PBEKeySpec(chars, salt, Iterations, 64 * 8);
             SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
             byte[] hash = skf.generateSecret(spec).getEncoded();
             this.Password = toHex(hash);
+            this.Salt = toHex(salt);
             Arrays.fill(chars, '\0');
         }
         catch (NoSuchAlgorithmException | InvalidKeySpecException e)
@@ -37,7 +38,7 @@ class Password
 
     }
 
-    protected Password(String passwd, byte[] salt)
+    protected Password(String passwd, String salt)
     {
         this.Password = passwd;
         this.Salt = salt;
@@ -49,12 +50,12 @@ class Password
 
         try
         {
-            PBEKeySpec spec = new PBEKeySpec(toCheck, this.Salt, Iterations, 64 * 8);
+            PBEKeySpec spec = new PBEKeySpec(toCheck, fromHex(this.Salt), Iterations, 64 * 8);
             SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
             byte[] testHash = skf.generateSecret(spec).getEncoded();
 
             int diff = stored.length ^ testHash.length;
-            for(int i = 0; i < stored.length /*&& i < testHash.length*/; i++)
+            for(int i = 0; i < stored.length && i < testHash.length; i++)
             {
                 diff |= stored[i] ^ testHash[i];
             }
@@ -112,8 +113,16 @@ class Password
     {
         JSONObject retValue = new JSONObject();
         retValue.put("Password", this.Password);
-        retValue.put("Salt", this.Salt.toString());
+        retValue.put("Salt", this.Salt);
 
         return retValue;
+    }
+
+    protected static Password JSONdeserialize(JSONObject SEpassword)
+    {
+        String passwd = (String) SEpassword.get("Password");
+        String salt = (String) SEpassword.get("Salt");
+
+        return new Password(passwd, salt);
     }
 }

@@ -69,7 +69,7 @@ class User
         Message current;
         LinkedList<Message> returnList = new LinkedList<>();
 
-        while ((current = this.BackLogMessages.remove()) != null)
+        while ((current = this.BackLogMessages.poll()) != null)
         {
             returnList.addLast(current);
         }
@@ -131,7 +131,7 @@ class User
         JSONArray currentFriendList = (JSONArray) serializedUser.get("Friends");
         JSONArray currentBackLog = (JSONArray) serializedUser.get("BackLogsMessages");
 
-        Password DEpassword = new Password((String) currentPassword.get("Password"), ((String) currentPassword.get("Salt")).getBytes());
+        Password DEpassword = users.Password.JSONdeserialize(currentPassword);
 
         LinkedList<String> DEfriendList = new LinkedList<>();
         for (String friend : (Iterable<String>) currentFriendList)

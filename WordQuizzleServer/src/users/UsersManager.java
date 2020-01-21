@@ -21,6 +21,11 @@ public class UsersManager extends RemoteServer implements Registrable
 
     private UsersManager() {}
 
+    public static UsersManager getInstance()
+    {
+        return INSTANCE;
+    }
+
     public boolean registerUser(String userName, char[] passwd)
     {
         System.out.print("Registering user \"" + userName + "\" at the service... ");
@@ -112,7 +117,7 @@ public class UsersManager extends RemoteServer implements Registrable
             e.printStackTrace();
         }
 
-        String json = new String(read, Charset.defaultCharset());
+        String json = new String(read);
 
         try
         {

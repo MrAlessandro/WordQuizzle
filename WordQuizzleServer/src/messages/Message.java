@@ -70,7 +70,7 @@ public class Message
 
         // Read message type
         buffer.clear();
-        buffer.position(buffer.capacity()-2);
+        buffer.limit(2);
         numReadBytes = client.read(buffer);
         if(numReadBytes < 2)
         {
@@ -79,8 +79,6 @@ public class Message
         }
 
         buffer.flip();
-        buffer.limit(buffer.capacity());
-        buffer.position(buffer.capacity()-2);
         short type = buffer.getShort();
         buffer.clear();
         if (MessageType.valueOf(type) == null)
@@ -88,11 +86,12 @@ public class Message
 
         // Initialize message
         readMessage = new Message(MessageType.valueOf(type));
+        CharBuffer charView;
 
         // Read fields
         while (numReadBytes > 0)
         {
-            buffer.position(buffer.capacity()-2);
+            buffer.limit(2);
             numReadBytes = client.read(buffer);
             if (numReadBytes == 0)
                 break;
@@ -103,37 +102,23 @@ public class Message
             }
 
             buffer.flip();
-            buffer.limit(buffer.capacity());
-            buffer.position(buffer.capacity()-2);
             short fieldLength = buffer.getShort();
             buffer.clear();
             if (fieldLength < 0)
                 throw new InvalidMessageFormatException("Invalid field size");
 
-            buffer.position(buffer.capacity()-fieldLength);
+            buffer.limit(fieldLength * 2);
             numReadBytes = client.read(buffer);
-            if(numReadBytes < fieldLength)
+            if(numReadBytes < fieldLength * 2)
             {
                 buffer.clear();
                 throw new InvalidMessageFormatException("Too few bytes read");
             }
 
             buffer.flip();
-            buffer.limit(buffer.capacity());
-            buffer.position(buffer.capacity()-fieldLength);
-            char[] charBuffer = new char[fieldLength/2];
-            for (int i = 0; i < charBuffer.length; i++)
-            {
-                try
-                {
-                    charBuffer[i] = buffer.getChar();
-                }
-                catch (BufferOverflowException e)
-                {
-                    buffer.clear();
-                    throw new InvalidMessageFormatException("Too few bytes read");
-                }
-            }
+            charView = buffer.asCharBuffer();
+            char[] charBuffer = new char[fieldLength];
+            charView.get(charBuffer);
             buffer.clear();
 
             readMessage.addField(charBuffer);
@@ -145,7 +130,6 @@ public class Message
     public static int writeMessage(SocketChannel client, ByteBuffer buffer, Message toSend) throws IOException
     {
         int writtenBytes = 0;
-        CharBuffer
 
         buffer.clear();
         buffer.putShort(toSend.type.getValue());
@@ -163,10 +147,9 @@ public class Message
 
             // Write field's body
             buffer.clear();
-            for (int i = 0; i < field.getBody().length; i++)
-            {
-                buffer.putChar(field.getBody()[i]);
-            }
+            CharBuffer charView = buffer.asCharBuffer();
+            charView.put(field.getBody());
+            buffer.position(buffer.position() + charView.position()*2);
             buffer.flip();
             writtenBytes += client.write(buffer);
         }

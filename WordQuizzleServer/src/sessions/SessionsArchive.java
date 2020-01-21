@@ -53,6 +53,11 @@ class SessionsArchive
         return index;
     }
 
+    protected static SessionCompartment getCompartment(int index)
+    {
+        return archive[index];
+    }
+
     protected static Message getSessionPendingMessage(int index) throws SessionsArchiveInconsistanceException
     {
         return archive[index].getPendingSessionMessage();

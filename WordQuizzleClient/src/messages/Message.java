@@ -3,6 +3,7 @@ package messages;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -63,9 +64,9 @@ public class Message
         Message readMessage;
         int numReadBytes;
 
+        // Read message type
         buffer.clear();
-
-        buffer.position(buffer.capacity()-2-1);
+        buffer.limit(2);
         numReadBytes = client.read(buffer);
         if(numReadBytes < 2)
         {
@@ -79,11 +80,14 @@ public class Message
         if (MessageType.valueOf(type) == null)
             throw new InvalidMessageFormatException("Invalid message type");
 
+        // Initialize message
         readMessage = new Message(MessageType.valueOf(type));
+        CharBuffer charView;
 
+        // Read fields
         while (numReadBytes > 0)
         {
-            buffer.position(buffer.capacity()-2-1);
+            buffer.limit(2);
             numReadBytes = client.read(buffer);
             if (numReadBytes == 0)
                 break;
@@ -97,9 +101,9 @@ public class Message
             short fieldLength = buffer.getShort();
             buffer.clear();
             if (fieldLength < 0)
-                throw new InvalidMessageFormatException("Invalid message type");
+                throw new InvalidMessageFormatException("Invalid field size");
 
-            buffer.position(buffer.capacity()-fieldLength-1);
+            buffer.limit(fieldLength * 2);
             numReadBytes = client.read(buffer);
             if(numReadBytes < fieldLength)
             {
@@ -108,12 +112,13 @@ public class Message
             }
 
             buffer.flip();
+            charView = buffer.asCharBuffer();
             char[] charBuffer = new char[fieldLength/2];
             for (int i = 0; i < charBuffer.length; i++)
             {
                 try
                 {
-                    charBuffer[i] = buffer.getChar();
+                    charBuffer[i] = charView.get();
                 }
                 catch (BufferOverflowException e)
                 {
@@ -149,14 +154,15 @@ public class Message
 
             // Write field's body
             buffer.clear();
-            buffer.put(String.valueOf(field.getBody()).getBytes());
+            CharBuffer charView = buffer.asCharBuffer();
+            charView.put(field.getBody());
+            buffer.position(buffer.position() + charView.position()*2);
             buffer.flip();
             writtenBytes += client.write(buffer);
         }
 
         return writtenBytes;
     }
-
 
     @Override
     public String toString()

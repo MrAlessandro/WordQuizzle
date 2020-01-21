@@ -5,7 +5,7 @@ import messages.Message;
 import java.nio.channels.DatagramChannel;
 import java.util.LinkedList;
 
-class Session
+public class Session
 {
     private String sessionUser;
     private LinkedList<Message> sessionMessageBuffer;
