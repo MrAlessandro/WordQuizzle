@@ -18,6 +18,11 @@ public class Field
         return this.body;
     }
 
+    public short size()
+    {
+        return this.length;
+    }
+
     protected JSONObject JSONserialize()
     {
         JSONObject serializedThis = new JSONObject();

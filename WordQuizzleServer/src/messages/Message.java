@@ -7,6 +7,7 @@ import org.json.simple.JSONObject;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -67,7 +68,9 @@ public class Message
         Message readMessage;
         int numReadBytes;
 
-        buffer.position(buffer.capacity()-2-1);
+        // Read message type
+        buffer.clear();
+        buffer.position(buffer.capacity()-2);
         numReadBytes = client.read(buffer);
         if(numReadBytes < 2)
         {
@@ -76,16 +79,20 @@ public class Message
         }
 
         buffer.flip();
+        buffer.limit(buffer.capacity());
+        buffer.position(buffer.capacity()-2);
         short type = buffer.getShort();
         buffer.clear();
         if (MessageType.valueOf(type) == null)
             throw new InvalidMessageFormatException("Invalid message type");
 
+        // Initialize message
         readMessage = new Message(MessageType.valueOf(type));
 
+        // Read fields
         while (numReadBytes > 0)
         {
-            buffer.position(buffer.capacity()-2-1);
+            buffer.position(buffer.capacity()-2);
             numReadBytes = client.read(buffer);
             if (numReadBytes == 0)
                 break;
@@ -96,12 +103,14 @@ public class Message
             }
 
             buffer.flip();
+            buffer.limit(buffer.capacity());
+            buffer.position(buffer.capacity()-2);
             short fieldLength = buffer.getShort();
             buffer.clear();
             if (fieldLength < 0)
-                throw new InvalidMessageFormatException("Invalid message type");
+                throw new InvalidMessageFormatException("Invalid field size");
 
-            buffer.position(buffer.capacity()-fieldLength-1);
+            buffer.position(buffer.capacity()-fieldLength);
             numReadBytes = client.read(buffer);
             if(numReadBytes < fieldLength)
             {
@@ -110,6 +119,8 @@ public class Message
             }
 
             buffer.flip();
+            buffer.limit(buffer.capacity());
+            buffer.position(buffer.capacity()-fieldLength);
             char[] charBuffer = new char[fieldLength/2];
             for (int i = 0; i < charBuffer.length; i++)
             {
@@ -134,6 +145,7 @@ public class Message
     public static int writeMessage(SocketChannel client, ByteBuffer buffer, Message toSend) throws IOException
     {
         int writtenBytes = 0;
+        CharBuffer
 
         buffer.clear();
         buffer.putShort(toSend.type.getValue());
@@ -143,8 +155,18 @@ public class Message
 
         for (Field field : toSend.fields)
         {
+            // Write field's length
             buffer.clear();
-            buffer.put(String.valueOf(field.getBody()).getBytes());
+            buffer.putShort(field.size());
+            buffer.flip();
+            writtenBytes += client.write(buffer);
+
+            // Write field's body
+            buffer.clear();
+            for (int i = 0; i < field.getBody().length; i++)
+            {
+                buffer.putChar(field.getBody()[i]);
+            }
             buffer.flip();
             writtenBytes += client.write(buffer);
         }

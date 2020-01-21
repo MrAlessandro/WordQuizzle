@@ -64,6 +64,7 @@ public class Message
         int numReadBytes;
 
         buffer.clear();
+
         buffer.position(buffer.capacity()-2-1);
         numReadBytes = client.read(buffer);
         if(numReadBytes < 2)
@@ -140,6 +141,13 @@ public class Message
 
         for (Field field : toSend.fields)
         {
+            // Write field's length
+            buffer.clear();
+            buffer.putShort(field.size());
+            buffer.flip();
+            writtenBytes += client.write(buffer);
+
+            // Write field's body
             buffer.clear();
             buffer.put(String.valueOf(field.getBody()).getBytes());
             buffer.flip();
@@ -148,6 +156,7 @@ public class Message
 
         return writtenBytes;
     }
+
 
     @Override
     public String toString()

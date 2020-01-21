@@ -43,8 +43,10 @@ class WordQuizzleServer
         }*/
 
 
-        /*Thread t = new Thread(new Executor());
-        t.start();*/
+        Thread r = new Thread(new Reader());
+        r.start();
+        Thread w = new Thread(new Reader());
+        w.start();
 
         try
         {

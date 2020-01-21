@@ -39,6 +39,6 @@ public class DelegationsDispenser
 
     public static SelectionKey getDelegationBack() throws InterruptedException
     {
-        return BACK_DISPENSER.take();
+        return BACK_DISPENSER.poll();
     }
 }
