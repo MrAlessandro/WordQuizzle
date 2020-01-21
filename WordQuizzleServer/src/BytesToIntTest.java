@@ -19,10 +19,10 @@ public class BytesToIntTest
 
         System.out.println(val);*/
 
-/*        Message toSend = new Message(MessageType.OK, "Field1", "Field2", "Field3");
+/*        messages.Message toSend = new messages.Message(messages.MessageType.OK, "Field1", "Field2", "Field3");
 
         byte[] bytesToWrite;
-        int length = 6; // sizeof(MessageType)=4 + sizeof(\0)=1 + .... + sizeof(\0)=1
+        int length = 6; // sizeof(messages.MessageType)=4 + sizeof(\0)=1 + .... + sizeof(\0)=1
         Iterator<char[]> iter = toSend.getFieldsIterator();
         while (iter.hasNext())
         {

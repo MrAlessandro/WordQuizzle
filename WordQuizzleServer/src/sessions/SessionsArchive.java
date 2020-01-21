@@ -1,36 +1,32 @@
 package sessions;
 
-import sessions.exceptions.SessionsArchiveInconsistanceException;
 import messages.Message;
+import sessions.exceptions.SessionsArchiveInconsistanceException;
 import util.Constants;
 
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
 
-class SessionsArchive
-{
+class SessionsArchive {
     private static final SessionsArchive instance = new SessionsArchive();
     private static final SessionCompartment[] archive = new SessionCompartment[Constants.SessionMapSize];
     private static final ReentrantLock lastLock = new ReentrantLock();
     private static int last = 0;
 
-    static
-    {
-        for (int i = 0; i < archive.length; i++)
-        {
+    static {
+        for (int i = 0; i < archive.length; i++) {
             archive[i] = new SessionCompartment();
         }
     }
 
-    private SessionsArchive(){}
+    private SessionsArchive() {
+    }
 
-    protected static SessionsArchive getInstance()
-    {
+    protected static SessionsArchive getInstance() {
         return instance;
     }
 
-    protected static int recordSession(String username) throws SessionsArchiveInconsistanceException
-    {
+    protected static int recordSession(String username) throws SessionsArchiveInconsistanceException {
         int index;
 
         lastLock.lock();
@@ -41,8 +37,7 @@ class SessionsArchive
         return index;
     }
 
-    protected static int recordSession(String username, LinkedList<Message> backlog) throws SessionsArchiveInconsistanceException
-    {
+    protected static int recordSession(String username, LinkedList<Message> backlog) throws SessionsArchiveInconsistanceException {
         int index;
 
         lastLock.lock();
@@ -53,18 +48,15 @@ class SessionsArchive
         return index;
     }
 
-    protected static SessionCompartment getCompartment(int index)
-    {
+    protected static SessionCompartment getCompartment(int index) {
         return archive[index];
     }
 
-    protected static Message getSessionPendingMessage(int index) throws SessionsArchiveInconsistanceException
-    {
+    protected static Message getSessionPendingMessage(int index) throws SessionsArchiveInconsistanceException {
         return archive[index].getPendingSessionMessage();
     }
 
-    protected static void storeSessionPendingMessage(int index, Message message) throws SessionsArchiveInconsistanceException
-    {
+    protected static void storeSessionPendingMessage(int index, Message message) throws SessionsArchiveInconsistanceException {
         archive[index].storeSessionPendingMessage(message);
     }
 }

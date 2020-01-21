@@ -1,20 +1,16 @@
-import messages.InvalidMessageFormatException;
 import messages.Message;
 import messages.MessageType;
+import messages.exceptions.InvalidMessageFormatException;
 
-import javax.swing.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.Arrays;
 
 class WordQuizzleClient
 {
@@ -29,7 +25,7 @@ class WordQuizzleClient
 
         ByteBuffer buffer = ByteBuffer.allocate(2048);
 
-        SocketAddress address = new InetSocketAddress("localhost", CONNECTION_PORT);
+        SocketAddress address = new InetSocketAddress(HOST_NAME, CONNECTION_PORT);
         SocketChannel server = SocketChannel.open(address);
         server.configureBlocking(true);
         buffer.putInt(MessageType.LOG_IN.getValue());
@@ -64,12 +60,12 @@ class WordQuizzleClient
         return retValue;
     }
 
-    static byte[] toBytes(char[] chars) {
+/*    static byte[] toBytes(char[] chars) {
         CharBuffer charBuffer = CharBuffer.wrap(chars);
-        ByteBuffer byteBuffer = Charset.forName("UTF-8").encode(charBuffer);
+        ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(charBuffer);
         byte[] bytes = Arrays.copyOfRange(byteBuffer.array(),
                 byteBuffer.position(), byteBuffer.limit());
         Arrays.fill(byteBuffer.array(), (byte) 0); // clear sensitive data
         return bytes;
-    }
+    }*/
 }

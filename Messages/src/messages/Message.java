@@ -1,5 +1,9 @@
 package messages;
 
+import messages.exceptions.InvalidMessageFormatException;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -156,6 +160,37 @@ public class Message
         }
 
         return writtenBytes;
+    }
+
+    public JSONObject JSONserialize()
+    {
+        JSONObject retValue = new JSONObject();
+        JSONArray fieldsList = new JSONArray();
+
+        retValue.put("Type", this.type.getValue());
+
+        for (Field current : this.fields)
+        {
+            fieldsList.add(current.JSONserialize());
+        }
+
+        retValue.put("Fields", fieldsList);
+
+        return retValue;
+    }
+
+    public static Message JSONdeserialize(JSONObject serializedMessage)
+    {
+        MessageType resType =  MessageType.valueOf((short) serializedMessage.get("Type"));
+        LinkedList<Field> DEfields = new LinkedList<>();
+
+        JSONArray messageFiledList = (JSONArray) serializedMessage.get("Fields");
+        for (JSONObject field : (Iterable<JSONObject>) messageFiledList)
+        {
+            DEfields.addLast(Field.JSONdeserialize(field));
+        }
+
+        return new Message(resType, DEfields);
     }
 
     @Override

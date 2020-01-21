@@ -1,9 +1,9 @@
 import dispatching.Delegation;
 import dispatching.DelegationsDispenser;
 import dispatching.OperationType;
-import sessions.exceptions.InvalidMessageFormatException;
-import sessions.exceptions.SessionsArchiveInconsistanceException;
 import messages.exceptions.UnexpectedMessageException;
+import messages.exceptions.InvalidMessageFormatException;
+import sessions.exceptions.SessionsArchiveInconsistanceException;
 import users.exceptions.UnknownUserException;
 import messages.Message;
 import messages.MessageType;
@@ -62,7 +62,7 @@ class Executor implements Runnable
 
                                 System.out.print("Logging in user \"" + username + "\"... ");
 
-                                LinkedList<Message> backLog = (LinkedList<Message>) UsersManager.validatePasswordRetrieveBackLog(username, password);
+                                LinkedList<Message> backLog = UsersManager.validatePasswordRetrieveBackLog(username, password);
                                 if (backLog != null)
                                 {// Password correct
                                     backLog.addFirst(new Message(MessageType.OK, String.valueOf(backLog.size())));
