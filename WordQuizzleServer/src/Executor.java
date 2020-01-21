@@ -43,6 +43,13 @@ class Executor implements Runnable
                     {
                         // Read message
                         Message message = Message.readMessage(clientSocket, buffer);
+                        if (message == null)
+                        {
+                            delegation.setType(OperationType.CLOSE);
+                            DelegationsDispenser.delegateBack(delegation);
+                            break;
+                        }
+
                         String username = (String) delegation.getDelegation().attachment();
 
                         // Consistence condition
@@ -77,7 +84,8 @@ class Executor implements Runnable
                                 }
 
                                 // Reinsert socket in the communication dispatching
-                                DelegationsDispenser.delegateBack(delegation.getDelegation(), OperationType.WRITE);
+                                delegation.setType(OperationType.WRITE);
+                                DelegationsDispenser.delegateBack(delegation);
                                 break;
                             }
                             default:
@@ -100,7 +108,8 @@ class Executor implements Runnable
                                 Message.writeMessage(clientSocket, buffer, toSend);
                         }
 
-                        DelegationsDispenser.delegateBack(delegation.getDelegation(), OperationType.READ);
+                        delegation.setType(OperationType.READ);
+                        DelegationsDispenser.delegateBack(delegation);
 
                         break;
                     }

@@ -105,10 +105,19 @@ class WordQuizzleServer
                 Delegation delegatedBack = null;
                 while ((delegatedBack = DelegationsDispenser.getDelegationBack()) != null)
                 {
-                    if (delegatedBack.getType() == OperationType.READ)
-                        delegatedBack.getDelegation().interestOps(SelectionKey.OP_READ);
-                    else if (delegatedBack.getType() == OperationType.WRITE)
-                        delegatedBack.getDelegation().interestOps(SelectionKey.OP_WRITE);
+                    switch (delegatedBack.getType())
+                    {
+                        case READ:
+                            delegatedBack.getDelegation().interestOps(SelectionKey.OP_READ);
+                            break;
+                        case WRITE:
+                            delegatedBack.getDelegation().interestOps(SelectionKey.OP_WRITE);
+                            break;
+                        case CLOSE:
+                            delegatedBack.getDelegation().cancel();
+                            delegatedBack.getDelegation().channel().close();
+                            break;
+                    }
                 }
 
             }

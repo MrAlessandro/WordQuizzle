@@ -71,6 +71,10 @@ public class Message
         buffer.clear();
         buffer.limit(2);
         numReadBytes = client.read(buffer);
+        if(numReadBytes == -1)
+        {// Client closed connection
+            return null;
+        }
         if(numReadBytes < 2)
         {
             buffer.clear();

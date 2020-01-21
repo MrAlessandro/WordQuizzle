@@ -22,4 +22,9 @@ public class Delegation
     {
         return this.delegation;
     }
+
+    public void setType(OperationType opType)
+    {
+        this.type = opType;
+    }
 }
