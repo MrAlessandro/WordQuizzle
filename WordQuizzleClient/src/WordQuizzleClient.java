@@ -55,7 +55,8 @@ class WordQuizzleClient
             Registry r = LocateRegistry.getRegistry();
             Registrable remoteNet = (Registrable) r.lookup("WordQuizzleServer");
             retValue = remoteNet.registerUser(username, password);
-        } catch (RemoteException | NotBoundException e)
+        }
+        catch (RemoteException | NotBoundException e)
         {
             e.printStackTrace();
         }

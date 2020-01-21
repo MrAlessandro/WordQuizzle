@@ -1,10 +1,10 @@
 import dispatching.Delegation;
 import dispatching.DelegationsDispenser;
 import dispatching.OperationType;
-import exceptions.InvalidMessageFormatException;
-import exceptions.SessionsArchiveInconsistanceException;
-import exceptions.UnexpectedMessageException;
-import exceptions.UnknownUserException;
+import sessions.exceptions.InvalidMessageFormatException;
+import sessions.exceptions.SessionsArchiveInconsistanceException;
+import messages.exceptions.UnexpectedMessageException;
+import users.exceptions.UnknownUserException;
 import messages.Message;
 import messages.MessageType;
 import sessions.Session;
@@ -24,7 +24,7 @@ class Executor implements Runnable
     @Override
     public void run()
     {
-        SocketChannel clientSocket = null;
+        SocketChannel clientSocket;
         Delegation delegation = null;
         boolean stop = false;
 
@@ -62,7 +62,7 @@ class Executor implements Runnable
 
                                 System.out.print("Logging in user \"" + username + "\"... ");
 
-                                LinkedList<Message> backLog = UsersManager.validatePasswordRetrieveBackLog(username, password);
+                                LinkedList<Message> backLog = (LinkedList<Message>) UsersManager.validatePasswordRetrieveBackLog(username, password);
                                 if (backLog != null)
                                 {// Password correct
                                     backLog.addFirst(new Message(MessageType.OK, String.valueOf(backLog.size())));

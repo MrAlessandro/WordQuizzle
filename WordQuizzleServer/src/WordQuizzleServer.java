@@ -18,6 +18,7 @@ class WordQuizzleServer
 {
     private final static int CONNECTION_PORT = 50500;
     private final static String HOST_NAME = "localhost";
+    public  static boolean STOP = false;
 
     public static void main(String[] args) throws IOException
     {
@@ -26,6 +27,9 @@ class WordQuizzleServer
         Selector selector = null;
         ServerSocketChannel connectionSocket = null;
         InetSocketAddress serverAddress = new InetSocketAddress(HOST_NAME, CONNECTION_PORT);
+
+        // Registering a shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread(new Shutter()));
 
         // Restoring previous server state
         UsersManager.restoreNet();
@@ -47,8 +51,6 @@ class WordQuizzleServer
 
         Thread r = new Thread(new Executor());
         r.start();
-        Thread w = new Thread(new Executor());
-        w.start();
 
         try
         {
@@ -58,7 +60,7 @@ class WordQuizzleServer
             connectionSocket.configureBlocking(false);
             connectionSocket.register(selector, SelectionKey.OP_ACCEPT);
 
-            while (true)
+            while (!STOP)
             {
                 selector.select(10);
                 Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -111,8 +113,8 @@ class WordQuizzleServer
 
             }
 
-            //selector.close();
-            //connectionSocket.close();
+            selector.close();
+            connectionSocket.close();
 
         }
         catch (IOException | InterruptedException e)

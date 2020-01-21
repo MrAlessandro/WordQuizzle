@@ -1,4 +1,4 @@
-package exceptions;
+package messages.exceptions;
 
 public class UnexpectedMessageException extends Exception
 {

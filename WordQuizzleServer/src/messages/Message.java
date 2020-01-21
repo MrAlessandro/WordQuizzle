@@ -1,11 +1,10 @@
 package messages;
 
-import exceptions.InvalidMessageFormatException;
+import sessions.exceptions.InvalidMessageFormatException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
@@ -89,7 +88,7 @@ public class Message
         CharBuffer charView;
 
         // Read fields
-        while (numReadBytes > 0)
+        while (true)
         {
             buffer.limit(2);
             numReadBytes = client.read(buffer);
@@ -106,6 +105,8 @@ public class Message
             buffer.clear();
             if (fieldLength < 0)
                 throw new InvalidMessageFormatException("Invalid field size");
+            else if (fieldLength == 0)
+                break;
 
             buffer.limit(fieldLength * 2);
             numReadBytes = client.read(buffer);
@@ -114,7 +115,6 @@ public class Message
                 buffer.clear();
                 throw new InvalidMessageFormatException("Too few bytes read");
             }
-
             buffer.flip();
             charView = buffer.asCharBuffer();
             char[] charBuffer = new char[fieldLength];
@@ -145,13 +145,18 @@ public class Message
             buffer.flip();
             writtenBytes += client.write(buffer);
 
-            // Write field's body
-            buffer.clear();
-            CharBuffer charView = buffer.asCharBuffer();
-            charView.put(field.getBody());
-            buffer.position(buffer.position() + charView.position()*2);
-            buffer.flip();
-            writtenBytes += client.write(buffer);
+            if (field.size() > 0)
+            {
+                // Write field's body
+                buffer.clear();
+                CharBuffer charView = buffer.asCharBuffer();
+                charView.put(field.getBody());
+                buffer.position(buffer.position() + charView.position()*2);
+                buffer.flip();
+                writtenBytes += client.write(buffer);
+            }
+            else
+                break;
         }
 
         return writtenBytes;

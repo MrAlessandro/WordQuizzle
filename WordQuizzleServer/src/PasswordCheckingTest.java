@@ -1,7 +1,5 @@
-import exceptions.InconsistentRelationshipException;
-import exceptions.UnknownUserException;
+import users.exceptions.UnknownUserException;
 import messages.Message;
-import sessions.SessionsManager;
 import users.UsersManager;
 
 import java.util.LinkedList;

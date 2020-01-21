@@ -1,6 +1,6 @@
 package sessions;
 
-import exceptions.SessionsArchiveInconsistanceException;
+import sessions.exceptions.SessionsArchiveInconsistanceException;
 import messages.Message;
 import util.Constants;
 

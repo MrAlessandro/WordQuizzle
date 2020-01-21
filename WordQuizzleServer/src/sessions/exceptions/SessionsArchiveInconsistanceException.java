@@ -1,4 +1,4 @@
-package exceptions;
+package sessions.exceptions;
 
 public class SessionsArchiveInconsistanceException extends Exception
 {

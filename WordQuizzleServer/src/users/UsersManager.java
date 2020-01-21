@@ -1,14 +1,13 @@
 package users;
 
-import exceptions.*;
 import messages.Message;
+import users.exceptions.*;
 import util.AnsiColors;
 import util.Constants;
 import org.json.simple.parser.ParseException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.rmi.server.RemoteServer;

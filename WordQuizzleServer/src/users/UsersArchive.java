@@ -1,7 +1,7 @@
 package users;
 
-import exceptions.*;
 import messages.Message;
+import users.exceptions.*;
 import util.Constants;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;

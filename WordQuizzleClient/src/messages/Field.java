@@ -1,5 +1,6 @@
 package messages;
 
+
 public class Field
 {
     private short length;
@@ -20,5 +21,4 @@ public class Field
     {
         return this.length;
     }
-
 }
