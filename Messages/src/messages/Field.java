@@ -36,4 +36,9 @@ public class Field
         String gotBody = (String) serialized.get("Body");
         return new Field(gotBody.toCharArray());
     }
+
+    public String toString()
+    {
+        return String.valueOf(this.body);
+    }
 }

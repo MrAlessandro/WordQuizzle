@@ -1,8 +1,9 @@
-package sessions;
+package oldSessions;
 
 import messages.Message;
-import sessions.exceptions.SessionsArchiveInconsistanceException;
+import oldSessions.exceptions.SessionsArchiveInconsistanceException;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -15,7 +16,8 @@ class SessionCompartment {
         this.session = null;
     }
 
-    protected void recordSession(String username) throws SessionsArchiveInconsistanceException {
+    protected void recordSession(String username) throws SessionsArchiveInconsistanceException
+    {
         Session toStore = new Session(username);
         boolean testLock = this.compartmentLock.writeLock().tryLock();
         if (testLock) {
@@ -25,7 +27,8 @@ class SessionCompartment {
             throw new SessionsArchiveInconsistanceException("");
     }
 
-    protected void recordSession(String username, LinkedList<Message> backLog) throws SessionsArchiveInconsistanceException {
+    protected void recordSession(String username, LinkedList<Message> backLog) throws SessionsArchiveInconsistanceException
+    {
         Session toStore = new Session(username, backLog);
         boolean testLock = this.compartmentLock.writeLock().tryLock();
         if (testLock) {
@@ -35,7 +38,21 @@ class SessionCompartment {
             throw new SessionsArchiveInconsistanceException("");
     }
 
-    protected Message getPendingSessionMessage() throws SessionsArchiveInconsistanceException {
+    protected LinkedList<Message> retrieveBackLogUnregisterSession() throws IOException
+    {
+        LinkedList<Message> remainingMessages;
+
+        this.compartmentLock.writeLock().lock();
+
+        remainingMessages = this.session.retrieveBackLogCloseSession();
+
+        this.compartmentLock.writeLock().unlock();
+
+        return remainingMessages;
+    }
+
+    protected Message getPendingSessionMessage() throws SessionsArchiveInconsistanceException
+    {
         Message retMessage;
         this.compartmentLock.writeLock().lock();
         if (this.session == null) {
@@ -50,7 +67,8 @@ class SessionCompartment {
         return retMessage;
     }
 
-    protected void storeSessionPendingMessage(Message message) throws SessionsArchiveInconsistanceException {
+    protected void storeSessionPendingMessage(Message message) throws SessionsArchiveInconsistanceException
+    {
         boolean check;
 
         this.compartmentLock.writeLock().lock();

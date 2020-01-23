@@ -62,7 +62,7 @@ public class Message
         return this.fields.get(index).getBody();
     }
 
-    public static Message readMessage(SocketChannel client, ByteBuffer buffer) throws InvalidMessageFormatException, IOException
+    public static Message readMessage(SocketChannel client, ByteBuffer buffer) throws IOException, InvalidMessageFormatException
     {
         Message readMessage;
         int numReadBytes;
@@ -207,11 +207,18 @@ public class Message
     {
         StringBuilder builder = new StringBuilder();
 
-        builder.append("Type: ").append(type.toString()).append("; Fields: ");
+        builder.append("Type: ").append(type.toString()).append(";");
 
-        for (Field current : this.fields)
+        if (fields != null && fields.size() > 0)
         {
-            builder.append("'").append(String.valueOf(current.getBody())).append("'").append(", ");
+            int i = 1;
+            for (Field field : this.fields)
+            {
+                builder.append(" Field").append(i).append(": ").append(field);
+                if (i != fields.size())
+                    builder.append(",");
+                i++;
+            }
         }
 
         return builder.toString();

@@ -22,10 +22,10 @@ public class JPlaceholderPasswordField extends JPasswordField
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
+        char[] pass = super.getPassword();
 
-        if (super.getText().length() > 0 || ph == null) {
+        if (pass.length > 0 || ph == null)
             return;
-        }
 
         Graphics2D g2 = (Graphics2D) g;
 

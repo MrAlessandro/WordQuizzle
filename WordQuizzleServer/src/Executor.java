@@ -15,11 +15,12 @@ import util.AnsiColors;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.LinkedList;
+import java.util.Collection;
 
 class Executor implements Runnable
 {
     private static final ByteBuffer buffer = ByteBuffer.allocate(2048);
+    private static final UsersManager usersManager = UsersManager.getInstance();
 
     @Override
     public void run()
@@ -27,6 +28,7 @@ class Executor implements Runnable
         SocketChannel clientSocket;
         Delegation delegation = null;
         boolean stop = false;
+        String costumer;
 
         while (!stop)
         {
@@ -41,21 +43,24 @@ class Executor implements Runnable
                 {
                     case READ:
                     {
+                        // Get the username associated with the connection
+                        costumer = (String) delegation.getDelegation().attachment();
+
                         // Read message
                         Message message = Message.readMessage(clientSocket, buffer);
                         if (message == null)
                         {
-                            delegation.setType(OperationType.CLOSE);
-                            DelegationsDispenser.delegateBack(delegation);
+                            if (costumer != null)
+                                SessionsManager.closeSession(costumer);
+                            delegation.getDelegation().cancel();
+                            delegation.getDelegation().channel().close();
                             break;
                         }
 
-                        String username = (String) delegation.getDelegation().attachment();
-
                         // Consistence condition
-                        if (username == null && message.getType() != MessageType.LOG_IN)
+                        if (costumer == null && message.getType() != MessageType.LOG_IN)
                             throw new UnexpectedMessageException("Expected LogIn message");
-                        else if (username != null && message.getType() == MessageType.LOG_IN)
+                        else if (costumer != null && message.getType() == MessageType.LOG_IN)
                             throw new UnexpectedMessageException("Unexpected LogIn message");
 
                         switch (message.getType())
@@ -63,18 +68,18 @@ class Executor implements Runnable
                             // LogIn operation
                             case LOG_IN:
                             {
-                                username = String.valueOf(message.getField(0));
+                                costumer = String.valueOf(message.getField(0));
                                 char[] password = message.getField(1);
                                 Session session;
 
-                                System.out.print("Logging in user \"" + username + "\"... ");
+                                System.out.print("Logging in user \"" + costumer + "\"... ");
 
-                                LinkedList<Message> backLog = UsersManager.validatePasswordRetrieveBackLog(username, password);
+                                Collection<Message> backLog = UsersManager.grantAccess(costumer, password);
                                 if (backLog != null)
                                 {// Password correct
-                                    backLog.addFirst(new Message(MessageType.OK, String.valueOf(backLog.size())));
-                                    SessionsManager.openSession(clientSocket, username, backLog);
-                                    delegation.getDelegation().attach(username);
+                                    SessionsManager.openSession(costumer, backLog);
+                                    SessionsManager.prependMessage(costumer, new Message(MessageType.OK, String.valueOf(backLog.size())));
+                                    delegation.getDelegation().attach(costumer);
                                     AnsiColors.printlnGreen("LOGGED");
                                 }
                                 else
@@ -99,12 +104,15 @@ class Executor implements Runnable
                     case WRITE:
                     {
                         if (delegation.getDelegation().attachment() instanceof Message)
-                        // Error message for users which are not logged in
+                        {// Error message for users which are not logged in
                             Message.writeMessage(clientSocket, buffer, (Message) delegation.getDelegation().attachment());
+                            delegation.getDelegation().attach(null);
+                        }
                         else if (delegation.getDelegation().attachment() instanceof String)
                         {// Send pending messages stored on session
+                            String username = (String) delegation.getDelegation().attachment();
                             Message toSend = null;
-                            while ((toSend = SessionsManager.getPendingSessionMessage(clientSocket)) != null)
+                            while ((toSend = SessionsManager.retrieveMessage(username)) != null)
                                 Message.writeMessage(clientSocket, buffer, toSend);
                         }
 

@@ -1,4 +1,4 @@
-package users;
+package users.user;
 
 import org.json.simple.JSONObject;
 
@@ -16,20 +16,18 @@ class Password
     private String Salt;
     private static final int Iterations = 1000;
 
-    protected Password(char[] passwd)
+    protected Password(char[] password)
     {
-        char[] chars = passwd;
-
         try
         {
             byte[] salt = generateSalt();
 
-            PBEKeySpec spec = new PBEKeySpec(chars, salt, Iterations, 64 * 8);
+            PBEKeySpec spec = new PBEKeySpec(password, salt, Iterations, 64 * 8);
             SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
             byte[] hash = skf.generateSecret(spec).getEncoded();
             this.Password = toHex(hash);
             this.Salt = toHex(salt);
-            Arrays.fill(chars, '\0');
+            Arrays.fill(password, '\0');
         }
         catch (NoSuchAlgorithmException | InvalidKeySpecException e)
         {
@@ -38,9 +36,9 @@ class Password
 
     }
 
-    protected Password(String passwd, String salt)
+    protected Password(String password, String salt)
     {
-        this.Password = passwd;
+        this.Password = password;
         this.Salt = salt;
     }
 
@@ -70,12 +68,6 @@ class Password
         }
 
         return false;
-    }
-
-
-    protected String getEncodedPassword()
-    {
-        return this.Password;
     }
 
     private static byte[] generateSalt() throws NoSuchAlgorithmException
@@ -124,5 +116,10 @@ class Password
         String salt = (String) SEpassword.get("Salt");
 
         return new Password(passwd, salt);
+    }
+
+    public String toString()
+    {
+        return this.Password;
     }
 }

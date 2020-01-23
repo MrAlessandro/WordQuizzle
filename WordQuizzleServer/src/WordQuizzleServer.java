@@ -1,9 +1,10 @@
 import dispatching.Delegation;
 import dispatching.DelegationsDispenser;
-import dispatching.OperationType;
 import users.Registrable;
 import users.UsersManager;
 import util.AnsiColors;
+
+import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -18,21 +19,22 @@ class WordQuizzleServer
 {
     private final static int CONNECTION_PORT = 50500;
     private final static String HOST_NAME = "localhost";
-    public  static boolean STOP = false;
+    protected volatile static boolean STOP = false;
 
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args)
     {
         Registrable stub;
         Registry registry ;
-        Selector selector = null;
-        ServerSocketChannel connectionSocket = null;
+        Selector selector;
+        ServerSocketChannel connectionSocket;
         InetSocketAddress serverAddress = new InetSocketAddress(HOST_NAME, CONNECTION_PORT);
 
         // Registering a shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(new Shutter()));
 
-        // Restoring previous server state
-        UsersManager.restoreNet();
+        Thread r = new Thread(new Executor());
+        r.start();
+
 
         // Enabling RMI support for registration operation
         /*
@@ -48,12 +50,11 @@ class WordQuizzleServer
             e.printStackTrace();
         }*/
 
-
-        Thread r = new Thread(new Executor());
-        r.start();
-
         try
         {
+            // Restoring previous server state
+            UsersManager.restore();
+
             selector = Selector.open();
             connectionSocket = ServerSocketChannel.open();
             connectionSocket.bind(serverAddress);
@@ -72,8 +73,6 @@ class WordQuizzleServer
                     if (currentKey.isAcceptable())
                     {
                         System.out.print("Accepting connection from a client... ");
-
-
                         ServerSocketChannel server = (ServerSocketChannel) currentKey.channel();
                         SocketChannel client = server.accept();
 
@@ -101,8 +100,7 @@ class WordQuizzleServer
                     }
                 }
 
-
-                Delegation delegatedBack = null;
+                Delegation delegatedBack;
                 while ((delegatedBack = DelegationsDispenser.getDelegationBack()) != null)
                 {
                     switch (delegatedBack.getType())
@@ -113,25 +111,20 @@ class WordQuizzleServer
                         case WRITE:
                             delegatedBack.getDelegation().interestOps(SelectionKey.OP_WRITE);
                             break;
-                        case CLOSE:
-                            delegatedBack.getDelegation().cancel();
-                            delegatedBack.getDelegation().channel().close();
-                            break;
                     }
                 }
-
             }
 
             selector.close();
             connectionSocket.close();
 
+            UsersManager.backUp();
+            UsersManager.print();
         }
-        catch (IOException | InterruptedException e)
+        catch (IOException | InterruptedException | ParseException e)
         {
             e.printStackTrace();
         }
-
-        UsersManager.printNet();
 
     }
 }

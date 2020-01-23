@@ -17,7 +17,8 @@ class WordQuizzleClient
     private final static int CONNECTION_PORT = 50500;
     private final static String HOST_NAME = "localhost";
 
-    public static void main(String[] args) throws IOException, InvalidMessageFormatException {
+    public static void main(String[] args) throws IOException, InvalidMessageFormatException
+    {
         //WelcomeFrame gui = new WelcomeFrame();
         //SwingUtilities.invokeLater(gui);
 
@@ -30,13 +31,15 @@ class WordQuizzleClient
         server.configureBlocking(true);
         buffer.putInt(MessageType.LOG_IN.getValue());
 
-        Message message = new Message(MessageType.LOG_IN, "Alessandro");
+        Message message = new Message(MessageType.LOG_IN, "Andrea");
         message.addField(password);
 
         System.out.println("Sending message: " + message.toString());
         Message.writeMessage(server, buffer, message);
 
         message = Message.readMessage(server, buffer);
+
+        assert message != null;
         System.out.println("Received message: "+ message.toString());
 
         server.close();
@@ -60,12 +63,4 @@ class WordQuizzleClient
         return retValue;
     }
 
-/*    static byte[] toBytes(char[] chars) {
-        CharBuffer charBuffer = CharBuffer.wrap(chars);
-        ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(charBuffer);
-        byte[] bytes = Arrays.copyOfRange(byteBuffer.array(),
-                byteBuffer.position(), byteBuffer.limit());
-        Arrays.fill(byteBuffer.array(), (byte) 0); // clear sensitive data
-        return bytes;
-    }*/
 }

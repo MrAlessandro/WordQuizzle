@@ -17,7 +17,9 @@ public enum MessageType
     USERNAME_USED((short) 8, "UsernameUsed"),
     ALREADY_FRIENDS((short) 9, "AlreadyFriends"),
     USERNAME_UNKNOWN((short) 10, "UsernameUnknown"),
-    PASSWORD_WRONG((short) 11, "PasswordWrong");
+    PASSWORD_WRONG((short) 11, "PasswordWrong"),
+    INVALID_MESSAGE((short) 12, "InvalidMessage"),
+    UNEXPECTED_MESSAGE((short) 13, "UnexpectedMessage");
 
     private short value;
     private String name;

@@ -1,16 +1,21 @@
+import org.json.simple.parser.ParseException;
+import users.exceptions.AlreadyExistingRelationshipException;
+import users.exceptions.InconsistentRelationshipException;
 import users.exceptions.UnknownUserException;
 import messages.Message;
 import users.UsersManager;
 
-import java.util.LinkedList;
+import java.io.IOException;
+import java.util.Collection;
 
 public class PasswordCheckingTest
 {
-    public static void main(String[] args) throws UnknownUserException
+    public static void main(String[] args) throws UnknownUserException, IOException, ParseException
     {
         UsersManager Net = UsersManager.getInstance();
 
-        /*Net.registerUser("Alfredo", new char[]{'1','2','3','4'});
+/*
+        Net.registerUser("Alfredo", new char[]{'1','2','3','4'});
         Net.registerUser("Andrea", new char[]{'3','3','3','3'});
         Net.registerUser("Giacomo", new char[]{'1','2','3','4'});
         Net.registerUser("Alessandro", new char[]{'1','2','3','4'});
@@ -22,58 +27,56 @@ public class PasswordCheckingTest
 
         try
         {
-            Net.addFriendship("Andrea", "Giacomo");
-            Net.addFriendship("Andrea", "Alessandro");
-            Net.addFriendship("Andrea", "Paola");
-            Net.addFriendship("Andrea", "Claudia");
-            Net.addFriendship("Giacomo", "Stefano");
-            Net.addFriendship("Giacomo", "Chiara");
-            Net.addFriendship("Giacomo", "Beatrice");
-            Net.addFriendship("Giacomo", "Alessandro");
-            Net.addFriendship("Alessandro", "Claudia");
-            Net.addFriendship("Alessandro", "Beatrice");
-            Net.addFriendship("Alessandro", "Paola");
-            Net.addFriendship("Chiara", "Claudia");
-            Net.addFriendship("Chiara", "Beatrice");
+            UsersManager.makeFriends("Andrea", "Giacomo");
+            UsersManager.makeFriends("Andrea", "Alessandro");
+            UsersManager.makeFriends("Andrea", "Paola");
+            UsersManager.makeFriends("Andrea", "Claudia");
+            UsersManager.makeFriends("Giacomo", "Stefano");
+            UsersManager.makeFriends("Giacomo", "Chiara");
+            UsersManager.makeFriends("Giacomo", "Beatrice");
+            UsersManager.makeFriends("Giacomo", "Alessandro");
+            UsersManager.makeFriends("Alessandro", "Claudia");
+            UsersManager.makeFriends("Alessandro", "Beatrice");
+            UsersManager.makeFriends("Alessandro", "Paola");
+            UsersManager.makeFriends("Chiara", "Claudia");
+            UsersManager.makeFriends("Chiara", "Beatrice");
         }
-        catch (InconsistentRelationshipException e)
+        catch (InconsistentRelationshipException | AlreadyExistingRelationshipException e)
         {
             e.printStackTrace();
-        }*/
+        }
+*/
 
-        Net.restoreNet();
+        UsersManager.restore();
 
-        LinkedList<Message> backLog = UsersManager.validatePasswordRetrieveBackLog("Andrea", new char[]{'3','3','3','3'});
+        Collection<Message> backLog = UsersManager.grantAccess("Andrea", new char[]{'3','3','3','3'});
         if (backLog != null)
             System.out.println("Checked");
         else
             System.out.println("Wrong");
-        backLog = UsersManager.validatePasswordRetrieveBackLog("Alessandro", new char[]{'1','2','3','4'});
+        backLog = UsersManager.grantAccess("Alessandro", new char[]{'1','2','3','4'});
         if (backLog != null)
             System.out.println("Checked");
         else
             System.out.println("Wrong");
-        backLog = UsersManager.validatePasswordRetrieveBackLog("Chiara", new char[]{'1','2','3','4'});
+        backLog = UsersManager.grantAccess("Chiara", new char[]{'1','2','3','4'});
         if (backLog != null)
             System.out.println("Checked");
         else
             System.out.println("Wrong");
-        backLog = UsersManager.validatePasswordRetrieveBackLog("Giacomo", new char[]{'1','2','3','4'});
+        backLog = UsersManager.grantAccess("Giacomo", new char[]{'1','2','3','4'});
         if (backLog != null)
             System.out.println("Checked");
         else
             System.out.println("Wrong");
-        backLog = UsersManager.validatePasswordRetrieveBackLog("Paola", new char[]{'1','2','3','4'});
+        backLog = UsersManager.grantAccess("Paola", new char[]{'1','2','3','4'});
         if (backLog != null)
             System.out.println("Checked");
         else
             System.out.println("Wrong");
 
-
-
-        Net.printNet();
-
-        Net.backUpNet();
+        UsersManager.backUp();
+        UsersManager.print();
     }
 
 }
