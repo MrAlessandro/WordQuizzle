@@ -64,6 +64,9 @@ public class Message
 
     public static Message readMessage(SocketChannel client, ByteBuffer buffer) throws IOException, InvalidMessageFormatException
     {
+        if (client == null || buffer == null)
+            throw new NullPointerException();
+
         Message readMessage;
         int numReadBytes;
 
@@ -137,6 +140,9 @@ public class Message
 
     public static int writeMessage(SocketChannel client, ByteBuffer buffer, Message toSend) throws IOException
     {
+        if (client == null || buffer == null || toSend == null)
+            throw new NullPointerException();
+
         int writtenBytes = 0;
 
         buffer.clear();

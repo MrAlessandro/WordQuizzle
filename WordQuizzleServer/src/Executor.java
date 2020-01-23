@@ -28,7 +28,7 @@ class Executor implements Runnable
         SocketChannel clientSocket;
         Delegation delegation = null;
         boolean stop = false;
-        String costumer;
+        String costumer = null;
 
         while (!stop)
         {
@@ -123,25 +123,49 @@ class Executor implements Runnable
                     }
                 }
             }
-            catch (InterruptedException e)
+            catch (InterruptedException | IOException | SessionsArchiveInconsistanceException e)
             {
                 e.printStackTrace();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
+                System.exit(1);
             }
             catch (InvalidMessageFormatException e)
             {
-                e.printStackTrace();
+                if (costumer == null)
+                    delegation.getDelegation().attach(new Message(MessageType.INVALID_MESSAGE));
+                else
+                {
+                    try
+                    {
+                        SessionsManager.prependMessage(costumer, new Message(MessageType.INVALID_MESSAGE));
+                    }
+                    catch (SessionsArchiveInconsistanceException ex)
+                    {
+                        e.printStackTrace();
+                        System.exit(1);
+                    }
+                }
+
+                delegation.setType(OperationType.WRITE);
+                DelegationsDispenser.delegateBack(delegation);
             }
             catch (UnexpectedMessageException e)
             {
-                e.printStackTrace();
-            }
-            catch (SessionsArchiveInconsistanceException e)
-            {
-                e.printStackTrace();
+                if (costumer == null)
+                    delegation.getDelegation().attach(new Message(MessageType.UNEXPECTED_MESSAGE));
+                else
+                {
+                    try
+                    {
+                        SessionsManager.prependMessage(costumer, new Message(MessageType.UNEXPECTED_MESSAGE));
+                    }
+                    catch (SessionsArchiveInconsistanceException ex)
+                    {
+                        ex.printStackTrace();
+                    }
+                }
+
+                delegation.setType(OperationType.WRITE);
+                DelegationsDispenser.delegateBack(delegation);
             }
             catch (UnknownUserException e)
             {

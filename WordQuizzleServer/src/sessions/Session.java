@@ -34,7 +34,7 @@ public class Session
         Message taken;
 
         this.sessionLock.lock();
-        taken = this.backLog.peekFirst();
+        taken = this.backLog.pollFirst();
         this.sessionLock.unlock();
 
         return taken;
