@@ -1,0 +1,6 @@
+TODO:
+
+Re-implementare il protocollo di comunicazione tenendo in considerazione delle scritture/letture parziali:
+    - Innanzitutto rimuovere lo step di chiusura della comunicazione di un messaggio (size -1) indicando, nella parte iniziale del dialogo, il numero dei fields contenuti.
+    - Se una durante scrittura/lettura vengono comunicati meno bytes del previsto, effettuare il reinserimento del messaggio nella coda relativa alla sessione indicando, all'interno del messaggio in un campo apposito, il numero di bytes scritti/letti al fine di completare l'operazione in un momento successivo
+    - Definire un timer/numero massimo di tentativi, che limiti il numero delle prove di scrittura/lettura.

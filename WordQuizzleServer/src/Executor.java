@@ -48,6 +48,7 @@ class Executor implements Runnable
 
                         // Read message
                         Message message = Message.readMessage(clientSocket, buffer);
+                        System.out.println("Read: " + message);
                         if (message == null)
                         {
                             if (costumer != null)
@@ -105,7 +106,9 @@ class Executor implements Runnable
                     {
                         if (delegation.getDelegation().attachment() instanceof Message)
                         {// Error message for users which are not logged in
-                            Message.writeMessage(clientSocket, buffer, (Message) delegation.getDelegation().attachment());
+                            Message message = (Message) delegation.getDelegation().attachment();
+                            System.out.println("To write: " + message);
+                            Message.writeMessage(clientSocket, buffer, message);
                             delegation.getDelegation().attach(null);
                         }
                         else if (delegation.getDelegation().attachment() instanceof String)
@@ -113,7 +116,10 @@ class Executor implements Runnable
                             String username = (String) delegation.getDelegation().attachment();
                             Message toSend = null;
                             while ((toSend = SessionsManager.retrieveMessage(username)) != null)
+                            {
+                                System.out.println("To write: " + toSend);
                                 Message.writeMessage(clientSocket, buffer, toSend);
+                            }
                         }
 
                         delegation.setType(OperationType.READ);

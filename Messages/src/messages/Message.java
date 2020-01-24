@@ -19,7 +19,7 @@ public class Message
     private Message(MessageType type)
     {
         this.type = type;
-        this.fields = null;
+        this.fields = new LinkedList<>();
     }
 
     public Message(MessageType type, String ...argsList)
