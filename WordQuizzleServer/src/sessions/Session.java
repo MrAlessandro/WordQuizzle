@@ -2,7 +2,6 @@ package sessions;
 
 import messages.Message;
 
-import java.io.IOException;
 import java.nio.channels.DatagramChannel;
 import java.util.Collection;
 import java.util.LinkedList;

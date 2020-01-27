@@ -1,6 +1,6 @@
 package users.user;
 
-import messages.Message;
+import messages.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 

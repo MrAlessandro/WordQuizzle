@@ -50,6 +50,7 @@ public class Field
         int numReadBytes;
         short length;
 
+        buffer.clear();
         buffer.limit(2);
         while (buffer.hasRemaining())
         {
@@ -100,6 +101,7 @@ public class Field
         CharBuffer charView;
         int writtenBytes = 0;
 
+        buffer.clear();
         buffer.putShort(field.length);
         buffer.flip();
 

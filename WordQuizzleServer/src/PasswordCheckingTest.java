@@ -1,6 +1,4 @@
 import org.json.simple.parser.ParseException;
-import users.exceptions.AlreadyExistingRelationshipException;
-import users.exceptions.InconsistentRelationshipException;
 import users.exceptions.UnknownUserException;
 import messages.Message;
 import users.UsersManager;

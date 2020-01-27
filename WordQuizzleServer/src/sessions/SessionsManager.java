@@ -4,9 +4,7 @@ import messages.Message;
 import sessions.exceptions.SessionsArchiveInconsistanceException;
 import util.Constants;
 
-import java.nio.channels.SocketChannel;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SessionsManager {

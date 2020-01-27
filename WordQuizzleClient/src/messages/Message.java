@@ -82,6 +82,7 @@ public class Message
         short shortRead;
         int numReadBytes;
 
+        buffer.clear();
         buffer.limit(2);
         while (buffer.hasRemaining())
         {
@@ -107,6 +108,7 @@ public class Message
 
         int writtenBytes = 0;
 
+        buffer.clear();
         buffer.putShort(toWrite);
         buffer.flip();
 
