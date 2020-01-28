@@ -31,7 +31,7 @@ class WordQuizzleClient
         server.configureBlocking(true);
         buffer.putInt(MessageType.LOG_IN.getValue());
 
-        Message message = new Message(MessageType.LOG_IN, "Alessandro");
+        Message message = new Message(MessageType.LOG_IN, "Andrea");
         message.addField(password);
 
         System.out.println("Sending message: " + message.toString());

@@ -1,35 +1,35 @@
 package dispatching;
 
-import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class DelegationsDispenser
 {
-    private static final DelegationsDispenser INSTANCE = new DelegationsDispenser();
     private static final LinkedBlockingQueue<Delegation> DISPENSER = new LinkedBlockingQueue<>();
     private static final LinkedBlockingQueue<Delegation> BACK_DISPENSER = new LinkedBlockingQueue<>();
 
     public DelegationsDispenser(){}
 
-    public static void delegateRead(SelectionKey delegation)
+    public static void delegateRead(SocketChannel delegation, Object attachment)
     {
-        DISPENSER.add(new Delegation(delegation, OperationType.READ));
+        DISPENSER.add(new Delegation(delegation, OperationType.READ, attachment));
     }
 
-    public static void delegateWrite(SelectionKey delegation)
+    public static void delegateWrite(SocketChannel delegation, Object attachment)
     {
-        DISPENSER.add(new Delegation(delegation, OperationType.WRITE));
+        DISPENSER.add(new Delegation(delegation, OperationType.WRITE, attachment));
     }
 
-    public static Delegation getDelegation() throws InterruptedException
+    public static Delegation getDelegation()
     {
-        return DISPENSER.take();
-    }
-
-
-    public static void delegateBack(SelectionKey delegation, OperationType type)
-    {
-        BACK_DISPENSER.add(new Delegation(delegation, type));
+        try
+        {
+            return DISPENSER.take();
+        }
+        catch (InterruptedException e)
+        {
+            throw new RuntimeException("Unexpected interruption");
+        }
     }
 
     public static void delegateBack(Delegation delegation)
@@ -37,7 +37,7 @@ public class DelegationsDispenser
         BACK_DISPENSER.add(delegation);
     }
 
-    public static Delegation getDelegationBack() throws InterruptedException
+    public static Delegation getDelegationBack()
     {
         return BACK_DISPENSER.poll();
     }

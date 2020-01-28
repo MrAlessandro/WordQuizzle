@@ -15,7 +15,7 @@ public class Message
     protected MessageType type;
     private LinkedList<Field> fields;
 
-    private Message()
+    public Message()
     {
         this.fields = null;
         this.type = null;
@@ -89,8 +89,7 @@ public class Message
             numReadBytes = sender.read(buffer);
             if(numReadBytes == -1)
             {
-                buffer.clear();
-                return Short.MIN_VALUE;
+                throw new IOException();
             }
         }
 
@@ -103,9 +102,6 @@ public class Message
 
     protected static int writeShort(SocketChannel receiver, ByteBuffer buffer, short toWrite) throws IOException
     {
-        if (receiver == null || buffer == null)
-            throw new NullPointerException();
-
         int writtenBytes = 0;
 
         buffer.clear();
@@ -120,36 +116,54 @@ public class Message
         return writtenBytes;
     }
 
-    public static Message readMessage(SocketChannel sender, ByteBuffer buffer) throws IOException, InvalidMessageFormatException
+    public static Message readMessage(SocketChannel sender, ByteBuffer buffer)
     {
-        if (sender == null || buffer == null)
-            throw new NullPointerException();
-
         Message message = new Message();
         short messageType;
         short fieldsNum;
 
         // Read message type
-        messageType = readShort(sender, buffer);
-        if (messageType == Short.MIN_VALUE)
+        try
+        {
+            messageType = readShort(sender, buffer);
+        }
+        catch (IOException e)
+        {
             return null;
+        }
+
         if (MessageType.valueOf(messageType) == null)
-            throw new InvalidMessageFormatException("Invalid message type");
+            return null;
 
         message.setType(MessageType.valueOf(messageType));
 
         // Read fields number
-        fieldsNum = readShort(sender, buffer);
-        if (fieldsNum == Short.MIN_VALUE)
+        try
+        {
+            fieldsNum = readShort(sender, buffer);
+        }
+        catch (IOException e)
+        {
             return null;
+        }
+
         if (fieldsNum < 0)
-            throw new InvalidMessageFormatException("Invalid fields number");
+            return null;
 
 
         for (int i = 0; i < fieldsNum; i++)
         {
-            // Read field length
-            Field field = Field.readField(sender, buffer);
+            Field field;
+
+            try
+            {
+                field = Field.readField(sender, buffer);
+            }
+            catch (IOException e)
+            {
+                return null;
+            }
+
             if (field == null)
                 return null;
 
@@ -159,17 +173,24 @@ public class Message
         return message;
     }
 
-    public static int writeMessage(SocketChannel client, ByteBuffer buffer, Message toSend) throws IOException
+    public static int writeMessage(SocketChannel client, ByteBuffer buffer, Message toSend)
     {
-        if (client == null || buffer == null || toSend == null)
-            throw new NullPointerException();
+        int writtenBytes;
 
-        int writtenBytes = writeShort(client, buffer, toSend.type.getValue());
-        writtenBytes += writeShort(client, buffer, (short) toSend.fields.size());
-
-        for (Field field : toSend.fields)
+        try
         {
-            writtenBytes += Field.writeField(client, buffer, field);
+            writtenBytes = writeShort(client, buffer, toSend.type.getValue());
+            writtenBytes += writeShort(client, buffer, (short) toSend.fields.size());
+
+            for (Field field : toSend.fields)
+            {
+                writtenBytes += Field.writeField(client, buffer, field);
+            }
+
+        }
+        catch (IOException e)
+        {
+            return -1;
         }
 
         return writtenBytes;

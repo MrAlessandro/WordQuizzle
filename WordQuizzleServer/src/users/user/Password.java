@@ -31,7 +31,7 @@ class Password
         }
         catch (NoSuchAlgorithmException | InvalidKeySpecException e)
         {
-            e.printStackTrace();
+            throw new RuntimeException("Generating password");
         }
 
     }
@@ -70,9 +70,19 @@ class Password
         return false;
     }
 
-    private static byte[] generateSalt() throws NoSuchAlgorithmException
+    private static byte[] generateSalt()
     {
-        SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+        SecureRandom sr;
+
+        try
+        {
+            sr = SecureRandom.getInstance("SHA1PRNG");
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            throw new RuntimeException("Generating randomizer");
+        }
+
         byte[] salt = new byte[16];
         sr.nextBytes(salt);
         return salt;

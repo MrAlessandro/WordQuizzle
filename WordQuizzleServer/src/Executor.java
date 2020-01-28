@@ -1,179 +1,134 @@
 import dispatching.Delegation;
 import dispatching.DelegationsDispenser;
 import dispatching.OperationType;
-import messages.exceptions.UnexpectedMessageException;
-import messages.exceptions.InvalidMessageFormatException;
-import sessions.exceptions.SessionsArchiveInconsistanceException;
-import users.exceptions.UnknownUserException;
+import returns.ReturnValue;
+import status.Status;
 import messages.Message;
 import messages.MessageType;
-import sessions.Session;
-import sessions.SessionsManager;
 import users.UsersManager;
 import util.AnsiColors;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.Collection;
 
 class Executor implements Runnable
 {
     private static final ByteBuffer buffer = ByteBuffer.allocate(2048);
-    private static final UsersManager usersManager = UsersManager.getInstance();
 
     @Override
     public void run()
     {
         SocketChannel clientSocket;
-        Delegation delegation = null;
+        Delegation delegation;
+        Object attachment;
+        OperationType opType;
         boolean stop = false;
-        String costumer = null;
 
         while (!stop)
         {
-            try
+            // Gets the delegation from the inter-thread communication structure
+            delegation = DelegationsDispenser.getDelegation();
+            // Extracts details from the delegation
+            clientSocket = delegation.getChannel();
+            attachment = delegation.getAttachment();
+            opType = delegation.getType();
+
+            switch (opType)
             {
-                // Gets the delegation from the inter-thread communication structure
-                delegation = DelegationsDispenser.getDelegation();
-                // Extracts details from the delegation
-                clientSocket = (SocketChannel) delegation.getDelegation().channel();
-
-                switch (delegation.getType())
+                case READ:
                 {
-                    case READ:
-                    {
-                        // Get the username associated with the connection
-                        costumer = (String) delegation.getDelegation().attachment();
+                    // Read message
+                    Message message = Message.readMessage(clientSocket, buffer);
+                    if (message == null)
+                    {// Close connection on empty read
+                        if (attachment instanceof String)
+                            UsersManager.closeSession((String) attachment);
+                        delegation.setType(OperationType.CLOSE);
+                        DelegationsDispenser.delegateBack(delegation);
+                        break;
+                    }
 
-                        // Read message
-                        Message message = Message.readMessage(clientSocket, buffer);
-                        if (message == null)
-                        {// Close connection on empty read
-                            if (costumer != null)
-                                SessionsManager.closeSession(costumer);
-                            delegation.getDelegation().cancel();
-                            delegation.getDelegation().channel().close();
+                    switch (message.getType())
+                    {
+                        // LogIn operation
+                        case LOG_IN:
+                        {
+                            String username = String.valueOf(message.getField(0));
+                            char[] password = message.getField(1);
+                            ReturnValue returnValue;
+
+                            System.out.print("Logging in user \"" + username + "\"... ");
+
+                            returnValue = UsersManager.openSession(username, password, delegation.getChannel());
+
+                            switch ((Status) returnValue.status)
+                            {
+                                case USER_UNKNOWN:
+                                case WRONG_PASSWORD:
+                                    AnsiColors.printlnRed(returnValue.status.toString());
+                                    delegation.attach(new Message(MessageType.valueOf(((Status) returnValue.status).getValue())));
+                                    delegation.setType(OperationType.WRITE_TO_UNLOGGED);
+                                    break;
+                                case SUCCESS:
+                                    AnsiColors.printlnGreen(returnValue.status.toString());
+                                    delegation.attach(username);
+                                    delegation.setType(OperationType.UNDEFINED);
+                                    break;
+                            }
+
+                            // Reinsert socket in the communication dispatching
+                            DelegationsDispenser.delegateBack(delegation);
                             break;
                         }
-
-                        // Consistence condition
-                        if (costumer == null && message.getType() != MessageType.LOG_IN)
-                            throw new UnexpectedMessageException("Expected LogIn message");
-                        else if (costumer != null && message.getType() == MessageType.LOG_IN)
-                            throw new UnexpectedMessageException("Unexpected LogIn message");
-
-                        switch (message.getType())
+                        case ADD_FRIEND:
                         {
-                            // LogIn operation
-                            case LOG_IN:
-                            {
-                                costumer = String.valueOf(message.getField(0));
-                                char[] password = message.getField(1);
-                                Session session;
+                            /*Message confirmMessage;
+                            String friend = String.valueOf(message.getField(0));
+                            System.out.println("Sending a friendship request from \"" + username + "\" to \"" + friend + "\"... ");
 
-                                System.out.print("Logging in user \"" + costumer + "\"... ");
+                            confirmMessage = new Message(MessageType.CONFIRM_FRIENDSHIP, username);
 
-                                Collection<Message> backLog = UsersManager.grantAccess(costumer, password);
-                                if (backLog != null)
-                                {// Password correct
-                                    SessionsManager.openSession(costumer, backLog);
-                                    SessionsManager.prependMessage(costumer, new Message(MessageType.OK, String.valueOf(backLog.size())));
-                                    delegation.getDelegation().attach(costumer);
-                                    AnsiColors.printlnGreen("LOGGED");
-                                }
-                                else
-                                {// Password wrong
-                                    AnsiColors.printlnRed("PASSWORD WRONG");
-                                    delegation.getDelegation().attach(new Message(MessageType.PASSWORD_WRONG));
-                                }
+                            AnsiColors.printlnGreen("SENT");
 
-                                // Reinsert socket in the communication dispatching
-                                delegation.setType(OperationType.WRITE);
-                                DelegationsDispenser.delegateBack(delegation);
-                                break;
-                            }
-                            default:
-                            {
-                                throw new InvalidMessageFormatException("Unknown message type");
-                            }
+                            UsersManager.makeFriends(username, friend);*/
+
+
                         }
+                        default:
+                        {
 
-                        break;
+                        }
                     }
-                    case WRITE:
-                    {
-                        if (delegation.getDelegation().attachment() instanceof Message)
-                        {// Error message for users which are not logged in
-                            Message message = (Message) delegation.getDelegation().attachment();
-                            Message.writeMessage(clientSocket, buffer, message);
-                            delegation.getDelegation().attach(null);
-                        }
-                        else if (delegation.getDelegation().attachment() instanceof String)
-                        {// Send pending messages stored on session
-                            String username = (String) delegation.getDelegation().attachment();
-                            Message toSend = null;
-                            while ((toSend = SessionsManager.retrieveMessage(username)) != null)
-                                Message.writeMessage(clientSocket, buffer, toSend);
-                        }
 
-                        delegation.setType(OperationType.READ);
-                        DelegationsDispenser.delegateBack(delegation);
-
-                        break;
-                    }
+                    break;
                 }
-            }
-            catch (InterruptedException | IOException | SessionsArchiveInconsistanceException e)
-            {
-                e.printStackTrace();
-                System.exit(1);
-            }
-            catch (InvalidMessageFormatException e)
-            {
-                if (costumer == null)
-                    delegation.getDelegation().attach(new Message(MessageType.INVALID_MESSAGE));
-                else
+                case WRITE:
                 {
-                    try
-                    {
-                        SessionsManager.prependMessage(costumer, new Message(MessageType.INVALID_MESSAGE));
-                    }
-                    catch (SessionsArchiveInconsistanceException ex)
-                    {
-                        e.printStackTrace();
-                        System.exit(1);
-                    }
-                }
+                    String username = (String) delegation.getAttachment();
+                    ReturnValue returnValue = UsersManager.retrieveMessage(username);
+                    if (returnValue.status == Status.USER_UNKNOWN)
+                        throw new RuntimeException("System inconsistency");
 
-                delegation.setType(OperationType.WRITE);
-                DelegationsDispenser.delegateBack(delegation);
-            }
-            catch (UnexpectedMessageException e)
-            {
-                if (costumer == null)
-                    delegation.getDelegation().attach(new Message(MessageType.UNEXPECTED_MESSAGE));
-                else
+                    Message.writeMessage(clientSocket, buffer, (Message) returnValue.value);
+
+                    delegation.setType(OperationType.UNDEFINED);
+                    DelegationsDispenser.delegateBack(delegation);
+
+                    break;
+                }
+                case WRITE_TO_UNLOGGED:
                 {
-                    try
-                    {
-                        SessionsManager.prependMessage(costumer, new Message(MessageType.UNEXPECTED_MESSAGE));
-                    }
-                    catch (SessionsArchiveInconsistanceException ex)
-                    {
-                        ex.printStackTrace();
-                    }
-                }
+                    Message message = (Message) delegation.getAttachment();
+                    Message.writeMessage(clientSocket, buffer, message);
+                    delegation.attach(null);
 
-                delegation.setType(OperationType.WRITE);
-                DelegationsDispenser.delegateBack(delegation);
+                    delegation.setType(OperationType.READ);
+                    DelegationsDispenser.delegateBack(delegation);
+
+                    break;
+                }
             }
-            catch (UnknownUserException e)
-            {
-                AnsiColors.printlnRed("UNKNOWN USER");
-                delegation.getDelegation().attach(new Message(MessageType.USERNAME_UNKNOWN));
-                DelegationsDispenser.delegateBack(delegation);
-            }
+
         }
     }
 }

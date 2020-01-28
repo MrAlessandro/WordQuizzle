@@ -1,5 +1,6 @@
 import dispatching.Delegation;
 import dispatching.DelegationsDispenser;
+import dispatching.OperationType;
 import users.Registrable;
 import users.UsersManager;
 import util.AnsiColors;
@@ -90,27 +91,31 @@ class WordQuizzleServer
                     if (currentKey.isReadable())
                     {
                         currentKey.interestOps(0);
-                        DelegationsDispenser.delegateRead(currentKey);
+                        DelegationsDispenser.delegateRead((SocketChannel) currentKey.channel(), currentKey.attachment());
                     }
 
                     if (currentKey.isWritable())
                     {
                         currentKey.interestOps(0);
-                        DelegationsDispenser.delegateWrite(currentKey);
+                        DelegationsDispenser.delegateWrite((SocketChannel) currentKey.channel(), currentKey.attachment());
                     }
                 }
 
                 Delegation delegatedBack;
                 while ((delegatedBack = DelegationsDispenser.getDelegationBack()) != null)
                 {
-                    switch (delegatedBack.getType())
+                    if (delegatedBack.getType() == OperationType.CLOSE)
                     {
-                        case READ:
-                            delegatedBack.getDelegation().interestOps(SelectionKey.OP_READ);
-                            break;
-                        case WRITE:
-                            delegatedBack.getDelegation().interestOps(SelectionKey.OP_WRITE);
-                            break;
+                        delegatedBack.getChannel().keyFor(selector).cancel();
+                        delegatedBack.getChannel().close();
+                    }
+                    else
+                    {
+                        delegatedBack.getChannel().keyFor(selector).attach(delegatedBack.getAttachment());
+                        if (UsersManager.WRITABLE_CONNECTIONS.contains(delegatedBack.getChannel()))
+                            delegatedBack.getChannel().keyFor(selector).interestOps(SelectionKey.OP_WRITE);
+                        else
+                            delegatedBack.getChannel().keyFor(selector).interestOps(SelectionKey.OP_READ);
                     }
                 }
             }
@@ -121,7 +126,7 @@ class WordQuizzleServer
             UsersManager.backUp();
             UsersManager.print();
         }
-        catch (IOException | InterruptedException | ParseException e)
+        catch (IOException e)
         {
             e.printStackTrace();
         }

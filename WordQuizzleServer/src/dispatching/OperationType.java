@@ -4,9 +4,11 @@ import java.util.HashMap;
 
 public enum OperationType
 {
-    READ ((short) 1, "Read"),
-    WRITE ((short) 2, "Write"),
-    CLOSE ((short) 3, "Close");
+    WRITE ((short) 1, "Read"),
+    READ ((short) 2, "Write"),
+    WRITE_TO_UNLOGGED ((short) 3, "WriteToUnlogged"),
+    CLOSE ((short) 4, "Close"),
+    UNDEFINED ((short) 4, "NotYetDefined");
 
     private short value;
     private String name;

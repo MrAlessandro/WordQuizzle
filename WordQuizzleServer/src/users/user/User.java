@@ -1,9 +1,11 @@
 package users.user;
 
-import messages.*;
+import messages.Message;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import users.UsersManager;
 
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -15,19 +17,22 @@ public class User
 {
     private String username;
     private Password password;
-    private int score;
-    private HashSet<String> friends;
-    private LinkedList<Message> backLogMessages;
+    private SocketChannel connection;
+
     private ReentrantLock userLock;
+    private LinkedList<Message> backLogMessages;
+    private HashSet<String> friends;
+    private int score;
 
     public User(String username, char[] password)
     {
         this.username = username;
         this.password = new Password(password);
-        this.score = 0;
         this.friends = new HashSet<>(20);
         this.backLogMessages = new LinkedList<>();
         this.userLock = new ReentrantLock();
+        this.connection = null;
+        this.score = 0;
     }
 
     public User(String username, Password password, int score, HashSet<String> friends, LinkedList<Message> backLog)
@@ -36,8 +41,9 @@ public class User
         this.password = password;
         this.friends = friends;
         this.backLogMessages = backLog;
-        this.score = score;
         this.userLock = new ReentrantLock();
+        this.connection = null;
+        this.score = score;
     }
 
     public String getUsername()
@@ -45,35 +51,9 @@ public class User
         return this.username;
     }
 
-    public String getPassword()
-    {
-        return this.password.toString();
-    }
-
     public boolean checkPassword(char[] password)
     {
         return this.password.checkPassword(password);
-    }
-
-    protected String[] getFriendsList()
-    {
-        String[] friendsList;
-
-        this.userLock.lock();
-        if (this.friends.isEmpty())
-            friendsList = null;
-        else
-        {
-            friendsList = new String[this.friends.size()];
-            int i = 0;
-            for (String friend : this.friends)
-            {
-                friendsList[i++] = friend;
-            }
-        }
-        this.userLock.unlock();
-
-        return friendsList;
     }
 
     public boolean isFriendOf(String userName)
@@ -87,25 +67,6 @@ public class User
         return check;
     }
 
-    public Collection<Message> retrieveBackLog()
-    {
-        Message current;
-        ArrayList<Message> backLog = new ArrayList<>();
-
-        this.userLock.lock();
-        if (this.backLogMessages.size() != 0)
-        {
-            backLog = new ArrayList<>(this.backLogMessages.size());
-            while ((current = this.backLogMessages.poll()) != null)
-            {
-                backLog.add(current);
-            }
-        }
-        this.userLock.unlock();
-
-        return backLog;
-    }
-
     public boolean addFriend(String userName)
     {
         boolean retValue;
@@ -117,6 +78,35 @@ public class User
         return retValue;
     }
 
+    public void appendMessage(Message message)
+    {
+        this.userLock.lock();
+        this.backLogMessages.add(message);
+        UsersManager.WRITABLE_CONNECTIONS.add(this.connection);
+        this.userLock.unlock();
+    }
+
+    public void prependMessage(Message message)
+    {
+        this.userLock.lock();
+        this.backLogMessages.addFirst(message);
+        UsersManager.WRITABLE_CONNECTIONS.add(this.connection);
+        this.userLock.unlock();
+    }
+
+    public Message getMessage()
+    {
+        Message message;
+
+        this.userLock.lock();
+        message = this.backLogMessages.pollFirst();
+        if (this.backLogMessages.size() == 0)
+            UsersManager.WRITABLE_CONNECTIONS.remove(this.connection);
+        this.userLock.unlock();
+
+        return message;
+    }
+
     public boolean removeFriend(String username)
     {
         boolean retValue;
@@ -126,6 +116,21 @@ public class User
         this.userLock.unlock();
 
         return retValue;
+    }
+
+    public void connect(SocketChannel connection)
+    {
+        this.connection = connection;
+    }
+
+    public SocketChannel disconnect()
+    {
+        SocketChannel connection;
+
+        connection = this.connection;
+        this.connection = null;
+
+        return connection;
     }
 
     public JSONObject JSONserialize()

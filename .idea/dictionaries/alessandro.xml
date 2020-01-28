@@ -13,8 +13,11 @@
       <w>nserialize</w>
       <w>osession</w>
       <w>pbkdf</w>
+      <w>prng</w>
       <w>quizzle</w>
+      <w>randomizer</w>
       <w>unicast</w>
+      <w>unlogged</w>
     </words>
   </dictionary>
 </component>

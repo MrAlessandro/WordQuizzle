@@ -10,16 +10,18 @@ public enum MessageType
     ADD_FRIEND((short) 3, "AddFriend"),
     FRIENDS_LIST((short) 4, "FriendList"),
     CHALLENGE((short) 5, "Challenge"),
+    CONFIRM_FRIENDSHIP((short) 6, "ConfirmFriendship"),
 
     // Response messages
-    OK((short) 6, "Ok"),
-    YOUR_FRIENDS_LIST((short) 7, "YourFriendList"),
-    USERNAME_USED((short) 8, "UsernameUsed"),
-    ALREADY_FRIENDS((short) 9, "AlreadyFriends"),
-    USERNAME_UNKNOWN((short) 10, "UsernameUnknown"),
-    PASSWORD_WRONG((short) 11, "PasswordWrong"),
-    INVALID_MESSAGE((short) 12, "InvalidMessage"),
-    UNEXPECTED_MESSAGE((short) 13, "UnexpectedMessage");
+    OK((short) 7, "Ok"),
+    YOUR_FRIENDS_LIST((short) 8, "YourFriendList"),
+    USERNAME_USED((short) 9, "UsernameUsed"),
+    ALREADY_FRIENDS((short) 10, "AlreadyFriends"),
+    USERNAME_UNKNOWN((short) 11, "UsernameUnknown"),
+    PASSWORD_WRONG((short) 12, "PasswordWrong"),
+    INVALID_MESSAGE((short) 13, "InvalidMessage"),
+    UNEXPECTED_MESSAGE((short) 14, "UnexpectedMessage");
+
 
     private short value;
     private String name;

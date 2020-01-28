@@ -44,7 +44,7 @@ public class PasswordCheckingTest
             e.printStackTrace();
         }
 */
-
+        /*
         UsersManager.restore();
 
         Collection<Message> backLog = UsersManager.grantAccess("Andrea", new char[]{'3','3','3','3'});
@@ -75,6 +75,8 @@ public class PasswordCheckingTest
 
         UsersManager.backUp();
         UsersManager.print();
+
+         */
     }
 
 }

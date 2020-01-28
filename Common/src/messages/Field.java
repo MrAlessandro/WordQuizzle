@@ -40,7 +40,7 @@ public class Field
         return this.length;
     }
 
-    protected static Field readField(SocketChannel sender, ByteBuffer buffer) throws IOException, InvalidMessageFormatException
+    protected static Field readField(SocketChannel sender, ByteBuffer buffer) throws IOException
     {
         if (sender == null || buffer == null)
             throw new NullPointerException();
@@ -56,10 +56,7 @@ public class Field
         {
             numReadBytes = sender.read(buffer);
             if(numReadBytes == -1)
-            {
-                buffer.clear();
-                return null;
-            }
+                throw new IOException();
         }
 
         buffer.flip();
@@ -67,7 +64,7 @@ public class Field
         buffer.clear();
 
         if (length <= 0)
-            throw new InvalidMessageFormatException("Invalid fields number");
+            return null;
 
         field.length = length;
 
