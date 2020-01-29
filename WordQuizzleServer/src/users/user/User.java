@@ -5,9 +5,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import users.UsersManager;
 
-import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.nio.channels.SelectionKey;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
@@ -17,9 +15,9 @@ public class User
 {
     private String username;
     private Password password;
-    private SocketChannel connection;
 
     private ReentrantLock userLock;
+    private SelectionKey connection;
     private LinkedList<Message> backLogMessages;
     private HashSet<String> friends;
     private int score;
@@ -78,35 +76,6 @@ public class User
         return retValue;
     }
 
-    public void appendMessage(Message message)
-    {
-        this.userLock.lock();
-        this.backLogMessages.add(message);
-        UsersManager.WRITABLE_CONNECTIONS.add(this.connection);
-        this.userLock.unlock();
-    }
-
-    public void prependMessage(Message message)
-    {
-        this.userLock.lock();
-        this.backLogMessages.addFirst(message);
-        UsersManager.WRITABLE_CONNECTIONS.add(this.connection);
-        this.userLock.unlock();
-    }
-
-    public Message getMessage()
-    {
-        Message message;
-
-        this.userLock.lock();
-        message = this.backLogMessages.pollFirst();
-        if (this.backLogMessages.size() == 0)
-            UsersManager.WRITABLE_CONNECTIONS.remove(this.connection);
-        this.userLock.unlock();
-
-        return message;
-    }
-
     public boolean removeFriend(String username)
     {
         boolean retValue;
@@ -118,17 +87,63 @@ public class User
         return retValue;
     }
 
-    public void connect(SocketChannel connection)
+    public SelectionKey appendMessage(Message message)
     {
-        this.connection = connection;
+        SelectionKey connection;
+
+        this.userLock.lock();
+        this.backLogMessages.add(message);
+        connection = this.connection;
+        this.userLock.unlock();
+
+        return connection;
     }
 
-    public SocketChannel disconnect()
+    public SelectionKey prependMessage(Message message)
     {
-        SocketChannel connection;
+        SelectionKey connection;
 
+        this.userLock.lock();
+        this.backLogMessages.addFirst(message);
+        connection = this.connection;
+        this.userLock.unlock();
+
+        return connection;
+    }
+
+    public Message getMessage()
+    {
+        Message message;
+
+        this.userLock.lock();
+        message = this.backLogMessages.pollFirst();
+        this.userLock.unlock();
+
+        return message;
+    }
+
+    public SelectionKey connect(SelectionKey connection)
+    {
+        SelectionKey returned;
+
+        this.userLock.lock();
+        if (this.connection != null)
+            returned =  null;
+        else
+            returned = (this.connection = connection);
+        this.userLock.unlock();
+
+        return returned;
+    }
+
+    public SelectionKey disconnect()
+    {
+        SelectionKey connection;
+
+        this.userLock.lock();
         connection = this.connection;
         this.connection = null;
+        this.userLock.unlock();
 
         return connection;
     }

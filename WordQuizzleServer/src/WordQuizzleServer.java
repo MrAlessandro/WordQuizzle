@@ -1,11 +1,10 @@
 import dispatching.Delegation;
 import dispatching.DelegationsDispenser;
 import dispatching.OperationType;
-import users.Registrable;
+import messages.Message;
+import remote.Registrable;
 import users.UsersManager;
 import util.AnsiColors;
-
-import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -91,13 +90,13 @@ class WordQuizzleServer
                     if (currentKey.isReadable())
                     {
                         currentKey.interestOps(0);
-                        DelegationsDispenser.delegateRead((SocketChannel) currentKey.channel(), currentKey.attachment());
+                        DelegationsDispenser.delegateRead(currentKey);
                     }
 
                     if (currentKey.isWritable())
                     {
                         currentKey.interestOps(0);
-                        DelegationsDispenser.delegateWrite((SocketChannel) currentKey.channel(), currentKey.attachment());
+                        DelegationsDispenser.delegateWrite(currentKey);
                     }
                 }
 
@@ -106,16 +105,16 @@ class WordQuizzleServer
                 {
                     if (delegatedBack.getType() == OperationType.CLOSE)
                     {
-                        delegatedBack.getChannel().keyFor(selector).cancel();
-                        delegatedBack.getChannel().close();
+                        delegatedBack.getSelection().cancel();
+                        delegatedBack.getSelection().channel().close();
                     }
                     else
                     {
-                        delegatedBack.getChannel().keyFor(selector).attach(delegatedBack.getAttachment());
-                        if (UsersManager.WRITABLE_CONNECTIONS.contains(delegatedBack.getChannel()))
-                            delegatedBack.getChannel().keyFor(selector).interestOps(SelectionKey.OP_WRITE);
-                        else
-                            delegatedBack.getChannel().keyFor(selector).interestOps(SelectionKey.OP_READ);
+                        int ops = SelectionKey.OP_READ;
+                        if (delegatedBack.getSelection().attachment() instanceof Message || UsersManager.hasPendingMessages(delegatedBack.getSelection()))
+                            ops = ops | SelectionKey.OP_WRITE;
+
+                        delegatedBack.getSelection().interestOps(ops);
                     }
                 }
             }

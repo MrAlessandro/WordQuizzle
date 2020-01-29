@@ -1,18 +1,16 @@
 package dispatching;
 
-import java.nio.channels.SocketChannel;
+import java.nio.channels.SelectionKey;
 
 public class Delegation
 {
     private OperationType type;
-    private SocketChannel channel;
-    private Object attachment;
+    private SelectionKey selection;
 
-    public Delegation(SocketChannel key, OperationType opType, Object attachment)
+    public Delegation(SelectionKey selection, OperationType opType)
     {
-        this.channel = key;
         this.type = opType;
-        this.attachment = attachment;
+        this.selection = selection;
     }
 
     public OperationType getType()
@@ -20,24 +18,13 @@ public class Delegation
         return this.type;
     }
 
-    public SocketChannel getChannel()
+    public SelectionKey getSelection()
     {
-        return this.channel;
+        return this.selection;
     }
 
     public void setType(OperationType opType)
     {
         this.type = opType;
     }
-
-    public Object getAttachment()
-    {
-        return this.attachment;
-    }
-
-    public void attach(Object attachment)
-    {
-        this.attachment = attachment;
-    }
-
 }

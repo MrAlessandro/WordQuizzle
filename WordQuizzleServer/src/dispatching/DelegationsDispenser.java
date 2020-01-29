@@ -1,6 +1,6 @@
 package dispatching;
 
-import java.nio.channels.SocketChannel;
+import java.nio.channels.SelectionKey;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class DelegationsDispenser
@@ -10,14 +10,14 @@ public class DelegationsDispenser
 
     public DelegationsDispenser(){}
 
-    public static void delegateRead(SocketChannel delegation, Object attachment)
+    public static void delegateRead(SelectionKey delegation)
     {
-        DISPENSER.add(new Delegation(delegation, OperationType.READ, attachment));
+        DISPENSER.add(new Delegation(delegation, OperationType.READ));
     }
 
-    public static void delegateWrite(SocketChannel delegation, Object attachment)
+    public static void delegateWrite(SelectionKey delegation)
     {
-        DISPENSER.add(new Delegation(delegation, OperationType.WRITE, attachment));
+        DISPENSER.add(new Delegation(delegation, OperationType.WRITE));
     }
 
     public static Delegation getDelegation()
@@ -28,7 +28,7 @@ public class DelegationsDispenser
         }
         catch (InterruptedException e)
         {
-            throw new RuntimeException("Unexpected interruption");
+            throw new Error("Unexpected interruption");
         }
     }
 

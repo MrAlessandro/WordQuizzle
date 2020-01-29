@@ -19,7 +19,7 @@ public enum MessageType
     ALREADY_FRIENDS((short) 10, "AlreadyFriends"),
     USERNAME_UNKNOWN((short) 11, "UsernameUnknown"),
     PASSWORD_WRONG((short) 12, "PasswordWrong"),
-    INVALID_MESSAGE((short) 13, "InvalidMessage"),
+    INVALID_MESSAGE_FORMAT((short) 13, "InvalidMessage"),
     UNEXPECTED_MESSAGE((short) 14, "UnexpectedMessage");
 
 

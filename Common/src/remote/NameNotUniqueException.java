@@ -1,4 +1,4 @@
-package users.exceptions;
+package remote;
 
 public class NameNotUniqueException extends Exception
 {

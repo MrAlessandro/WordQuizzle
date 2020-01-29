@@ -1,33 +1,47 @@
 package users;
 
-import jdk.nashorn.internal.ir.ReturnNode;
 import messages.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import returns.ReturnValue;
-import status.Status;
+import remote.Registrable;
 import users.exceptions.AlreadyExistingRelationshipException;
-import users.exceptions.InconsistentRelationshipException;
 import users.exceptions.UnknownUserException;
+import users.exceptions.WrongPasswordException;
 import users.user.User;
 import util.Constants;
 
 import java.io.IOException;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.rmi.RemoteException;
 import java.rmi.server.RemoteServer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 
 public class UsersManager extends RemoteServer implements Registrable
 {
     private static final UsersManager INSTANCE = new UsersManager();
     private static final ConcurrentHashMap<String, User> USERS_ARCHIVE = new ConcurrentHashMap<>(Constants.UserMapSize);
-    public static final Set<SocketChannel> WRITABLE_CONNECTIONS = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private static final ConcurrentHashMap<SelectionKey, Short> WRITABLE_CONNECTIONS = new ConcurrentHashMap<>();
+    private static final BiFunction<SelectionKey, Short, Short> INCREMENTER = (SelectionKey selectionKey, Short relatedCounter) -> {
+        if (relatedCounter == null)
+            return (short) 1;
+        else
+            return ++relatedCounter;
+    };
+    private static final BiFunction<SelectionKey, Short, Short> DECREMENTER = (SelectionKey selectionKey, Short relatedCounter) -> {
+        if (relatedCounter == null)
+            return null;
+        else
+            if (relatedCounter == 1)
+                return null;
+            else
+                return  --relatedCounter;
+    };
 
     private UsersManager()
     {}
@@ -38,52 +52,56 @@ public class UsersManager extends RemoteServer implements Registrable
     }
 
     @Override
-    public boolean registerUser(String username, char[] password) throws RemoteException
+    public boolean registerUser(String username, char[] password)
     {
         return (USERS_ARCHIVE.putIfAbsent(username, new User(username, password))) == null;
     }
 
-    public static ReturnValue openSession(String username, char[] password, SocketChannel connection)
+    public static boolean openSession(String username, char[] password, SelectionKey connection) throws UnknownUserException, WrongPasswordException
     {
         User taken  = USERS_ARCHIVE.get(username);
 
         if (taken ==  null)
-            return new ReturnValue(Status.USER_UNKNOWN, Status.USER_UNKNOWN.toString());
-        else if (taken.checkPassword(password))
-        {
-            taken.connect(connection);
-            taken.prependMessage(new Message(MessageType.OK));
-            return new ReturnValue(Status.SUCCESS, Status.SUCCESS.toString());
-        }
-        else
-            return new ReturnValue(Status.WRONG_PASSWORD, true);
+            throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
+
+        if (!taken.checkPassword(password))
+            throw new WrongPasswordException();
+
+        taken.connect(connection);
+        taken.prependMessage(new Message(MessageType.OK));
+
+        if (connection != null)
+            WRITABLE_CONNECTIONS.compute(connection, INCREMENTER);
+
+        return true;
     }
 
-    public static ReturnValue closeSession(String username)
+    public static boolean closeSession(String username, SelectionKey connection)
     {
         User taken  = USERS_ARCHIVE.get(username);
 
         if (taken ==  null)
-            return new ReturnValue(Status.USER_UNKNOWN, Status.USER_UNKNOWN.toString());
+            throw new Error("Attempt to close a not existing session");
+
+        WRITABLE_CONNECTIONS.remove(connection);
 
         taken.disconnect();
 
-        return new ReturnValue(Status.SUCCESS, true);
+        return true;
     }
 
-    public static ReturnValue makeFriends(String username1, String username2) throws AlreadyExistingRelationshipException, InconsistentRelationshipException, UnknownUserException
+    public static boolean makeFriends(String username1, String username2) throws AlreadyExistingRelationshipException, UnknownUserException
     {
         User taken1  = USERS_ARCHIVE.get(username1);
         User taken2  = USERS_ARCHIVE.get(username2);
 
         if (taken1 == null)
-            return new ReturnValue(Status.USER1_UNKNOWN, "USER \"" +  username1 + "\" UNKNOWN");
+            throw new UnknownUserException("UNKNOWN USER \"" + username1 + "\"");
         if (taken2 == null)
-            return new ReturnValue(Status.USER1_UNKNOWN, "USER \"" +  username1 + "\" UNKNOWN");
+            throw new UnknownUserException("UNKNOWN USER \"" + username2 + "\"");
 
         boolean check1;
         boolean check2;
-        boolean retValue;
 
         taken1.lock();
         taken2.lock();
@@ -98,7 +116,7 @@ public class UsersManager extends RemoteServer implements Registrable
                 taken2.removeFriend(username1);
                 taken1.unlock();
                 taken2.unlock();
-                throw new RuntimeException("Inconsistent relationship");
+                throw new Error("Inconsistent relationship");
             }
         }
         else
@@ -109,52 +127,83 @@ public class UsersManager extends RemoteServer implements Registrable
                 taken2.removeFriend(username1);
                 taken1.unlock();
                 taken2.unlock();
-                throw new RuntimeException("Inconsistent relationship");
+                throw new Error("Inconsistent relationship");
             }
             else
             {
                 taken1.unlock();
                 taken2.unlock();
-                return new ReturnValue(Status.FRIENDSHIP_ALREADY_EXISTS, "\"" + username1 + "\" AND \"" + username2 + "\" ARE FRIENDS ALREADY");
+                throw new AlreadyExistingRelationshipException("\"" + username1 + "\" and \"" + username2 + "\" ARE ALREADY FRIENDS");
             }
         }
 
         taken1.unlock();
         taken2.unlock();
 
-        return new ReturnValue(Status.SUCCESS, true);
+        return true;
     }
 
-    public static ReturnValue sendMessage(String username, Message message) throws UnknownUserException
+    public static boolean sendMessage(String username, Message message) throws UnknownUserException
     {
         User taken  = USERS_ARCHIVE.get(username);
 
         if (taken ==  null)
-            return new ReturnValue(Status.USER_UNKNOWN, Status.USER_UNKNOWN.toString());
+            throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
 
-        taken.appendMessage(message);
+        SelectionKey connection = taken.appendMessage(message);
 
-        return new ReturnValue(Status.SUCCESS, true);
+        if (connection != null)
+            WRITABLE_CONNECTIONS.compute(connection, INCREMENTER);
+
+        return true;
     }
 
-    public static ReturnValue sendResponse(String username, Message message) throws UnknownUserException
+    public static boolean sendResponse(String username, Message message) throws UnknownUserException
     {
         User taken  = USERS_ARCHIVE.get(username);
 
         if (taken ==  null)
-            return new ReturnValue(Status.USER_UNKNOWN, Status.USER_UNKNOWN.toString());
+            throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
 
-        return new ReturnValue(Status.SUCCESS, true);
+        SelectionKey connection = taken.prependMessage(message);
+
+        if (connection != null)
+            WRITABLE_CONNECTIONS.compute(connection, INCREMENTER);
+
+        return true;
     }
 
-    public static ReturnValue retrieveMessage(String username)
+    public static boolean restoreUnsentMessage(String username, Message message)
     {
         User taken  = USERS_ARCHIVE.get(username);
 
         if (taken ==  null)
-            return new ReturnValue(Status.USER_UNKNOWN, Status.USER_UNKNOWN.toString());
+            throw new Error("System inconsistency");
 
-        return new ReturnValue(Status.SUCCESS, taken.getMessage());
+        taken.prependMessage(message);
+
+        return true;
+    }
+
+    public static Message retrieveMessage(String username, SelectionKey connection) throws UnknownUserException
+    {
+        User taken  = USERS_ARCHIVE.get(username);
+        Message message;
+
+        if (taken ==  null)
+            throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
+
+        message = taken.getMessage();
+
+        if (message != null)
+            WRITABLE_CONNECTIONS.compute(connection, DECREMENTER);
+
+        return message;
+    }
+
+    public static boolean hasPendingMessages(SelectionKey connection)
+    {
+        return WRITABLE_CONNECTIONS.containsKey(connection);
     }
 
     public static void backUp()
@@ -177,7 +226,7 @@ public class UsersManager extends RemoteServer implements Registrable
         }
         catch (IOException e)
         {
-            throw new RuntimeException("Backing up users system");
+            throw new Error("Backing up users system");
         }
     }
 
@@ -194,7 +243,7 @@ public class UsersManager extends RemoteServer implements Registrable
         }
         catch (IOException e)
         {
-            throw new RuntimeException("Reading users system back up file");
+            throw new Error("Reading users system back up file");
         }
 
         String jsonString = new String(jsonBytes);
@@ -209,7 +258,7 @@ public class UsersManager extends RemoteServer implements Registrable
         }
         catch (ParseException e)
         {
-            throw new RuntimeException("Parsing users system back up file");
+            throw new Error("Parsing users system back up file");
         }
 
         for (JSONObject currentUser : (Iterable<JSONObject>) DEusersArray)

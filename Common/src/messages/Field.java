@@ -40,11 +40,8 @@ public class Field
         return this.length;
     }
 
-    protected static Field readField(SocketChannel sender, ByteBuffer buffer) throws IOException
+    protected static Field readField(SocketChannel sender, ByteBuffer buffer) throws IOException, InvalidMessageFormatException
     {
-        if (sender == null || buffer == null)
-            throw new NullPointerException();
-
         Field field = new Field();
         CharBuffer charView;
         int numReadBytes;
@@ -64,7 +61,7 @@ public class Field
         buffer.clear();
 
         if (length <= 0)
-            return null;
+            throw new InvalidMessageFormatException("INVALID FIELD LENGTH");
 
         field.length = length;
 
@@ -75,7 +72,7 @@ public class Field
             if(numReadBytes == -1)
             {
                 buffer.clear();
-                return null;
+                throw new IOException();
             }
         }
 

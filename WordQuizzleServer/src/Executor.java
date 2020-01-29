@@ -1,19 +1,20 @@
 import dispatching.Delegation;
 import dispatching.DelegationsDispenser;
 import dispatching.OperationType;
-import returns.ReturnValue;
-import status.Status;
+import exceptions.CommunicableException;
 import messages.Message;
-import messages.MessageType;
+import messages.exceptions.InvalidMessageFormatException;
 import users.UsersManager;
+import users.exceptions.UnknownUserException;
 import util.AnsiColors;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 class Executor implements Runnable
 {
-    private static final ByteBuffer buffer = ByteBuffer.allocate(2048);
+    private static final ByteBuffer buffer = ByteBuffer.allocateDirect(2048);
 
     @Override
     public void run()
@@ -28,9 +29,10 @@ class Executor implements Runnable
         {
             // Gets the delegation from the inter-thread communication structure
             delegation = DelegationsDispenser.getDelegation();
+
             // Extracts details from the delegation
-            clientSocket = delegation.getChannel();
-            attachment = delegation.getAttachment();
+            clientSocket = (SocketChannel) delegation.getSelection().channel();
+            attachment = delegation.getSelection().attachment();
             opType = delegation.getType();
 
             switch (opType)
@@ -38,12 +40,36 @@ class Executor implements Runnable
                 case READ:
                 {
                     // Read message
-                    Message message = Message.readMessage(clientSocket, buffer);
-                    if (message == null)
-                    {// Close connection on empty read
+                    Message message = null;
+                    try
+                    {
+                        message = Message.readMessage(clientSocket, buffer);
+                    }
+                    catch (IOException e)
+                    {// Close connection
                         if (attachment instanceof String)
-                            UsersManager.closeSession((String) attachment);
+                            UsersManager.closeSession((String) attachment, delegation.getSelection());
                         delegation.setType(OperationType.CLOSE);
+                        DelegationsDispenser.delegateBack(delegation);
+                        break;
+                    }
+                    catch (InvalidMessageFormatException e)
+                    {// Invalid message format
+                        Message response = new Message(e.getResponseType());
+                        if (attachment instanceof String)
+                        {
+                            try
+                            {
+                                UsersManager.sendResponse((String) attachment, response);
+                            }
+                            catch (UnknownUserException ex)
+                            {
+                                throw new Error("Dispatching system inconsistency");
+                            }
+                        }
+                        else
+                            delegation.getSelection().attach(response);
+
                         DelegationsDispenser.delegateBack(delegation);
                         break;
                     }
@@ -55,25 +81,19 @@ class Executor implements Runnable
                         {
                             String username = String.valueOf(message.getField(0));
                             char[] password = message.getField(1);
-                            ReturnValue returnValue;
 
                             System.out.print("Logging in user \"" + username + "\"... ");
 
-                            returnValue = UsersManager.openSession(username, password, delegation.getChannel());
-
-                            switch ((Status) returnValue.status)
+                            try
                             {
-                                case USER_UNKNOWN:
-                                case WRONG_PASSWORD:
-                                    AnsiColors.printlnRed(returnValue.status.toString());
-                                    delegation.attach(new Message(MessageType.valueOf(((Status) returnValue.status).getValue())));
-                                    delegation.setType(OperationType.WRITE_TO_UNLOGGED);
-                                    break;
-                                case SUCCESS:
-                                    AnsiColors.printlnGreen(returnValue.status.toString());
-                                    delegation.attach(username);
-                                    delegation.setType(OperationType.UNDEFINED);
-                                    break;
+                                UsersManager.openSession(username, password, delegation.getSelection());
+                                AnsiColors.printlnGreen("LOGGED");
+                                delegation.getSelection().attach(username);
+                            }
+                            catch (CommunicableException e)
+                            {
+                                AnsiColors.printlnRed(e.getMessage());
+                                delegation.getSelection().attach(new Message(e.getResponseType()));
                             }
 
                             // Reinsert socket in the communication dispatching
@@ -91,42 +111,44 @@ class Executor implements Runnable
                             AnsiColors.printlnGreen("SENT");
 
                             UsersManager.makeFriends(username, friend);*/
-
-
                         }
                         default:
-                        {
-
-                        }
+                        {}
                     }
 
                     break;
                 }
                 case WRITE:
                 {
-                    String username = (String) delegation.getAttachment();
-                    ReturnValue returnValue = UsersManager.retrieveMessage(username);
-                    if (returnValue.status == Status.USER_UNKNOWN)
-                        throw new RuntimeException("System inconsistency");
+                    if (attachment instanceof Message)
+                    {
+                        try
+                        {
+                            Message.writeMessage(clientSocket, buffer, (Message) attachment);
+                        } catch (IOException e) {delegation.setType(OperationType.CLOSE);}
+                    }
+                    else if (attachment instanceof String)
+                    {
+                        Message outcome = null;
+                        try
+                        {
+                            outcome = UsersManager.retrieveMessage((String) attachment, delegation.getSelection());
+                            Message.writeMessage(clientSocket, buffer, outcome);
+                        }
+                        catch (UnknownUserException e) {throw new Error("Dispatching system inconsistency");}
+                        catch (IOException e)
+                        {
+                            UsersManager.restoreUnsentMessage((String) attachment, outcome);
+                            delegation.setType(OperationType.CLOSE);
+                        }
+                    }
 
-                    Message.writeMessage(clientSocket, buffer, (Message) returnValue.value);
-
-                    delegation.setType(OperationType.UNDEFINED);
                     DelegationsDispenser.delegateBack(delegation);
 
                     break;
                 }
-                case WRITE_TO_UNLOGGED:
-                {
-                    Message message = (Message) delegation.getAttachment();
-                    Message.writeMessage(clientSocket, buffer, message);
-                    delegation.attach(null);
-
-                    delegation.setType(OperationType.READ);
-                    DelegationsDispenser.delegateBack(delegation);
-
-                    break;
-                }
+                default:
+                    throw new Error("Unknown operation type");
             }
 
         }

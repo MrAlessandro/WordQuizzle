@@ -6,9 +6,7 @@ public enum OperationType
 {
     WRITE ((short) 1, "Read"),
     READ ((short) 2, "Write"),
-    WRITE_TO_UNLOGGED ((short) 3, "WriteToUnlogged"),
-    CLOSE ((short) 4, "Close"),
-    UNDEFINED ((short) 4, "NotYetDefined");
+    CLOSE ((short) 3, "Close");
 
     private short value;
     private String name;

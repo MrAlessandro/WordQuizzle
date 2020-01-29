@@ -1,6 +1,9 @@
 import messages.Message;
 import messages.MessageType;
 import messages.exceptions.InvalidMessageFormatException;
+import remote.Registrable;
+import remote.VoidPasswordException;
+import remote.VoidUsernameException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -31,7 +34,7 @@ class WordQuizzleClient
         server.configureBlocking(true);
         buffer.putInt(MessageType.LOG_IN.getValue());
 
-        Message message = new Message(MessageType.LOG_IN, "Andrea");
+        Message message = new Message(MessageType.LOG_IN, "Alessandro");
         message.addField(password);
 
         System.out.println("Sending message: " + message.toString());
@@ -55,7 +58,7 @@ class WordQuizzleClient
             Registrable remoteNet = (Registrable) r.lookup("WordQuizzleServer");
             retValue = remoteNet.registerUser(username, password);
         }
-        catch (RemoteException | NotBoundException e)
+        catch (RemoteException | NotBoundException | VoidUsernameException | VoidPasswordException e)
         {
             e.printStackTrace();
         }
