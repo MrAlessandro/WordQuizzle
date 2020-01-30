@@ -7,10 +7,11 @@ public enum MessageType
     // Request messages
     LOG_IN((short) 1, "LogIn"),
     LOG_OUT((short) 2, "LogOut"),
-    ADD_FRIEND((short) 3, "AddFriend"),
+    REQUEST_FOR_FRIENDSHIP((short) 3, "AddFriend"),
+    CONFIRM_FRIENDSHIP((short) 6, "ConfirmFriendship"),
+    DECLINE_FRIENDSHIP((short) 15, "DeclineFriendship"),
     FRIENDS_LIST((short) 4, "FriendList"),
     CHALLENGE((short) 5, "Challenge"),
-    CONFIRM_FRIENDSHIP((short) 6, "ConfirmFriendship"),
 
     // Response messages
     OK((short) 7, "Ok"),
@@ -20,7 +21,8 @@ public enum MessageType
     USERNAME_UNKNOWN((short) 11, "UsernameUnknown"),
     PASSWORD_WRONG((short) 12, "PasswordWrong"),
     INVALID_MESSAGE_FORMAT((short) 13, "InvalidMessage"),
-    UNEXPECTED_MESSAGE((short) 14, "UnexpectedMessage");
+    UNEXPECTED_MESSAGE((short) 14, "UnexpectedMessage"),
+    FRIENDSHIP_REQUEST_ALREADY_SENT ((short) 16, "FriendshipRequestAlreadySent");
 
 
     private short value;

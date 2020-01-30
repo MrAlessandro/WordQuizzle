@@ -1,5 +1,7 @@
 package server.main;
 
+import messages.MessageType;
+import messages.exceptions.UnexpectedMessageException;
 import server.dispatching.Delegation;
 import server.dispatching.DelegationsDispenser;
 import server.dispatching.OperationType;
@@ -59,16 +61,7 @@ class Executor implements Runnable
                     {// Invalid message format
                         Message response = new Message(e.getResponseType());
                         if (attachment instanceof String)
-                        {
-                            try
-                            {
-                                UsersManager.sendResponse((String) attachment, response);
-                            }
-                            catch (UnknownUserException ex)
-                            {
-                                throw new Error("Dispatching system inconsistency");
-                            }
-                        }
+                            UsersManager.sendResponse((String) attachment, response);
                         else
                             delegation.getSelection().attach(response);
 
@@ -102,20 +95,107 @@ class Executor implements Runnable
                             DelegationsDispenser.delegateBack(delegation);
                             break;
                         }
-                        case ADD_FRIEND:
+                        case REQUEST_FOR_FRIENDSHIP:
                         {
-                            /*Message confirmMessage;
+                            if(!isAuthorizedMessage(delegation))
+                                break;
+
+                            Message response = null;
+                            String applicant = (String) delegation.getSelection().attachment();
                             String friend = String.valueOf(message.getField(0));
-                            System.out.println("Sending a friendship request from \"" + username + "\" to \"" + friend + "\"... ");
 
-                            confirmMessage = new Message(MessageType.CONFIRM_FRIENDSHIP, username);
+                            System.out.println("Sending a friendship request from \"" + applicant + "\" to \"" + friend + "\"... ");
 
-                            AnsiColors.printlnGreen("SENT");
+                            // Send confirmation message to requested user
+                            try
+                            {
+                                UsersManager.sendFriendshipRequest(applicant, friend);
+                                AnsiColors.printlnGreen("SENT");
+                                response = new Message(MessageType.OK);
+                            }
+                            catch (CommunicableException e)
+                            {
+                                AnsiColors.printlnRed(e.getMessage());
+                                response = new Message(e.getResponseType());
+                            }
 
-                            UsersManager.makeFriends(username, friend);*/
+                            // Send response to applicant
+                            UsersManager.sendResponse(applicant, response);
+
+                            DelegationsDispenser.delegateBack(delegation);
+                        }
+                        case CONFIRM_FRIENDSHIP:
+                        {
+                            if(!isAuthorizedMessage(delegation))
+                                break;
+
+                            String friend = (String) delegation.getSelection().attachment();
+                            String applicant = String.valueOf(message.getField(0));
+                            Message response;
+
+                            System.out.println("Confirming friendship between \"" + applicant + "\" and \"" + friend + "\"... ");
+
+                            try
+                            {   // Constructing friendship
+                                UsersManager.makeFriends(applicant, friend);
+                                AnsiColors.printlnGreen("CONFIRMED");
+
+                                // Sending confirm message to the applicant
+                                response = new Message(MessageType.OK);
+                                UsersManager.sendMessage(applicant, new Message(MessageType.CONFIRM_FRIENDSHIP, friend));
+                            }
+                            catch (UnknownUserException e)
+                            {
+                                throw new Error("System inconsistency");
+                            }
+                            catch (UnexpectedMessageException e)
+                            {
+                                AnsiColors.printlnRed(e.getMessage());
+                                response = new Message(MessageType.UNEXPECTED_MESSAGE);
+                            }
+
+                            // Send response to applicant
+                            UsersManager.sendResponse(friend, response);
+
+                            DelegationsDispenser.delegateBack(delegation);
+                        }
+                        case DECLINE_FRIENDSHIP:
+                        {
+                            if(!isAuthorizedMessage(delegation))
+                                break;
+
+                            String friend = (String) delegation.getSelection().attachment();
+                            String applicant = String.valueOf(message.getField(0));
+                            Message response;
+
+                            System.out.println("Declining friendship between \"" + applicant + "\" and \"" + friend + "\"... ");
+
+                            try
+                            {   // Removing request from system
+                                UsersManager.cancelFriendshipRequest(applicant, friend);
+                                AnsiColors.printlnGreen("DECLINED");
+
+                                // Sending confirm message to the applicant
+                                response = new Message(MessageType.OK);
+                                UsersManager.sendMessage(applicant, new Message(MessageType.DECLINE_FRIENDSHIP, friend));
+                            }
+                            catch (UnknownUserException e)
+                            {
+                                throw new Error("System inconsistency");
+                            }
+                            catch (UnexpectedMessageException e)
+                            {
+                                AnsiColors.printlnRed(e.getMessage());
+                                response = new Message(MessageType.UNEXPECTED_MESSAGE);
+                            }
+
+                            // Send response to applicant
+                            UsersManager.sendResponse(friend, response);
+
+                            DelegationsDispenser.delegateBack(delegation);
                         }
                         default:
-                        {}
+                        { }
                     }
 
                     break;
@@ -154,6 +234,20 @@ class Executor implements Runnable
             }
 
         }
+    }
+
+    private boolean isAuthorizedMessage(Delegation delegation)
+    {
+        if (!(delegation.getSelection().attachment() instanceof String))
+        {
+            AnsiColors.printlnRed("Received invalid message.");
+            delegation.getSelection().attach(new Message(MessageType.UNEXPECTED_MESSAGE));
+            DelegationsDispenser.delegateBack(delegation);
+            return false;
+        }
+        else
+            return true;
+
     }
 }
 

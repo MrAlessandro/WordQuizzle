@@ -233,7 +233,7 @@ class ActionPanel extends JPanel
         public void actionPerformed(ActionEvent e)
         {
             JButton button = (JButton) e.getSource();
-            WelcomeFrame frame = (WelcomeFrame) SwingUtilities.getRoot(button);
+            WordQuizzleClientFrame frame = (WordQuizzleClientFrame) SwingUtilities.getRoot(button);
             frame.reset();
         }
     }

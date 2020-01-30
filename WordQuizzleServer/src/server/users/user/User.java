@@ -14,11 +14,13 @@ public class User
 {
     private String username;
     private Password password;
+    private HashSet<String> friends;
+    private HashSet<String> waitingOutcomingFriendshipRequests;
+    private HashSet<String> waitingIncomingFriendshipRequests;
 
     private ReentrantLock userLock;
     private SelectionKey connection;
     private LinkedList<Message> backLogMessages;
-    private HashSet<String> friends;
     private int score;
 
     public User(String username, char[] password)
@@ -29,10 +31,12 @@ public class User
         this.backLogMessages = new LinkedList<>();
         this.userLock = new ReentrantLock();
         this.connection = null;
+        this.waitingOutcomingFriendshipRequests = new HashSet<>(10);
+        this.waitingIncomingFriendshipRequests = new HashSet<>(10);
         this.score = 0;
     }
 
-    public User(String username, Password password, int score, HashSet<String> friends, LinkedList<Message> backLog)
+    public User(String username, Password password, int score, HashSet<String> friends, LinkedList<Message> backLog, HashSet<String> waitingIncomingFriendshipRequests, HashSet<String> waitingOutcomingFriendshipRequests)
     {
         this.username = username;
         this.password = password;
@@ -40,6 +44,8 @@ public class User
         this.backLogMessages = backLog;
         this.userLock = new ReentrantLock();
         this.connection = null;
+        this.waitingOutcomingFriendshipRequests = waitingOutcomingFriendshipRequests;
+        this.waitingIncomingFriendshipRequests = waitingIncomingFriendshipRequests;
         this.score = score;
     }
 
@@ -55,35 +61,37 @@ public class User
 
     public boolean isFriendOf(String userName)
     {
-        boolean check;
-
-        this.userLock.lock();
-        check = this.friends.contains(userName);
-        this.userLock.unlock();
-
-        return check;
+        return this.friends.contains(userName);
     }
 
     public boolean addFriend(String userName)
     {
-        boolean retValue;
+        return this.friends.add(userName);
+    }
 
-        this.userLock.lock();
-        retValue = this.friends.add(userName);
-        this.userLock.unlock();
+    public boolean addWaitingOutcomeFriendshipRequest(String wantedFriend)
+    {
+        return this.waitingOutcomingFriendshipRequests.add(wantedFriend);
+    }
 
-        return retValue;
+    public boolean removeWaitingOutcomeFriendshipRequest(String wantedFriend)
+    {
+        return this.waitingOutcomingFriendshipRequests.add(wantedFriend);
+    }
+
+    public boolean addWaitingIncomeFriendshipRequest(String applicant)
+    {
+        return this.waitingIncomingFriendshipRequests.add(applicant);
+    }
+
+    public boolean removeWaitingIncomeFriendshipRequest(String applicant)
+    {
+        return this.waitingIncomingFriendshipRequests.add(applicant);
     }
 
     public boolean removeFriend(String username)
     {
-        boolean retValue;
-
-        this.userLock.lock();
-        retValue = this.friends.remove(username);
-        this.userLock.unlock();
-
-        return retValue;
+        return this.friends.remove(username);
     }
 
     public SelectionKey appendMessage(Message message)
@@ -151,6 +159,8 @@ public class User
     {
         JSONObject retValue = new JSONObject();
         JSONArray friendList = new JSONArray();
+        JSONArray outcomeFriendships = new JSONArray();
+        JSONArray incomeFriendships = new JSONArray();
         JSONArray backLogs = new JSONArray();
 
         retValue.put("UserName", this.username);
@@ -159,12 +169,20 @@ public class User
 
         friendList.addAll(this.friends);
 
+        outcomeFriendships.addAll(this.waitingOutcomingFriendshipRequests);
+
+        incomeFriendships.addAll(this.waitingIncomingFriendshipRequests);
+
         for (Message mex : this.backLogMessages)
         {
             backLogs.add(mex.JSONserialize());
         }
 
         retValue.put("Friends", friendList);
+
+        retValue.put("OutcomeFriendships", outcomeFriendships);
+
+        retValue.put("IncomeFriendships", incomeFriendships);
 
         retValue.put("BackLogsMessages", backLogs);
 
@@ -177,6 +195,8 @@ public class User
         int currentScore = ((Long) serializedUser.get("Score")).intValue();
         JSONObject currentPassword = (JSONObject) serializedUser.get("Password");
         JSONArray currentFriendList = (JSONArray) serializedUser.get("Friends");
+        JSONArray currentOutcomeFriendships = (JSONArray) serializedUser.get("OutcomeFriendships");
+        JSONArray currentIncomeFriendships = (JSONArray) serializedUser.get("IncomeFriendships");
         JSONArray currentBackLog = (JSONArray) serializedUser.get("BackLogsMessages");
 
         Password DEpassword = server.users.user.Password.JSONdeserialize(currentPassword);
@@ -187,13 +207,26 @@ public class User
             DEfriendList.add(friend);
         }
 
+        HashSet<String> DEoutcomeFriendships = new HashSet<>();
+        for (String unFriend: (Iterable<String>) currentOutcomeFriendships)
+        {
+            DEoutcomeFriendships.add(unFriend) ;
+        }
+
+        HashSet<String> DEincomeFriendships = new HashSet<>();
+        for (String unFriend: (Iterable<String>) currentIncomeFriendships)
+        {
+            DEincomeFriendships.add(unFriend);
+        }
+
+
         LinkedList<Message> DEbackLogMessages = new LinkedList<>();
         for (JSONObject mex : (Iterable<JSONObject>) currentBackLog)
         {
             DEbackLogMessages.addLast(Message.JSONdeserialize(mex));
         }
 
-        return new User(currentUsername, DEpassword, currentScore, DEfriendList, DEbackLogMessages);
+        return new User(currentUsername, DEpassword, currentScore, DEfriendList, DEbackLogMessages, DEincomeFriendships, DEoutcomeFriendships);
     }
 
     public void lock()

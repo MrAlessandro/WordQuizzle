@@ -1,12 +1,14 @@
 package server.users;
 
 import messages.*;
+import messages.exceptions.UnexpectedMessageException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import remote.Registrable;
 import server.users.exceptions.AlreadyExistingRelationshipException;
+import server.users.exceptions.RequestAlreadySentException;
 import server.users.exceptions.UnknownUserException;
 import server.users.exceptions.WrongPasswordException;
 import server.users.user.User;
@@ -89,15 +91,15 @@ public class UsersManager extends RemoteServer implements Registrable
         return true;
     }
 
-    public static boolean makeFriends(String username1, String username2) throws AlreadyExistingRelationshipException, UnknownUserException
+    public static boolean makeFriends(String applicant, String friend) throws UnexpectedMessageException
     {
-        User taken1  = USERS_ARCHIVE.get(username1);
-        User taken2  = USERS_ARCHIVE.get(username2);
+        User taken1  = USERS_ARCHIVE.get(applicant);
+        User taken2  = USERS_ARCHIVE.get(friend);
 
         if (taken1 == null)
-            throw new UnknownUserException("UNKNOWN USER \"" + username1 + "\"");
+            throw new UnexpectedMessageException("UNKNOWN USER \"" + applicant + "\"");
         if (taken2 == null)
-            throw new UnknownUserException("UNKNOWN USER \"" + username2 + "\"");
+            throw new Error("UNKNOWN USER \"" + friend + "\"");
 
         boolean check1;
         boolean check2;
@@ -105,41 +107,88 @@ public class UsersManager extends RemoteServer implements Registrable
         taken1.lock();
         taken2.lock();
 
-        check1 = taken1.addFriend(username2);
-        if(check1)
-        {
-            check2 = taken2.addFriend(username1);
-            if (!check2)
-            {
-                taken1.removeFriend(username2);
-                taken2.removeFriend(username1);
-                taken1.unlock();
-                taken2.unlock();
-                throw new Error("Inconsistent relationship");
-            }
-        }
+        check1 = taken1.removeWaitingOutcomeFriendshipRequest(friend);
+        check2 = taken2.removeWaitingIncomeFriendshipRequest(applicant);
+
+        if (check1 != check2)
+            throw new Error("Inconsistent relationship");
+        if (!check1)
+            throw new UnexpectedMessageException("CONFIRMATION NOT CORRESPONDS TO ANY REQUEST");
+
+        check1 = taken1.isFriendOf(friend);
+        check2 = taken2.isFriendOf(applicant);
+
+        if (check1 != check2)
+            throw new Error("Inconsistent relationship");
+        else if (check1)
+            throw new Error("Inconsistent relationship");
         else
         {
-            check2 = taken2.isFriendOf(username1);
-            if (check2)
-            {
-                taken2.removeFriend(username1);
-                taken1.unlock();
-                taken2.unlock();
-                throw new Error("Inconsistent relationship");
-            }
-            else
-            {
-                taken1.unlock();
-                taken2.unlock();
-                throw new AlreadyExistingRelationshipException("\"" + username1 + "\" and \"" + username2 + "\" ARE ALREADY FRIENDS");
-            }
+            taken1.addFriend(friend);
+            taken2.addFriend(applicant);
         }
 
         taken1.unlock();
         taken2.unlock();
 
         return true;
+    }
+
+    public static boolean cancelFriendshipRequest(String applicant, String friend) throws UnexpectedMessageException
+    {
+        User taken1  = USERS_ARCHIVE.get(applicant);
+        User taken2  = USERS_ARCHIVE.get(friend);
+
+        if (taken1 == null)
+            throw new UnexpectedMessageException("UNKNOWN USER \"" + applicant + "\"");
+        if (taken2 == null)
+            throw new Error("UNKNOWN USER \"" + friend + "\"");
+
+        boolean check1;
+        boolean check2;
+
+        taken1.lock();
+        taken2.lock();
+
+        check1 = taken1.removeWaitingOutcomeFriendshipRequest(friend);
+        check2 = taken2.removeWaitingIncomeFriendshipRequest(applicant);
+
+        if (check1 != check2)
+            throw new Error("Inconsistent relationship");
+        if (!check1)
+            throw new UnexpectedMessageException("CONFIRMATION NOT CORRESPONDS TO ANY REQUEST");
+
+        taken1.unlock();
+        taken2.unlock();
+
+        return true;
+    }
+
+    private static boolean areFriends(String username1, String username2) throws UnknownUserException
+    {
+        User taken1  = USERS_ARCHIVE.get(username1);
+        User taken2  = USERS_ARCHIVE.get(username2);
+        boolean check1;
+        boolean check2;
+
+        if (taken1 == null)
+            throw new UnknownUserException("UNKNOWN USER \"" + username1 + "\"");
+        if (taken2 == null)
+            throw new UnknownUserException("UNKNOWN USER \"" + username2 + "\"");
+
+        taken1.lock();
+        taken2.lock();
+
+        check1 = taken1.isFriendOf(username2);
+        check2 = taken2.isFriendOf(username1);
+
+        if (check1 != check2)
+            throw new Error("Inconsistent relationship");
+
+        taken1.unlock();
+        taken2.unlock();
+
+        return check1;
     }
 
     public static boolean sendMessage(String username, Message message) throws UnknownUserException
@@ -157,12 +206,52 @@ public class UsersManager extends RemoteServer implements Registrable
         return true;
     }
 
-    public static boolean sendResponse(String username, Message message) throws UnknownUserException
+    public static boolean sendFriendshipRequest(String applicant, String friend) throws UnknownUserException, AlreadyExistingRelationshipException, RequestAlreadySentException
+    {
+        User taken1 = USERS_ARCHIVE.get(applicant);
+        User taken2 = USERS_ARCHIVE.get(friend);
+        boolean check1;
+        boolean check2;
+
+        if (taken1 == null)
+            throw new Error("UNKNOWN USER \"" + applicant + "\"");
+        if (taken2 == null)
+            throw new UnknownUserException("UNKNOWN USER \"" + friend + "\"");
+        if (areFriends(applicant, friend))
+            throw new AlreadyExistingRelationshipException("\"" + applicant + "\" and \"" + friend + "\" ARE ALREADY FRIENDS");
+
+        taken1.lock();
+        taken2.lock();
+
+        check1 = taken1.addWaitingOutcomeFriendshipRequest(friend);
+        check2 = taken2.addWaitingIncomeFriendshipRequest(applicant);
+
+        if (check1 != check2)
+            throw new Error("Inconsistent relationship");
+        else if (!check1)
+        {
+            taken1.unlock();
+            taken2.unlock();
+            throw new RequestAlreadySentException();
+        }
+
+        taken1.unlock();
+        taken2.unlock();
+
+        SelectionKey connection = taken2.appendMessage(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, applicant));
+
+        if (connection != null)
+            WRITABLE_CONNECTIONS.compute(connection, INCREMENTER);
+
+        return true;
+    }
+
+    public static boolean sendResponse(String username, Message message)
     {
         User taken  = USERS_ARCHIVE.get(username);
 
         if (taken ==  null)
-            throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
+            throw new Error("UNKNOWN USER \"" + username + "\"");
 
         SelectionKey connection = taken.prependMessage(message);
 

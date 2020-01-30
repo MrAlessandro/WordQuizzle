@@ -6,6 +6,8 @@
       <w>eback</w>
       <w>efields</w>
       <w>efriend</w>
+      <w>eincome</w>
+      <w>eoutcome</w>
       <w>epassword</w>
       <w>euser</w>
       <w>eusers</w>
@@ -13,6 +15,7 @@
       <w>ndeserialize</w>
       <w>nserialize</w>
       <w>osession</w>
+      <w>outcoming</w>
       <w>pbkdf</w>
       <w>prng</w>
       <w>quizzle</w>

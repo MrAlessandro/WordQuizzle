@@ -6,7 +6,7 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-class WelcomeFrame extends JFrame implements Runnable
+class WordQuizzleClientFrame extends JFrame implements Runnable
 {
     private JLayeredPane LayeredPane;
     private ImageIcon BackgroundImage;
@@ -15,7 +15,7 @@ class WelcomeFrame extends JFrame implements Runnable
     private JButton LogInButton;
     private JButton SignUpButton;
 
-    protected WelcomeFrame()
+    protected WordQuizzleClientFrame()
     {
         // Frame settings
         super();
@@ -104,7 +104,7 @@ class WelcomeFrame extends JFrame implements Runnable
         public void actionPerformed(ActionEvent e)
         {
             JButton button = (JButton) e.getSource();
-            WelcomeFrame frame = (WelcomeFrame) SwingUtilities.getRoot(button);
+            WordQuizzleClientFrame frame = (WordQuizzleClientFrame) SwingUtilities.getRoot(button);
             frame.setUpSignUp();
         }
     }
@@ -116,7 +116,7 @@ class WelcomeFrame extends JFrame implements Runnable
         public void actionPerformed(ActionEvent e)
         {
             JButton button = (JButton) e.getSource();
-            WelcomeFrame frame = (WelcomeFrame) SwingUtilities.getRoot(button);
+            WordQuizzleClientFrame frame = (WordQuizzleClientFrame) SwingUtilities.getRoot(button);
             frame.setUpLogIn();
         }
     }
