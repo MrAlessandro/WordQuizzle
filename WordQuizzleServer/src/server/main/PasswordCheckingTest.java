@@ -1,6 +1,8 @@
 package server.main;
 
+import messages.exceptions.UnexpectedMessageException;
 import org.json.simple.parser.ParseException;
+import server.users.exceptions.AlreadyExistingRelationshipException;
 import server.users.exceptions.UnknownUserException;
 import server.users.UsersManager;
 
@@ -12,7 +14,6 @@ public class PasswordCheckingTest
     {
         UsersManager Net = UsersManager.getInstance();
 
-/*
         Net.registerUser("Alfredo", new char[]{'1','2','3','4'});
         Net.registerUser("Andrea", new char[]{'3','3','3','3'});
         Net.registerUser("Giacomo", new char[]{'1','2','3','4'});
@@ -23,7 +24,7 @@ public class PasswordCheckingTest
         Net.registerUser("Beatrice", new char[]{'1','2','3','4'});
         Net.registerUser("Chiara", new char[]{'1','2','3','4'});
 
-        try
+        /*try
         {
             UsersManager.makeFriends("Andrea", "Giacomo");
             UsersManager.makeFriends("Andrea", "Alessandro");
@@ -39,11 +40,11 @@ public class PasswordCheckingTest
             UsersManager.makeFriends("Chiara", "Claudia");
             UsersManager.makeFriends("Chiara", "Beatrice");
         }
-        catch (InconsistentRelationshipException | AlreadyExistingRelationshipException e)
+        catch (UnexpectedMessageException e)
         {
             e.printStackTrace();
-        }
-*/
+        }*/
+
         /*
         UsersManager.restore();
 
@@ -72,11 +73,13 @@ public class PasswordCheckingTest
             System.out.println("Checked");
         else
             System.out.println("Wrong");
+        */
+
 
         UsersManager.backUp();
         UsersManager.print();
 
-         */
+
     }
 
 }

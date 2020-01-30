@@ -35,8 +35,8 @@ class Executor implements Runnable
             delegation = DelegationsDispenser.getDelegation();
 
             // Extracts details from the delegation
-            clientSocket = (SocketChannel) delegation.getSelection().channel();
-            attachment = delegation.getSelection().attachment();
+            clientSocket = (SocketChannel) delegation.getSelection();
+            attachment = delegation.attachment();
             opType = delegation.getType();
 
             switch (opType)
@@ -52,10 +52,11 @@ class Executor implements Runnable
                     catch (IOException e)
                     {// Close connection
                         if (attachment instanceof String)
-                            UsersManager.closeSession((String) attachment, delegation.getSelection());
+                            UsersManager.closeSession((String) attachment);
                         delegation.setType(OperationType.CLOSE);
                         DelegationsDispenser.delegateBack(delegation);
                         break;
+
                     }
                     catch (InvalidMessageFormatException e)
                     {// Invalid message format
@@ -63,7 +64,7 @@ class Executor implements Runnable
                         if (attachment instanceof String)
                             UsersManager.sendResponse((String) attachment, response);
                         else
-                            delegation.getSelection().attach(response);
+                            delegation.attach(response);
 
                         DelegationsDispenser.delegateBack(delegation);
                         break;
@@ -81,14 +82,14 @@ class Executor implements Runnable
 
                             try
                             {
-                                UsersManager.openSession(username, password, delegation.getSelection());
+                                UsersManager.openSession(username, password);
                                 AnsiColors.printlnGreen("LOGGED");
-                                delegation.getSelection().attach(username);
+                                delegation.attach(username);
                             }
                             catch (CommunicableException e)
                             {
                                 AnsiColors.printlnRed(e.getMessage());
-                                delegation.getSelection().attach(new Message(e.getResponseType()));
+                                delegation.attach(new Message(e.getResponseType()));
                             }
 
                             // Reinsert socket in the communication server.dispatching
@@ -101,10 +102,10 @@ class Executor implements Runnable
                                 break;
 
                             Message response = null;
-                            String applicant = (String) delegation.getSelection().attachment();
+                            String applicant = (String) delegation.attachment();
                             String friend = String.valueOf(message.getField(0));
 
-                            System.out.println("Sending a friendship request from \"" + applicant + "\" to \"" + friend + "\"... ");
+                            System.out.print("Sending a friendship request from \"" + applicant + "\" to \"" + friend + "\"... ");
 
                             // Send confirmation message to requested user
                             try
@@ -123,17 +124,19 @@ class Executor implements Runnable
                             UsersManager.sendResponse(applicant, response);
 
                             DelegationsDispenser.delegateBack(delegation);
+
+                            break;
                         }
                         case CONFIRM_FRIENDSHIP:
                         {
                             if(!isAuthorizedMessage(delegation))
                                 break;
 
-                            String friend = (String) delegation.getSelection().attachment();
+                            String friend = (String) delegation.attachment();
                             String applicant = String.valueOf(message.getField(0));
                             Message response;
 
-                            System.out.println("Confirming friendship between \"" + applicant + "\" and \"" + friend + "\"... ");
+                            System.out.print("Confirming friendship between \"" + applicant + "\" and \"" + friend + "\"... ");
 
                             try
                             {   // Constructing friendship
@@ -158,17 +161,19 @@ class Executor implements Runnable
                             UsersManager.sendResponse(friend, response);
 
                             DelegationsDispenser.delegateBack(delegation);
+
+                            break;
                         }
                         case DECLINE_FRIENDSHIP:
                         {
                             if(!isAuthorizedMessage(delegation))
                                 break;
 
-                            String friend = (String) delegation.getSelection().attachment();
+                            String friend = (String) delegation.attachment();
                             String applicant = String.valueOf(message.getField(0));
                             Message response;
 
-                            System.out.println("Declining friendship between \"" + applicant + "\" and \"" + friend + "\"... ");
+                            System.out.print("Declining friendship between \"" + applicant + "\" and \"" + friend + "\"... ");
 
                             try
                             {   // Removing request from system
@@ -193,6 +198,8 @@ class Executor implements Runnable
                             UsersManager.sendResponse(friend, response);
 
                             DelegationsDispenser.delegateBack(delegation);
+
+                            break;
                         }
                         default:
                         { }
@@ -214,10 +221,10 @@ class Executor implements Runnable
                         Message outcome = null;
                         try
                         {
-                            outcome = UsersManager.retrieveMessage((String) attachment, delegation.getSelection());
-                            Message.writeMessage(clientSocket, buffer, outcome);
+                            outcome = UsersManager.retrieveMessage((String) attachment);
+                            if (outcome != null)
+                                Message.writeMessage(clientSocket, buffer, outcome);
                         }
-                        catch (UnknownUserException e) {throw new Error("Dispatching system inconsistency");}
                         catch (IOException e)
                         {
                             UsersManager.restoreUnsentMessage((String) attachment, outcome);
@@ -238,10 +245,10 @@ class Executor implements Runnable
 
     private boolean isAuthorizedMessage(Delegation delegation)
     {
-        if (!(delegation.getSelection().attachment() instanceof String))
+        if (!(delegation.attachment() instanceof String))
         {
             AnsiColors.printlnRed("Received invalid message.");
-            delegation.getSelection().attach(new Message(MessageType.UNEXPECTED_MESSAGE));
+            delegation.attach(new Message(MessageType.UNEXPECTED_MESSAGE));
             DelegationsDispenser.delegateBack(delegation);
             return false;
         }

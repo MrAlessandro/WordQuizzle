@@ -27,14 +27,14 @@ public class UsersManager extends RemoteServer implements Registrable
 {
     private static final UsersManager INSTANCE = new UsersManager();
     private static final ConcurrentHashMap<String, User> USERS_ARCHIVE = new ConcurrentHashMap<>(ServerConstants.INITIAL_USERS_DATABASE_SIZE);
-    private static final ConcurrentHashMap<SelectionKey, Short> WRITABLE_CONNECTIONS = new ConcurrentHashMap<>();
-    private static final BiFunction<SelectionKey, Short, Short> INCREMENTER = (SelectionKey selectionKey, Short relatedCounter) -> {
+    private static final ConcurrentHashMap<String, Short> WRITABLE_CONNECTIONS = new ConcurrentHashMap<>();
+    private static final BiFunction<String, Short, Short> INCREMENTER = (String user, Short relatedCounter) -> {
         if (relatedCounter == null)
             return (short) 1;
         else
             return ++relatedCounter;
     };
-    private static final BiFunction<SelectionKey, Short, Short> DECREMENTER = (SelectionKey selectionKey, Short relatedCounter) -> {
+    private static final BiFunction<String, Short, Short> DECREMENTER = (String user, Short relatedCounter) -> {
         if (relatedCounter == null)
             return null;
         else
@@ -58,7 +58,7 @@ public class UsersManager extends RemoteServer implements Registrable
         return (USERS_ARCHIVE.putIfAbsent(username, new User(username, password))) == null;
     }
 
-    public static boolean openSession(String username, char[] password, SelectionKey connection) throws UnknownUserException, WrongPasswordException
+    public static boolean openSession(String username, char[] password) throws UnknownUserException, WrongPasswordException
     {
         User taken  = USERS_ARCHIVE.get(username);
 
@@ -68,25 +68,23 @@ public class UsersManager extends RemoteServer implements Registrable
         if (!taken.checkPassword(password))
             throw new WrongPasswordException();
 
-        taken.connect(connection);
+        taken.logIn();
         taken.prependMessage(new Message(MessageType.OK));
-
-        if (connection != null)
-            WRITABLE_CONNECTIONS.compute(connection, INCREMENTER);
+        WRITABLE_CONNECTIONS.compute(username, INCREMENTER);
 
         return true;
     }
 
-    public static boolean closeSession(String username, SelectionKey connection)
+    public static boolean closeSession(String username)
     {
         User taken  = USERS_ARCHIVE.get(username);
 
         if (taken ==  null)
             throw new Error("Attempt to close a not existing session");
 
-        WRITABLE_CONNECTIONS.remove(connection);
+        WRITABLE_CONNECTIONS.remove(username);
 
-        taken.disconnect();
+        taken.logOut();
 
         return true;
     }
@@ -198,10 +196,9 @@ public class UsersManager extends RemoteServer implements Registrable
         if (taken ==  null)
             throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
 
-        SelectionKey connection = taken.appendMessage(message);
 
-        if (connection != null)
-            WRITABLE_CONNECTIONS.compute(connection, INCREMENTER);
+        if (taken.appendMessage(message))
+            WRITABLE_CONNECTIONS.compute(username, INCREMENTER);
 
         return true;
     }
@@ -238,10 +235,10 @@ public class UsersManager extends RemoteServer implements Registrable
         taken1.unlock();
         taken2.unlock();
 
-        SelectionKey connection = taken2.appendMessage(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, applicant));
+        taken2.appendMessage(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, applicant));
 
-        if (connection != null)
-            WRITABLE_CONNECTIONS.compute(connection, INCREMENTER);
+        if (taken2.appendMessage(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, applicant)))
+            WRITABLE_CONNECTIONS.compute(friend, INCREMENTER);
 
         return true;
     }
@@ -253,10 +250,8 @@ public class UsersManager extends RemoteServer implements Registrable
         if (taken ==  null)
             throw new Error("UNKNOWN USER \"" + username + "\"");
 
-        SelectionKey connection = taken.prependMessage(message);
-
-        if (connection != null)
-            WRITABLE_CONNECTIONS.compute(connection, INCREMENTER);
+        if (taken.prependMessage(message))
+            WRITABLE_CONNECTIONS.compute(username, INCREMENTER);
 
         return true;
     }
@@ -273,25 +268,25 @@ public class UsersManager extends RemoteServer implements Registrable
         return true;
     }
 
-    public static Message retrieveMessage(String username, SelectionKey connection) throws UnknownUserException
+    public static Message retrieveMessage(String username)
     {
         User taken  = USERS_ARCHIVE.get(username);
         Message message;
 
         if (taken ==  null)
-            throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
+            throw new Error("UNKNOWN USER \"" + username + "\"");
 
         message = taken.getMessage();
 
         if (message != null)
-            WRITABLE_CONNECTIONS.compute(connection, DECREMENTER);
+            WRITABLE_CONNECTIONS.compute(username, DECREMENTER);
 
         return message;
     }
 
-    public static boolean hasPendingMessages(SelectionKey connection)
+    public static boolean hasPendingMessages(String username)
     {
-        return WRITABLE_CONNECTIONS.containsKey(connection);
+        return WRITABLE_CONNECTIONS.containsKey(username);
     }
 
     public static void backUp()

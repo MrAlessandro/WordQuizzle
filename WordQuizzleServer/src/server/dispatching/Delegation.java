@@ -1,16 +1,28 @@
 package server.dispatching;
 
-import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 
 public class Delegation
 {
     private OperationType type;
-    private SelectionKey selection;
+    private SocketChannel selection;
+    private Object attachment;
 
-    public Delegation(SelectionKey selection, OperationType opType)
+    public Delegation(SocketChannel selection, OperationType opType, Object attachment)
     {
         this.type = opType;
         this.selection = selection;
+        this.attachment = attachment;
+    }
+
+    public void attach(Object attachment)
+    {
+        this.attachment = attachment;
+    }
+
+    public Object attachment()
+    {
+        return this.attachment;
     }
 
     public OperationType getType()
@@ -18,7 +30,7 @@ public class Delegation
         return this.type;
     }
 
-    public SelectionKey getSelection()
+    public SocketChannel getSelection()
     {
         return this.selection;
     }

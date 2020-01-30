@@ -4,27 +4,17 @@ import client.constants.ClientConstants;
 import messages.Message;
 import messages.MessageType;
 import messages.exceptions.InvalidMessageFormatException;
-import remote.Registrable;
-import remote.VoidPasswordException;
-import remote.VoidUsernameException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 
-public class WordQuizzleClient
+public class AlessandroClient
 {
     public static void main(String[] args) throws IOException, InvalidMessageFormatException
     {
-        //client.gui.WelcomeFrame client.gui = new client.gui.WelcomeFrame();
-        //SwingUtilities.invokeLater(client.gui);
-
         char[] password = {'1', '2', '3', '4'};
 
         ByteBuffer buffer = ByteBuffer.allocate(2048);
@@ -42,28 +32,20 @@ public class WordQuizzleClient
 
         message = Message.readMessage(server, buffer);
 
-        assert message != null;
         System.out.println("Received message: "+ message.toString());
+
+        message = new Message(MessageType.REQUEST_FOR_FRIENDSHIP, "Andrea");
+        System.out.println("Sending message: " + message.toString());
+        Message.writeMessage(server, buffer, message);
+
+        message = Message.readMessage(server, buffer);
+
+        System.out.println("Received message: "+ message.toString());
+
+        message = Message.readMessage(server, buffer);
+        System.out.println("Received message: "+ message.toString());
+
 
         server.close();
     }
-
-    public static boolean register(String username, char[] password)
-    {
-        boolean retValue = false;
-
-        try
-        {
-            Registry r = LocateRegistry.getRegistry();
-            Registrable remoteNet = (Registrable) r.lookup("WordQuizzleServer");
-            retValue = remoteNet.registerUser(username, password);
-        }
-        catch (RemoteException | NotBoundException | VoidUsernameException | VoidPasswordException e)
-        {
-            e.printStackTrace();
-        }
-
-        return retValue;
-    }
-
 }

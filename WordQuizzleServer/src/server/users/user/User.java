@@ -4,7 +4,6 @@ import messages.Message;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import java.nio.channels.SelectionKey;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
@@ -19,7 +18,7 @@ public class User
     private HashSet<String> waitingIncomingFriendshipRequests;
 
     private ReentrantLock userLock;
-    private SelectionKey connection;
+    private boolean logged;
     private LinkedList<Message> backLogMessages;
     private int score;
 
@@ -30,7 +29,7 @@ public class User
         this.friends = new HashSet<>(20);
         this.backLogMessages = new LinkedList<>();
         this.userLock = new ReentrantLock();
-        this.connection = null;
+        this.logged = false;
         this.waitingOutcomingFriendshipRequests = new HashSet<>(10);
         this.waitingIncomingFriendshipRequests = new HashSet<>(10);
         this.score = 0;
@@ -43,7 +42,7 @@ public class User
         this.friends = friends;
         this.backLogMessages = backLog;
         this.userLock = new ReentrantLock();
-        this.connection = null;
+        this.logged = false;
         this.waitingOutcomingFriendshipRequests = waitingOutcomingFriendshipRequests;
         this.waitingIncomingFriendshipRequests = waitingIncomingFriendshipRequests;
         this.score = score;
@@ -94,28 +93,28 @@ public class User
         return this.friends.remove(username);
     }
 
-    public SelectionKey appendMessage(Message message)
+    public boolean appendMessage(Message message)
     {
-        SelectionKey connection;
+        boolean logged;
 
         this.userLock.lock();
         this.backLogMessages.add(message);
-        connection = this.connection;
+        logged = this.logged;
         this.userLock.unlock();
 
-        return connection;
+        return logged;
     }
 
-    public SelectionKey prependMessage(Message message)
+    public boolean prependMessage(Message message)
     {
-        SelectionKey connection;
+        boolean logged;
 
         this.userLock.lock();
         this.backLogMessages.addFirst(message);
-        connection = this.connection;
+        logged = this.logged;
         this.userLock.unlock();
 
-        return connection;
+        return logged;
     }
 
     public Message getMessage()
@@ -129,30 +128,31 @@ public class User
         return message;
     }
 
-    public SelectionKey connect(SelectionKey connection)
+    public boolean logIn()
     {
-        SelectionKey returned;
+        boolean returned = false;
 
         this.userLock.lock();
-        if (this.connection != null)
-            returned =  null;
-        else
-            returned = (this.connection = connection);
+        if (!this.logged)
+            returned  = (this.logged = true);
         this.userLock.unlock();
 
         return returned;
     }
 
-    public SelectionKey disconnect()
+    public boolean logOut()
     {
-        SelectionKey connection;
+        boolean returned = false;
 
         this.userLock.lock();
-        connection = this.connection;
-        this.connection = null;
+        if (this.logged)
+        {
+            returned = true;
+            this.logged = false;
+        }
         this.userLock.unlock();
 
-        return connection;
+        return returned;
     }
 
     public JSONObject JSONserialize()

@@ -1,6 +1,7 @@
 package server.dispatching;
 
 import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class DelegationsDispenser
@@ -10,14 +11,14 @@ public class DelegationsDispenser
 
     public DelegationsDispenser(){}
 
-    public static void delegateRead(SelectionKey delegation)
+    public static void delegateRead(SocketChannel delegation, Object attachment)
     {
-        DISPENSER.add(new Delegation(delegation, OperationType.READ));
+        DISPENSER.add(new Delegation(delegation, OperationType.READ, attachment));
     }
 
-    public static void delegateWrite(SelectionKey delegation)
+    public static void delegateWrite(SocketChannel delegation, Object attachment)
     {
-        DISPENSER.add(new Delegation(delegation, OperationType.WRITE));
+        DISPENSER.add(new Delegation(delegation, OperationType.WRITE, attachment));
     }
 
     public static Delegation getDelegation()

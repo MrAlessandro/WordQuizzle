@@ -1,5 +1,8 @@
 package client.gui;
 
+import client.gui.constants.GuiConstants;
+import client.main.WordQuizzleClient;
+
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -22,12 +25,12 @@ class ActionPanel extends JPanel
     public ActionPanel(int action)
     {
         super();
-        this.setBackground(Constants.ForegroundColor);
+        this.setBackground(GuiConstants.ForegroundColor);
         this.setLocation(248, 140);
         this.setSize(241, 115);
         this.setLayout(new GridBagLayout());
         this.setOpaque(true);
-        this.setBorder(BorderFactory.createLineBorder(Constants.MainColor));
+        this.setBorder(BorderFactory.createLineBorder(GuiConstants.MainColor));
         this.setVisible(false);
 
         this.UsernameTextField = new JPlaceholderTextField("Username");
@@ -133,7 +136,7 @@ class ActionPanel extends JPanel
 
                 panel.setBackground(Color.white);
 
-                ImageIcon loadingGIF = new ImageIcon(Constants.LoadingGifPAth.toString());
+                ImageIcon loadingGIF = new ImageIcon(GuiConstants.LoadingGifPAth.toString());
                 JLabel gifLabel = new JLabel(loadingGIF);
 
                 panel.add(gifLabel);
@@ -178,7 +181,7 @@ class ActionPanel extends JPanel
 
                 panel.setBackground(Color.white);
 
-                ImageIcon loadingGIF = new ImageIcon(Constants.LoadingGifPAth.toString());
+                ImageIcon loadingGIF = new ImageIcon(GuiConstants.LoadingGifPAth.toString());
                 JLabel gifLabel = new JLabel(loadingGIF);
 
                 panel.add(gifLabel);
@@ -189,9 +192,9 @@ class ActionPanel extends JPanel
                 boolean registered = WordQuizzleClient.register(panel.UsernameTextField.getText().trim(), panel.PasswordTextField.getPassword());
 
                 panel.removeAll();
-                panel.setBackground(Constants.BackgroundColor);
+                panel.setBackground(GuiConstants.BackgroundColor);
                 JLabel doneLabel = new JLabel();
-                doneLabel.setForeground(Constants.MainColor);
+                doneLabel.setForeground(GuiConstants.MainColor);
 
                 if(registered)
                 {
@@ -202,7 +205,7 @@ class ActionPanel extends JPanel
                 {
                     doneLabel.setText("Username not unique.");
                     JLabel more = new JLabel("Try another one!");
-                    more.setForeground(Constants.MainColor);
+                    more.setForeground(GuiConstants.MainColor);
 
                     GridBagConstraints constraints = new GridBagConstraints();
 

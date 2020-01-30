@@ -8,6 +8,7 @@ import remote.Registrable;
 import server.users.UsersManager;
 import server.printer.AnsiColors;
 
+import javax.jws.soap.SOAPBinding;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -15,6 +16,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.rmi.registry.Registry;
+import java.util.Iterator;
 import java.util.Set;
 
 class WordQuizzleServer
@@ -57,6 +59,8 @@ class WordQuizzleServer
             // Restoring previous server state
             UsersManager.restore();
 
+            UsersManager.print();
+
             selector = Selector.open();
             connectionSocket = ServerSocketChannel.open();
             connectionSocket.bind(serverAddress);
@@ -68,9 +72,11 @@ class WordQuizzleServer
                 selector.select(10);
                 Set<SelectionKey> selectedKeys = selector.selectedKeys();
 
-                for (SelectionKey currentKey : selectedKeys)
+                Iterator<SelectionKey> keyIter = selector.selectedKeys().iterator();
+                while (keyIter.hasNext())
                 {
-                    selectedKeys.remove(currentKey);
+                    SelectionKey currentKey = keyIter.next();
+                    keyIter.remove();
 
                     if (currentKey.isAcceptable())
                     {
@@ -82,7 +88,6 @@ class WordQuizzleServer
                         {
                             client.configureBlocking(false);
                             client.register(selector, SelectionKey.OP_READ).attach(null);
-
                             AnsiColors.printlnGreen("ACCEPTED");
                         }
                         else
@@ -92,13 +97,13 @@ class WordQuizzleServer
                     if (currentKey.isReadable())
                     {
                         currentKey.interestOps(0);
-                        DelegationsDispenser.delegateRead(currentKey);
+                        DelegationsDispenser.delegateRead((SocketChannel) currentKey.channel(), currentKey.attachment());
                     }
 
                     if (currentKey.isWritable())
                     {
                         currentKey.interestOps(0);
-                        DelegationsDispenser.delegateWrite(currentKey);
+                        DelegationsDispenser.delegateWrite((SocketChannel) currentKey.channel(), currentKey.attachment());
                     }
                 }
 
@@ -107,18 +112,31 @@ class WordQuizzleServer
                 {
                     if (delegatedBack.getType() == OperationType.CLOSE)
                     {
-                        delegatedBack.getSelection().cancel();
-                        delegatedBack.getSelection().channel().close();
+                        delegatedBack.getSelection().keyFor(selector).cancel();
+                        delegatedBack.getSelection().close();
                     }
                     else
                     {
                         int ops = SelectionKey.OP_READ;
-                        if (delegatedBack.getSelection().attachment() instanceof Message || UsersManager.hasPendingMessages(delegatedBack.getSelection()))
+                        if (delegatedBack.attachment() instanceof Message)
                             ops = ops | SelectionKey.OP_WRITE;
 
-                        delegatedBack.getSelection().interestOps(ops);
+                        delegatedBack.getSelection().keyFor(selector).attach(delegatedBack.attachment());
+                        delegatedBack.getSelection().keyFor(selector).interestOps(ops);
                     }
                 }
+
+                for (SelectionKey key : selector.keys())
+                {
+                    if (key.attachment() instanceof String && UsersManager.hasPendingMessages((String) key.attachment()))
+                        key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                }
+
+                /*Set<SelectionKey> writables = UsersManager.getWritables();
+                for (SelectionKey key : writables)
+                {
+                    key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                }*/
             }
 
             selector.close();

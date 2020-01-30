@@ -7,7 +7,7 @@ public enum MessageType
     // Request messages
     LOG_IN((short) 1, "LogIn"),
     LOG_OUT((short) 2, "LogOut"),
-    REQUEST_FOR_FRIENDSHIP((short) 3, "AddFriend"),
+    REQUEST_FOR_FRIENDSHIP((short) 3, "RequestForFriend"),
     CONFIRM_FRIENDSHIP((short) 6, "ConfirmFriendship"),
     DECLINE_FRIENDSHIP((short) 15, "DeclineFriendship"),
     FRIENDS_LIST((short) 4, "FriendList"),
