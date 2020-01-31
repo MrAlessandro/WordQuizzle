@@ -75,7 +75,7 @@ public class User
 
     public boolean removeWaitingOutcomeFriendshipRequest(String wantedFriend)
     {
-        return this.waitingOutcomingFriendshipRequests.add(wantedFriend);
+        return this.waitingOutcomingFriendshipRequests.remove(wantedFriend);
     }
 
     public boolean addWaitingIncomeFriendshipRequest(String applicant)
@@ -85,7 +85,7 @@ public class User
 
     public boolean removeWaitingIncomeFriendshipRequest(String applicant)
     {
-        return this.waitingIncomingFriendshipRequests.add(applicant);
+        return this.waitingIncomingFriendshipRequests.remove(applicant);
     }
 
     public boolean removeFriend(String username)

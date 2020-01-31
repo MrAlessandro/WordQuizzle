@@ -8,7 +8,6 @@ import remote.Registrable;
 import server.users.UsersManager;
 import server.printer.AnsiColors;
 
-import javax.jws.soap.SOAPBinding;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -78,7 +77,7 @@ class WordQuizzleServer
                     SelectionKey currentKey = keyIter.next();
                     keyIter.remove();
 
-                    if (currentKey.isAcceptable())
+                    if (currentKey.isValid() && currentKey.isAcceptable())
                     {
                         System.out.print("Accepting connection from a client... ");
                         ServerSocketChannel server = (ServerSocketChannel) currentKey.channel();
@@ -94,13 +93,13 @@ class WordQuizzleServer
                             AnsiColors.printlnRed("REFUSED");
                     }
 
-                    if (currentKey.isReadable())
+                    if (currentKey.isValid() && currentKey.isReadable())
                     {
                         currentKey.interestOps(0);
                         DelegationsDispenser.delegateRead((SocketChannel) currentKey.channel(), currentKey.attachment());
                     }
 
-                    if (currentKey.isWritable())
+                    if (currentKey.isValid() && currentKey.isWritable())
                     {
                         currentKey.interestOps(0);
                         DelegationsDispenser.delegateWrite((SocketChannel) currentKey.channel(), currentKey.attachment());
