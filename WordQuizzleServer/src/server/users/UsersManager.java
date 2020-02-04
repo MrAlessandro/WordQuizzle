@@ -7,6 +7,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import remote.Registrable;
+import remote.VoidPasswordException;
+import remote.VoidUsernameException;
 import server.users.exceptions.AlreadyExistingRelationshipException;
 import server.users.exceptions.RequestAlreadySentException;
 import server.users.exceptions.UnknownUserException;
@@ -15,7 +17,6 @@ import server.users.user.User;
 import server.constants.ServerConstants;
 
 import java.io.IOException;
-import java.nio.channels.SelectionKey;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.rmi.server.RemoteServer;
@@ -53,8 +54,13 @@ public class UsersManager extends RemoteServer implements Registrable
     }
 
     @Override
-    public boolean registerUser(String username, char[] password)
+    public boolean registerUser(String username, char[] password) throws VoidPasswordException, VoidUsernameException
     {
+        if (username == null || username.equals(""))
+            throw new VoidUsernameException("Empty username");
+        if (password.length == 0)
+            throw new VoidPasswordException("Empty password");
+
         return (USERS_ARCHIVE.putIfAbsent(username, new User(username, password))) == null;
     }
 

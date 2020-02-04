@@ -1,153 +1,116 @@
 package server.main;
 
-import server.dispatching.Delegation;
-import server.dispatching.DelegationsDispenser;
-import server.dispatching.OperationType;
-import messages.Message;
 import remote.Registrable;
+import server.constants.ServerConstants;
+import server.printer.Printer;
 import server.users.UsersManager;
-import server.printer.AnsiColors;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.rmi.registry.Registry;
-import java.util.Iterator;
-import java.util.Set;
 
 class WordQuizzleServer
 {
-    private final static int CONNECTION_PORT = 50500;
-    private final static String HOST_NAME = "localhost";
-    protected volatile static boolean STOP = false;
+    private static final Printer PRINTER = new Printer("Main");
+    public static volatile boolean shut = false;
 
     public static void main(String[] args)
     {
+        ServerSocketChannel serverSocket;
+        InetSocketAddress serverAddress;
+        Deputy[] deputies;
         Registrable stub;
-        Registry registry ;
-        Selector selector;
-        ServerSocketChannel connectionSocket;
-        InetSocketAddress serverAddress = new InetSocketAddress(HOST_NAME, CONNECTION_PORT);
+        Registry registry;
+
+        Thread.currentThread().setName("Main");
+
+        PRINTER.printCyan("Initializing WordQuizzle server... ");
+
+        // Setting socket address on which server listens for incoming connections
+        serverAddress = new InetSocketAddress(ServerConstants.HOST_NAME, ServerConstants.CONNECTION_PORT);
 
         // Registering a shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(new Shutter()));
 
-        Thread r = new Thread(new Executor());
-        r.start();
+        // Restoring previous server state
+        UsersManager.restore();
 
-
-        // Enabling RMI support for registration operation
-        /*
-        try
+        // Initialize and starts deputies
+        deputies = new Deputy[ServerConstants.DEPUTIES_POOL_SIZE];
+        for (int i = 0; i < deputies.length; i++)
         {
-            stub = (Registrable) UnicastRemoteObject.exportObject(UserNet.getNet(), 0);
-            LocateRegistry.createRegistry(constants.Constants.UserNetRegistryPort);
-            registry = LocateRegistry.getRegistry(constants.Constants.UserNetRegistryPort);
-            registry.bind("server.main.WordQuizzleServer", stub);
+            deputies[i] = new Deputy("Deputy_" + i);
+            deputies[i].start();
         }
-        catch (AlreadyBoundException | RemoteException e)
-        {
-            e.printStackTrace();
-        }*/
+
 
         try
         {
-            // Restoring previous server state
-            UsersManager.restore();
+            // Variable for select deputies sequentially
+            short selector = 0;
 
-            UsersManager.print();
+            // Enabling RMI support for registration operation
+            /*
+            stub = (Registrable) UnicastRemoteObject.exportObject(UsersManager.getInstance(), 0);
+            LocateRegistry.createRegistry(Constants.USERS_DATABASE_REGISTRY_PORT);
+            registry = LocateRegistry.getRegistry(Constants.USERS_DATABASE_REGISTRY_PORT);
+            registry.bind(Constants.USERS_DATABASE_REMOTE_NAME, stub);
+            */
 
-            selector = Selector.open();
-            connectionSocket = ServerSocketChannel.open();
-            connectionSocket.bind(serverAddress);
-            connectionSocket.configureBlocking(false);
-            connectionSocket.register(selector, SelectionKey.OP_ACCEPT);
+            // Opening server's connection socket
+            serverSocket = ServerSocketChannel.open();
+            serverSocket.bind(serverAddress);
 
-            while (!STOP)
+            PRINTER.printlnGreen("INITIALIZED");
+
+            // Start server listening cycle
+            while (!isShutDown())
             {
-                selector.select(10);
-                Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                // Wait for connection
+                PRINTER.print("Waiting for new connections... ");
+                SocketChannel connection = serverSocket.accept();
+                PRINTER.printlnGreen("ACCEPTED");
 
-                Iterator<SelectionKey> keyIter = selector.selectedKeys().iterator();
-                while (keyIter.hasNext())
-                {
-                    SelectionKey currentKey = keyIter.next();
-                    keyIter.remove();
-
-                    if (currentKey.isValid() && currentKey.isAcceptable())
-                    {
-                        System.out.print("Accepting connection from a client... ");
-                        ServerSocketChannel server = (ServerSocketChannel) currentKey.channel();
-                        SocketChannel client = server.accept();
-
-                        if (client != null)
-                        {
-                            client.configureBlocking(false);
-                            client.register(selector, SelectionKey.OP_READ).attach(null);
-                            AnsiColors.printlnGreen("ACCEPTED");
-                        }
-                        else
-                            AnsiColors.printlnRed("REFUSED");
-                    }
-
-                    if (currentKey.isValid() && currentKey.isReadable())
-                    {
-                        currentKey.interestOps(0);
-                        DelegationsDispenser.delegateRead((SocketChannel) currentKey.channel(), currentKey.attachment());
-                    }
-
-                    if (currentKey.isValid() && currentKey.isWritable())
-                    {
-                        currentKey.interestOps(0);
-                        DelegationsDispenser.delegateWrite((SocketChannel) currentKey.channel(), currentKey.attachment());
-                    }
-                }
-
-                Delegation delegatedBack;
-                while ((delegatedBack = DelegationsDispenser.getDelegationBack()) != null)
-                {
-                    if (delegatedBack.getType() == OperationType.CLOSE)
-                    {
-                        delegatedBack.getSelection().keyFor(selector).cancel();
-                        delegatedBack.getSelection().close();
-                    }
-                    else
-                    {
-                        int ops = SelectionKey.OP_READ;
-                        if (delegatedBack.attachment() instanceof Message)
-                            ops = ops | SelectionKey.OP_WRITE;
-
-                        delegatedBack.getSelection().keyFor(selector).attach(delegatedBack.attachment());
-                        delegatedBack.getSelection().keyFor(selector).interestOps(ops);
-                    }
-                }
-
-                for (SelectionKey key : selector.keys())
-                {
-                    if (key.attachment() instanceof String && UsersManager.hasPendingMessages((String) key.attachment()))
-                        key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                }
-
-                /*Set<SelectionKey> writables = UsersManager.getWritables();
-                for (SelectionKey key : writables)
-                {
-                    key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                }*/
+                // Dispatch the socket to be served to one of the deputies
+                deputies[selector++].dispatch.add(connection);
+                selector = (short) (selector % ServerConstants.DEPUTIES_POOL_SIZE);
             }
 
-            selector.close();
-            connectionSocket.close();
+            PRINTER.printCyan("Server is shutting down");
 
-            UsersManager.backUp();
-            UsersManager.print();
+            // Signal to terminate to others threads
+            Deputy.shutDown();
+
+            // Waiting for other threads to terminate
+            for (Deputy deputy : deputies)
+                deputy.join();
+
+            // Unbind the RMI service
+            //registry.unbind(Constants.USERS_DATABASE_REMOTE_NAME);
+            // Close the server's connection socket
+            serverSocket.close();
         }
-        catch (IOException e)
+        catch (IOException | InterruptedException e)
         {
             e.printStackTrace();
         }
 
+        // Backup users system in order to make it persistent
+        UsersManager.backUp();
+
+        PRINTER.printlnGreen("OFF");
     }
+
+    public static synchronized void shutDown()
+    {
+        shut = true;
+    }
+
+    private static synchronized boolean isShutDown()
+    {
+        return shut;
+    }
+
 }

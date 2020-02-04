@@ -1,123 +1,140 @@
 package client.gui;
 
 import client.gui.constants.GuiConstants;
+import client.operators.LogInOperator;
+import messages.Message;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.*;
 
-class WordQuizzleClientFrame extends JFrame implements Runnable
+public class WordQuizzleClientFrame extends JFrame
 {
-    private JLayeredPane LayeredPane;
-    private ImageIcon BackgroundImage;
-    private JLabel BackgroundLabel;
-    private ActionPanel MessageZone;
-    private JButton LogInButton;
-    private JButton SignUpButton;
+    public volatile Message response;
+    public volatile JPlaceholderTextField usernameTextField;
+    public volatile JPlaceholderPasswordField passwordField;
+    public volatile JLabel warningLabel;
 
-    protected WordQuizzleClientFrame()
+    public WordQuizzleClientFrame()
     {
-        // Frame settings
-        super();
-        this.setTitle("WordQuizzle");
+        super("WordQuizzle");
+        this.usernameTextField = new JPlaceholderTextField("Username");
+        this.passwordField = new JPlaceholderPasswordField("Password");
+        this.warningLabel = new JLabel(" ");
+        this.warningLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        this.getContentPane().setBackground(GuiConstants.BackgroundColor);
-        this.setLocationByPlatform(true);
+        this.welcomeFrame();
         this.setResizable(false);
-
-        // Image loading
-        this.BackgroundImage = new ImageIcon(GuiConstants.WordQuizzleLogoPath.toString());
-
-        // Setting panel
-        this.LayeredPane = new JLayeredPane();
-
-        // Setting background
-        this.BackgroundLabel = new JLabel(this.BackgroundImage);
-        this.BackgroundLabel.setLocation(0,0);
-        this.BackgroundLabel.setSize(700, 440);
-        this.LayeredPane.add(this.BackgroundLabel, JLayeredPane.DEFAULT_LAYER);
-
-        // Setting logIn button
-        this.LogInButton = new JButton("Log In");
-        this.LogInButton.setSize(this.LogInButton.getPreferredSize());
-        this.LogInButton.setLocation(10, 10);
-        this.LogInButton.setVisible(true);
-        this.LogInButton.addActionListener(new LogInButtonListener());
-        this.LayeredPane.add(this.LogInButton, JLayeredPane.MODAL_LAYER);
-
-        // Setting singUp button
-        this.SignUpButton = new JButton("Sign Up");
-        this.SignUpButton.setSize(this.SignUpButton.getPreferredSize());
-        this.SignUpButton.setLocation(this.BackgroundImage.getIconWidth() - this.SignUpButton.getWidth() - 10 , 10);
-        this.SignUpButton.setVisible(true);
-        this.SignUpButton.addActionListener(new SignUpButtonListener());
-        this.LayeredPane.add(this.SignUpButton, JLayeredPane.MODAL_LAYER);
-
-        // Adding panel at the frame
-        this.add(this.LayeredPane);
-
-        // Adjusting size of frame
-        this.setSize(this.BackgroundImage.getIconWidth(), this.BackgroundImage.getIconHeight() + 20);
-    }
-
-    @Override
-    public void run()
-    {
-        // Making frame visible
         this.setVisible(true);
     }
 
-    protected void setUpLogIn()
+    private void welcomeFrame()
     {
-        if (this.LayeredPane.isAncestorOf(this.MessageZone))
-            this.LayeredPane.remove(this.MessageZone);
-        this.SignUpButton.setVisible(false);
-        this.LogInButton.setVisible(false);
-        this.MessageZone = new ActionPanel(ActionPanel.ActionLogInPanel);
-        this.LayeredPane.add(this.MessageZone, JLayeredPane.PALETTE_LAYER);
-        this.MessageZone.setVisible(true);
+        this.getContentPane().removeAll();
+        JPanel panel = new JPanel();
+        this.getContentPane().setBackground(Color.WHITE);
+        this.getContentPane().setLayout(new FlowLayout());
+        this.getContentPane().add(new JLabel(GuiConstants.LOGO), BorderLayout.LINE_START);
+        this.getContentPane().add(panel);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBackground(Color.WHITE);
+        JLabel welcomeLabel = new JLabel("Welcome to WordQuizzle!");
+        welcomeLabel.setFont(new Font("", Font.PLAIN, 30));
+        welcomeLabel.setForeground(GuiConstants.MAIN_COLOR);
+        welcomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JButton logInButton = new JButton("LogIn");
+        logInButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        logInButton.addActionListener(e -> SwingUtilities.invokeLater(this::logInProcedure));
+        JButton signUpButton = new JButton("SignUp");
+        signUpButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        signUpButton.addActionListener(e -> SwingUtilities.invokeLater(this::signUpProcedure));
+        panel.add(welcomeLabel);
+        panel.add(Box.createRigidArea(new Dimension(0, 5)));
+        panel.add(logInButton);
+        panel.add(Box.createRigidArea(new Dimension(0, 5)));
+        panel.add(signUpButton);
+        this.getContentPane().add(panel);
+        this.pack();
     }
 
-    protected void setUpSignUp()
+    public void logInProcedure()
     {
-        if (this.LayeredPane.isAncestorOf(this.MessageZone))
-            this.LayeredPane.remove(this.MessageZone);
-        this.SignUpButton.setVisible(false);
-        this.LogInButton.setVisible(false);
-        this.MessageZone = new ActionPanel(ActionPanel.ActionSignUpPanel);
-        this.LayeredPane.add(this.MessageZone, JLayeredPane.PALETTE_LAYER);
-        this.MessageZone.setVisible(true);
+        this.getContentPane().removeAll();
+        this.getContentPane().setBackground(Color.WHITE);
+        this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
+        JPanel panel = new JPanel();
+        panel.setBackground(Color.WHITE);
+        panel.setLayout(new FlowLayout());
+        JButton logInButton = new JButton("LogIn");
+        logInButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        logInButton.addActionListener(e -> SwingUtilities.invokeLater(this::loading));
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        cancelButton.addActionListener(e -> SwingUtilities.invokeLater(this::welcomeFrame));
+        panel.add(cancelButton);
+        panel.add(logInButton);
+        this.getContentPane().add(this.usernameTextField);
+        this.getContentPane().add(this.passwordField);
+        this.getContentPane().add(this.warningLabel);
+        this.getContentPane().add(panel);
+        this.pack();
     }
 
-    protected void reset()
+    private void signUpProcedure()
     {
-        if (this.LayeredPane.isAncestorOf(this.MessageZone))
-            this.LayeredPane.remove(this.MessageZone);
-        this.SignUpButton.setVisible(true);
-        this.LogInButton.setVisible(true);
-        this.repaint();
+        this.getContentPane().removeAll();
+        this.getContentPane().setBackground(Color.WHITE);
+        this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
+        JPanel panel = new JPanel();
+        panel.setBackground(Color.WHITE);
+        panel.setLayout(new FlowLayout());
+        JButton signUpButton = new JButton("SignUp");
+        signUpButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        signUpButton.addActionListener(e -> SwingUtilities.invokeLater(this::loading));
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        cancelButton.addActionListener(e -> SwingUtilities.invokeLater(this::welcomeFrame));
+        panel.add(cancelButton);
+        panel.add(signUpButton);
+        this.getContentPane().add(this.usernameTextField);
+        this.getContentPane().add(this.passwordField);
+        this.getContentPane().add(this.warningLabel);
+        this.getContentPane().add(panel);
+        this.pack();
     }
 
-    private static class SignUpButtonListener implements ActionListener
+
+    private void loading()
     {
-        @Override
-        public void actionPerformed(ActionEvent e)
+        if (this.usernameTextField.getText().equals(""))
         {
-            JButton button = (JButton) e.getSource();
-            WordQuizzleClientFrame frame = (WordQuizzleClientFrame) SwingUtilities.getRoot(button);
-            frame.setUpSignUp();
+            this.warningLabel.setText("Username can not be void");
+            if (this.passwordField.getPassword().length == 0)
+                this.warningLabel.setText("Empty fields");
+            return;
         }
-    }
 
-    private static class LogInButtonListener implements ActionListener
-    {
-
-        @Override
-        public void actionPerformed(ActionEvent e)
+        if (this.passwordField.getPassword().length == 0)
         {
-            JButton button = (JButton) e.getSource();
-            WordQuizzleClientFrame frame = (WordQuizzleClientFrame) SwingUtilities.getRoot(button);
-            frame.setUpLogIn();
+            this.warningLabel.setText("Password can not be void");
+            return;
         }
+
+        this.warningLabel.setText(" ");
+
+        this.getContentPane().removeAll();
+        this.getContentPane().setLayout(new FlowLayout());
+        this.getContentPane().setBackground(Color.WHITE);
+        JLabel loadingGif = new JLabel(GuiConstants.LOADING_GIF);
+        this.getContentPane().add(loadingGif);
+        LogInOperator operator = new LogInOperator(this);
+        operator.execute();
+        this.pack();
     }
+
+    public void session()
+    {
+        this.getContentPane().removeAll();
+        this.setSize(500, 500);
+    }
+
 }
