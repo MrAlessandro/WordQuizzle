@@ -2,6 +2,8 @@ package server.main;
 
 import messages.exceptions.UnexpectedMessageException;
 import org.json.simple.parser.ParseException;
+import remote.VoidPasswordException;
+import remote.VoidUsernameException;
 import server.users.exceptions.AlreadyExistingRelationshipException;
 import server.users.exceptions.UnknownUserException;
 import server.users.UsersManager;
@@ -10,11 +12,10 @@ import java.io.IOException;
 
 public class PasswordCheckingTest
 {
-    public static void main(String[] args) throws UnknownUserException, IOException, ParseException
-    {
+    public static void main(String[] args) throws UnknownUserException, IOException, ParseException, VoidUsernameException, VoidPasswordException {
         UsersManager Net = UsersManager.getInstance();
 
-        /*Net.registerUser("Alfredo", new char[]{'1','2','3','4'});
+        Net.registerUser("Alfredo", new char[]{'1','2','3','4'});
         Net.registerUser("Andrea", new char[]{'3','3','3','3'});
         Net.registerUser("Giacomo", new char[]{'1','2','3','4'});
         Net.registerUser("Alessandro", new char[]{'1','2','3','4'});
@@ -22,7 +23,7 @@ public class PasswordCheckingTest
         Net.registerUser("Claudia", new char[]{'1','2','3','4'});
         Net.registerUser("Stefano", new char[]{'1','2','3','4'});
         Net.registerUser("Beatrice", new char[]{'1','2','3','4'});
-        Net.registerUser("Chiara", new char[]{'1','2','3','4'});*/
+        Net.registerUser("Chiara", new char[]{'1','2','3','4'});
 
         /*try
         {

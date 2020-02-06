@@ -4,22 +4,22 @@ import messages.Message;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import java.net.SocketAddress;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 
 public class User
 {
     private String username;
     private Password password;
+    private SocketAddress address;
     private HashSet<String> friends;
-    private HashSet<String> waitingOutcomingFriendshipRequests;
-    private HashSet<String> waitingIncomingFriendshipRequests;
-
-    private ReentrantLock userLock;
-    private boolean logged;
-    private LinkedList<Message> backLogMessages;
+    private Set<String> friendshipRequest;
+    private ConcurrentLinkedDeque<Message> requestsBackLog;
+    private Message responseBackLog;
     private int score;
 
     public User(String username, char[] password)
@@ -27,24 +27,20 @@ public class User
         this.username = username;
         this.password = new Password(password);
         this.friends = new HashSet<>(20);
-        this.backLogMessages = new LinkedList<>();
-        this.userLock = new ReentrantLock();
-        this.logged = false;
-        this.waitingOutcomingFriendshipRequests = new HashSet<>(10);
-        this.waitingIncomingFriendshipRequests = new HashSet<>(10);
+        this.friendshipRequest = ConcurrentHashMap.newKeySet(10);
+        this.requestsBackLog = new ConcurrentLinkedDeque<>();
+        this.address = null;
         this.score = 0;
     }
 
-    public User(String username, Password password, int score, HashSet<String> friends, LinkedList<Message> backLog, HashSet<String> waitingIncomingFriendshipRequests, HashSet<String> waitingOutcomingFriendshipRequests)
+    public User(String username, Password password, int score, HashSet<String> friends, ConcurrentLinkedDeque<Message> backLog, Set<String> friendshipRequest)
     {
         this.username = username;
         this.password = password;
         this.friends = friends;
-        this.backLogMessages = backLog;
-        this.userLock = new ReentrantLock();
-        this.logged = false;
-        this.waitingOutcomingFriendshipRequests = waitingOutcomingFriendshipRequests;
-        this.waitingIncomingFriendshipRequests = waitingIncomingFriendshipRequests;
+        this.friendshipRequest = friendshipRequest;
+        this.requestsBackLog = backLog;
+        this.address = null;
         this.score = score;
     }
 
@@ -68,99 +64,95 @@ public class User
         return this.friends.add(userName);
     }
 
-    public boolean addWaitingOutcomeFriendshipRequest(String wantedFriend)
-    {
-        return this.waitingOutcomingFriendshipRequests.add(wantedFriend);
-    }
-
-    public boolean removeWaitingOutcomeFriendshipRequest(String wantedFriend)
-    {
-        return this.waitingOutcomingFriendshipRequests.remove(wantedFriend);
-    }
-
-    public boolean addWaitingIncomeFriendshipRequest(String applicant)
-    {
-        return this.waitingIncomingFriendshipRequests.add(applicant);
-    }
-
-    public boolean removeWaitingIncomeFriendshipRequest(String applicant)
-    {
-        return this.waitingIncomingFriendshipRequests.remove(applicant);
-    }
-
     public boolean removeFriend(String username)
     {
         return this.friends.remove(username);
     }
 
-    public boolean appendMessage(Message message)
+    public boolean hasPendingFriendshipRequest(String friend)
     {
-        boolean logged;
-
-        this.userLock.lock();
-        this.backLogMessages.add(message);
-        logged = this.logged;
-        this.userLock.unlock();
-
-        return logged;
+        return this.friendshipRequest.contains(friend);
     }
 
-    public boolean prependMessage(Message message)
+    public boolean removePendingFriendshipRequest(String friend)
     {
-        boolean logged;
+        return this.friendshipRequest.remove(friend);
+    }
 
-        this.userLock.lock();
-        this.backLogMessages.addFirst(message);
-        logged = this.logged;
-        this.userLock.unlock();
+    public boolean addPendingFriendshipRequest(String friend)
+    {
+        return this.friendshipRequest.add(friend);
+    }
 
-        return logged;
+    public boolean appendRequest(Message message)
+    {
+        this.requestsBackLog.addLast(message);
+        return true;
+    }
+
+    public boolean prependRequest(Message message)
+    {
+        this.requestsBackLog.addFirst(message);
+        return true;
+    }
+
+    public boolean storeResponse(Message message)
+    {
+        this.responseBackLog = message;
+        return true;
     }
 
     public Message getMessage()
     {
         Message message;
 
-        this.userLock.lock();
-        message = this.backLogMessages.pollFirst();
-        this.userLock.unlock();
+        if (this.responseBackLog == null)
+            message = this.requestsBackLog.pollFirst();
+        else
+        {
+            message = this.responseBackLog;
+            this.responseBackLog = null;
+        }
 
         return message;
     }
 
-    public boolean logIn()
+    public int getBackLogAmount()
     {
-        boolean returned = false;
+        return this.requestsBackLog.size();
+    }
 
-        this.userLock.lock();
-        if (!this.logged)
-            returned  = (this.logged = true);
-        this.userLock.unlock();
-
-        return returned;
+    public boolean logIn(SocketAddress address)
+    {
+        this.address = address;
+        return true;
     }
 
     public boolean logOut()
     {
-        boolean returned = false;
+        if (this.address == null)
+            return false;
 
-        this.userLock.lock();
-        if (this.logged)
-        {
-            returned = true;
-            this.logged = false;
-        }
-        this.userLock.unlock();
+        this.address = null;
 
-        return returned;
+        return true;
+    }
+
+    public boolean isLogged()
+    {
+        return this.address != null;
+    }
+
+    public SocketAddress getAddress()
+    {
+        return this.address;
     }
 
     public JSONObject JSONserialize()
     {
         JSONObject retValue = new JSONObject();
         JSONArray friendList = new JSONArray();
-        JSONArray outcomeFriendships = new JSONArray();
-        JSONArray incomeFriendships = new JSONArray();
+        JSONArray requests = new JSONArray();
         JSONArray backLogs = new JSONArray();
 
         retValue.put("UserName", this.username);
@@ -169,22 +161,18 @@ public class User
 
         friendList.addAll(this.friends);
 
-        outcomeFriendships.addAll(this.waitingOutcomingFriendshipRequests);
+        requests.addAll(this.friendshipRequest);
 
-        incomeFriendships.addAll(this.waitingIncomingFriendshipRequests);
-
-        for (Message mex : this.backLogMessages)
+        for (Message mex : this.requestsBackLog)
         {
             backLogs.add(mex.JSONserialize());
         }
 
         retValue.put("Friends", friendList);
 
-        retValue.put("OutcomeFriendships", outcomeFriendships);
+        retValue.put("FriendshipRequests", requests);
 
-        retValue.put("IncomeFriendships", incomeFriendships);
-
-        retValue.put("BackLogsMessages", backLogs);
+        retValue.put("BackLogsRequests", backLogs);
 
         return retValue;
     }
@@ -195,9 +183,8 @@ public class User
         int currentScore = ((Long) serializedUser.get("Score")).intValue();
         JSONObject currentPassword = (JSONObject) serializedUser.get("Password");
         JSONArray currentFriendList = (JSONArray) serializedUser.get("Friends");
-        JSONArray currentOutcomeFriendships = (JSONArray) serializedUser.get("OutcomeFriendships");
-        JSONArray currentIncomeFriendships = (JSONArray) serializedUser.get("IncomeFriendships");
-        JSONArray currentBackLog = (JSONArray) serializedUser.get("BackLogsMessages");
+        JSONArray currentRequests = (JSONArray) serializedUser.get("FriendshipRequests");
+        JSONArray currentBackLog = (JSONArray) serializedUser.get("BackLogsRequests");
 
         Password DEpassword = server.users.user.Password.JSONdeserialize(currentPassword);
 
@@ -207,75 +194,51 @@ public class User
             DEfriendList.add(friend);
         }
 
-        HashSet<String> DEoutcomeFriendships = new HashSet<>();
-        for (String unFriend: (Iterable<String>) currentOutcomeFriendships)
+        Set<String> DErequests = ConcurrentHashMap.newKeySet(10);
+        for (String request : (Iterable<String>) currentRequests)
         {
-            DEoutcomeFriendships.add(unFriend) ;
+            DErequests.add(request);
         }
 
-        HashSet<String> DEincomeFriendships = new HashSet<>();
-        for (String unFriend: (Iterable<String>) currentIncomeFriendships)
-        {
-            DEincomeFriendships.add(unFriend);
-        }
-
-
-        LinkedList<Message> DEbackLogMessages = new LinkedList<>();
+        ConcurrentLinkedDeque<Message> DEbackLogMessages = new ConcurrentLinkedDeque<>();
         for (JSONObject mex : (Iterable<JSONObject>) currentBackLog)
         {
             DEbackLogMessages.addLast(Message.JSONdeserialize(mex));
         }
 
-        return new User(currentUsername, DEpassword, currentScore, DEfriendList, DEbackLogMessages, DEincomeFriendships, DEoutcomeFriendships);
-    }
-
-    public void lock()
-    {
-        this.userLock.lock();
-    }
-
-    public void unlock()
-    {
-        this.userLock.unlock();
+        return new User(currentUsername, DEpassword, currentScore, DEfriendList, DEbackLogMessages, DErequests);
     }
 
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
-        String[] friends;
-        Message[] backLog;
 
         builder.append("    Username: ").append(this.username).append(System.lineSeparator());
         builder.append("    Password: ").append(this.password).append(System.lineSeparator());
         builder.append("       Score: ").append(this.score).append(System.lineSeparator());
 
-        this.userLock.lock();
-
-        if (this.friends != null && this.friends.size() > 0)
+        if (this.friends.size() > 0)
         {
             boolean first = true;
             builder.append("      Fiends: ");
             for (String friend : this.friends)
             {
-                if (first)
-                {
+                if (first) {
                     builder.append(friend).append(System.lineSeparator());
                     first = false;
-                }
-                else
+                } else
                     builder.append("              ").append(friend).append(System.lineSeparator());
             }
         }
 
-        if (this.backLogMessages != null && this.backLogMessages.size() > 0)
+        if (this.requestsBackLog.size() > 0)
         {
             builder.append("      Backlog messages:");
-            for (Message message : this.backLogMessages)
+            for (Message message : this.requestsBackLog)
             {
                 builder.append("                        ").append(message).append(System.lineSeparator());
             }
         }
-        this.userLock.unlock();
 
         return builder.toString();
     }

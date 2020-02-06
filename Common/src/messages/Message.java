@@ -5,7 +5,10 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -153,6 +156,74 @@ public class Message
         return writtenBytes;
     }
 
+    // Client use only
+    public static Message readNotification(DatagramChannel UDPchannel, ByteBuffer buffer) throws IOException, InvalidMessageFormatException
+    {
+        Message message = new Message();
+        short messageType;
+        short fieldsNum;
+
+        buffer.clear();
+
+        UDPchannel.receive(buffer);
+
+        buffer.flip();
+
+        messageType = buffer.getShort();
+        if (MessageType.valueOf(messageType) == null)
+            throw new InvalidMessageFormatException("INVALID MESSAGE TYPE");
+
+        message.setType(MessageType.valueOf(messageType));
+
+        fieldsNum = buffer.getShort();
+        if (fieldsNum < 0)
+            throw new InvalidMessageFormatException("INVALID FIELDS NUMBER");
+
+        for (int i = 0; i < fieldsNum; i++)
+        {
+            short length = buffer.getShort();
+            if (length <= 0)
+                throw new InvalidMessageFormatException("INVALID FIELD LENGTH");
+
+            char[] body = new char[length];
+            for (int j = 0; j < length; j++)
+            {
+                body[j] = buffer.getChar();
+            }
+
+            message.addField(body);
+        }
+
+        return message;
+    }
+
+    // Server use only
+    public static int writeNotification(DatagramChannel UDPchannel, SocketAddress destination,  ByteBuffer buffer, Message message) throws IOException
+    {
+        int written;
+
+        buffer.clear();
+        buffer.putShort(message.type.getValue());
+        buffer.putShort((short) message.fields.size());
+
+        for (Field field : message.fields)
+        {
+            buffer.putShort(field.size());
+            for (int i = 0; i < field.getBody().length; i++)
+            {
+                buffer.putChar(field.getBody()[i]);
+            }
+        }
+
+        buffer.flip();
+
+        written = UDPchannel.send(buffer, destination);
+
+        buffer.clear();
+
+        return written;
+    }
+
     public JSONObject JSONserialize()
     {
         JSONObject retValue = new JSONObject();
@@ -172,7 +243,7 @@ public class Message
 
     public static Message JSONdeserialize(JSONObject serializedMessage)
     {
-        MessageType resType =  MessageType.valueOf((short) serializedMessage.get("Type"));
+        MessageType resType =  MessageType.valueOf((short) ((Long) serializedMessage.get("Type")).intValue());
         LinkedList<Field> DEfields = new LinkedList<>();
 
         JSONArray messageFiledList = (JSONArray) serializedMessage.get("Fields");

@@ -3,9 +3,9 @@ package client.operators;
 import client.gui.WordQuizzleClientFrame;
 import client.main.WordQuizzleClient;
 import messages.Message;
+import messages.MessageType;
 
 import javax.swing.*;
-import java.util.concurrent.ExecutionException;
 
 public class LogInOperator extends SwingWorker<Message, Void>
 {
@@ -25,6 +25,7 @@ public class LogInOperator extends SwingWorker<Message, Void>
     protected Message doInBackground() throws Exception
     {
         this.result = WordQuizzleClient.logIn(this.username, this.password);
+
         return this.result;
     }
 
@@ -32,7 +33,6 @@ public class LogInOperator extends SwingWorker<Message, Void>
     protected void done()
     {
         Message message = this.result;
-
 
         switch (message.getType())
         {

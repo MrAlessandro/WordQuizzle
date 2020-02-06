@@ -3,14 +3,18 @@ package server.main;
 import exceptions.CommunicableException;
 import messages.Message;
 import messages.MessageType;
+import messages.exceptions.InvalidMessageFormatException;
 import messages.exceptions.UnexpectedMessageException;
 import server.constants.ServerConstants;
 import server.printer.Printer;
 import server.users.UsersManager;
-import server.users.exceptions.UnknownUserException;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -22,38 +26,44 @@ class Deputy extends Thread
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(ServerConstants.BUFFERS_SIZE);
     protected LinkedBlockingQueue<SocketChannel> dispatch;
     private static volatile boolean shut = false;
+    private DatagramChannel UDPchannel;
+    public Selector selector;
     private Printer printer;
+    private int UDPport;
 
-    Deputy(String name)
+    Deputy(String name, int UDPport)
     {
         super();
         // Initialization of the dispatch queue from which the deputy thread extract new connections
         this.dispatch = new LinkedBlockingQueue<>();
         this.printer = new Printer(name);
         this.setName(name);
+        this.UDPport = UDPport;
     }
 
     @Override
     public void run()
     {
-        // Selector which detects ready operations
-        Selector selector = null;
-
         try
         {
             // Open the selector which detects ready operations on the registered connections
             selector = Selector.open();
 
+            // Open UDP socket
+            this.UDPchannel = DatagramChannel.open();
+            // Set address for UDP socket
+            this.UDPchannel.socket().bind(new InetSocketAddress(UDPport));
+
             // Deputy listening cycle
-            while (!isShutDown())
+            while (!shut)
             {
                 // Iterator of the ready channel set
                 Iterator<SelectionKey> iter;
                 // Ready channels counter
                 int ready;
                 // Extract any eventual new incoming connections
-                SocketChannel incoming = dispatch.poll();
-                if (incoming != null)
+                SocketChannel incoming;
+                while ((incoming = dispatch.poll()) != null)
                 {// There are new connections
                     // Configure as non-blocking
                     incoming.configureBlocking(false);
@@ -62,10 +72,10 @@ class Deputy extends Thread
                 }
 
                 // Channel selection to detect ready channels
-                ready = selector.select(ServerConstants.SELECTION_TIMEOUT);
+                ready = selector.select();
                 // Check if there are ready channels
-                if (ready > 0)
-                    // No ready operations, come back to the beginning of  the listening cycle
+                if (ready == 0)
+                    // No ready operations, come back to the beginning of the listening cycle
                     continue;
 
                 // There are some ready channel to read/write;
@@ -80,12 +90,12 @@ class Deputy extends Thread
                     // Check if the serving channel is readable
                     if (currentKey.isValid() && currentKey.isReadable())
                     {
-                        processRead(currentKey);
+                         receive(currentKey);
                     }
                     // Check if the serving channel is writable
                     if (currentKey.isValid() && currentKey.isWritable())
                     {
-                        processWrite(currentKey);
+                        send(currentKey);
                     }
                 }
 
@@ -101,15 +111,18 @@ class Deputy extends Thread
             // Close the selector
             selector.close();
         }
-        catch (IOException e) {throw new Error("Closing selector");}
-
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            throw new Error("During thread \"" + this.getName() + "\" listening cycle");
+        }
     }
 
-    private void processRead(SelectionKey selected) throws IOException
+    private void receive(SelectionKey selected) throws IOException
     {
         SocketChannel client = (SocketChannel) selected.channel();
         Object attachment = selected.attachment();
-        Message message = null;
+        Message message;
 
         try
         {
@@ -159,14 +172,20 @@ class Deputy extends Thread
         {
             case LOG_IN:
             {
-                String username = String.valueOf(message.getField(0));
-                char[] password = message.getField(1);
-
-                printer.print("Logging in user \"" + username + "\"... ");
-
                 try
                 {
-                    UsersManager.openSession(username, password);
+                    if (message.getField(0) == null || message.getField(1) == null)
+                        throw new InvalidMessageFormatException("INVALID LOGIN MESSAGE");
+
+                    String username = String.valueOf(message.getField(0));
+                    char[] password = message.getField(1);
+                    int UDPclientPort = Integer.parseInt(String.valueOf(message.getField(2)));
+                    InetAddress clientAddress = ((InetSocketAddress) ((SocketChannel) selected.channel()).getRemoteAddress()).getAddress();
+                    SocketAddress UDPclientAddress = new InetSocketAddress(clientAddress, UDPclientPort);
+
+                    printer.print("Logging in user \"" + username + "\"... ");
+
+                    UsersManager.openSession(username, password, UDPclientAddress);
                     printer.printlnGreen("LOGGED");
                     selected.attach(username);
                 }
@@ -180,8 +199,9 @@ class Deputy extends Thread
             }
             case REQUEST_FOR_FRIENDSHIP:
             {
+                assert attachment instanceof String;
                 String applicant = (String) attachment;
-                String friend = String.valueOf(message.getField(0));
+                String friend = String.valueOf(message.getField(1));
                 Message response;
 
                 printer.print("Sending a friendship request from \"" + applicant + "\" to \"" + friend + "\"... ");
@@ -201,11 +221,11 @@ class Deputy extends Thread
 
                 // Send response to applicant
                 UsersManager.sendResponse(applicant, response);
-
                 break;
             }
             case CONFIRM_FRIENDSHIP:
             {
+                assert attachment instanceof String;
                 String friend = (String) attachment;
                 String applicant = String.valueOf(message.getField(0));
                 Message response;
@@ -214,21 +234,17 @@ class Deputy extends Thread
 
                 try
                 {   // Constructing friendship
-                    UsersManager.makeFriends(applicant, friend);
+                    UsersManager.confirmFriendship(applicant, friend);
                     printer.printlnGreen("CONFIRMED");
 
                     // Sending confirm message to the applicant
                     response = new Message(MessageType.OK);
-                    UsersManager.sendMessage(applicant, new Message(MessageType.CONFIRM_FRIENDSHIP, friend));
+                    UsersManager.sendMessage(applicant, new Message(MessageType.FRIENDSHIP_CONFIRMED, applicant, friend));
                 }
-                catch (UnknownUserException e)
-                {
-                    throw new Error("System inconsistency");
-                }
-                catch (UnexpectedMessageException e)
+                catch (CommunicableException e)
                 {
                     printer.printlnRed(e.getMessage());
-                    response = new Message(MessageType.UNEXPECTED_MESSAGE);
+                    response = new Message(e.getResponseType());
                 }
 
                 // Send response to applicant
@@ -238,6 +254,7 @@ class Deputy extends Thread
             }
             case DECLINE_FRIENDSHIP:
             {
+                assert attachment instanceof String;
                 String friend = (String) attachment;
                 String applicant = String.valueOf(message.getField(0));
                 Message response;
@@ -251,16 +268,12 @@ class Deputy extends Thread
 
                     // Sending confirm message to the applicant
                     response = new Message(MessageType.OK);
-                    UsersManager.sendMessage(applicant, new Message(MessageType.DECLINE_FRIENDSHIP, friend));
+                    UsersManager.sendMessage(applicant, new Message(MessageType.FRIENDSHIP_DECLINED, applicant, friend));
                 }
-                catch (UnknownUserException e)
-                {
-                    throw new Error("System inconsistency");
-                }
-                catch (UnexpectedMessageException e)
+                catch (CommunicableException e)
                 {
                     printer.printlnRed(e.getMessage());
-                    response = new Message(MessageType.UNEXPECTED_MESSAGE);
+                    response = new Message(e.getResponseType());
                 }
 
                 // Send response to applicant
@@ -273,7 +286,7 @@ class Deputy extends Thread
         }
     }
 
-    private void processWrite(SelectionKey selected) throws IOException
+    private void send(SelectionKey selected) throws IOException
     {
         SocketChannel client = (SocketChannel) selected.channel();
         Object attachment = selected.attachment();
@@ -294,6 +307,7 @@ class Deputy extends Thread
                 selected.cancel();
                 client.close();
                 printer.printlnGreen("CLOSED");
+                return;
             }
         }
         else if (attachment instanceof String)
@@ -304,7 +318,11 @@ class Deputy extends Thread
             try
             {
                 outcome = UsersManager.retrieveMessage((String) attachment);
-                Message.writeMessage(client, buffer, outcome);
+                if (MessageType.isNotification(outcome.getType()))
+                    Message.writeNotification(this.UDPchannel, UsersManager.getUserAddress((String) attachment), buffer, outcome);
+                else
+                    Message.writeMessage(client, buffer, outcome);
+
                 printer.printlnGreen("WRITTEN");
             }
             catch (IOException e)
@@ -316,20 +334,17 @@ class Deputy extends Thread
                 selected.cancel();
                 client.close();
                 printer.printlnGreen("CLOSED");
+                return;
             }
         }
 
         selected.interestOps(SelectionKey.OP_READ);
     }
 
-    public static synchronized void shutDown()
+    public void shutDown()
     {
         shut = true;
-    }
-
-    private static synchronized boolean isShutDown()
-    {
-        return shut;
+        selector.wakeup();
     }
 }
 

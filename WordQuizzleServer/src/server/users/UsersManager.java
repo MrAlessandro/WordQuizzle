@@ -17,8 +17,10 @@ import server.users.user.User;
 import server.constants.ServerConstants;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.rmi.RemoteException;
 import java.rmi.server.RemoteServer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,17 +56,32 @@ public class UsersManager extends RemoteServer implements Registrable
     }
 
     @Override
-    public boolean registerUser(String username, char[] password) throws VoidPasswordException, VoidUsernameException
+    public boolean registerUser(String username, char[] password) throws RemoteException, VoidPasswordException, VoidUsernameException
     {
-        if (username == null || username.equals(""))
-            throw new VoidUsernameException("Empty username");
-        if (password.length == 0)
-            throw new VoidPasswordException("Empty password");
+        System.out.print("Registering user \"" + username + "\"... ");
 
-        return (USERS_ARCHIVE.putIfAbsent(username, new User(username, password))) == null;
+        if (username == null || username.equals(""))
+        {
+            System.out.println("\u001B[31m" + "EMPTY USERNAME" + "\u001B[0m");
+            throw new VoidUsernameException("Empty username");
+        }
+        if (password.length == 0)
+        {
+            System.out.println("\u001B[31m" + "EMPTY PASSWORD" + "\u001B[0m");
+            throw new VoidPasswordException("Empty password");
+        }
+
+        boolean result = (USERS_ARCHIVE.putIfAbsent(username, new User(username, password))) == null;
+
+        if (result)
+            System.out.println("\u001B[32m" + "REGISTERED" + "\u001B[0m");
+        else
+            System.out.println("\u001B[31m" + "USERNAME ALREADY USED" + "\u001B[0m");
+
+        return result;
     }
 
-    public static boolean openSession(String username, char[] password) throws UnknownUserException, WrongPasswordException
+    public static boolean openSession(String username, char[] password, SocketAddress clientAddress) throws UnknownUserException, WrongPasswordException
     {
         User taken  = USERS_ARCHIVE.get(username);
 
@@ -74,11 +91,26 @@ public class UsersManager extends RemoteServer implements Registrable
         if (!taken.checkPassword(password))
             throw new WrongPasswordException();
 
-        taken.logIn();
-        taken.prependMessage(new Message(MessageType.OK));
-        WRITABLE_CONNECTIONS.compute(username, INCREMENTER);
+        taken.logIn(clientAddress);
+        taken.storeResponse(new Message(MessageType.OK));
+
+        int backLogRequestsAmount = 1;
+        backLogRequestsAmount += taken.getBackLogAmount();
+
+        if(WRITABLE_CONNECTIONS.putIfAbsent(username, (short) backLogRequestsAmount) != null)
+            throw new Error("Writable channels management inconsistency");
 
         return true;
+    }
+
+    public static SocketAddress getUserAddress(String username)
+    {
+        User taken  = USERS_ARCHIVE.get(username);
+
+        if (taken ==  null)
+            throw new Error("UNKNOWN USER \"" + username + "\"");
+
+        return taken.getAddress();
     }
 
     public static boolean closeSession(String username)
@@ -95,104 +127,86 @@ public class UsersManager extends RemoteServer implements Registrable
         return true;
     }
 
-    public static boolean makeFriends(String applicant, String friend) throws UnexpectedMessageException
+    public static boolean sendFriendshipRequest(String applicant, String friend) throws UnknownUserException, AlreadyExistingRelationshipException, RequestAlreadySentException
     {
-        User taken1  = USERS_ARCHIVE.get(applicant);
-        User taken2  = USERS_ARCHIVE.get(friend);
-
-        if (taken1 == null)
-            throw new UnexpectedMessageException("UNKNOWN USER \"" + applicant + "\"");
-        if (taken2 == null)
-            throw new Error("UNKNOWN USER \"" + friend + "\"");
-
+        User applicantUser = USERS_ARCHIVE.get(applicant);
+        User friendUser = USERS_ARCHIVE.get(friend);
         boolean check1;
         boolean check2;
 
-        taken1.lock();
-        taken2.lock();
+        if (applicantUser == null)
+            throw new Error("UNKNOWN USER \"" + applicant + "\"");
+        if (friendUser == null)
+            throw new UnknownUserException("UNKNOWN USER \"" + friend + "\"");
 
-        check1 = taken1.removeWaitingOutcomeFriendshipRequest(friend);
-        check2 = taken2.removeWaitingIncomeFriendshipRequest(applicant);
-
-        if (check1 != check2)
-            throw new Error("Inconsistent relationship");
-        if (!check1)
-            throw new UnexpectedMessageException("CONFIRMATION NOT CORRESPONDS TO ANY REQUEST");
-
-        check1 = taken1.isFriendOf(friend);
-        check2 = taken2.isFriendOf(applicant);
+        check1 = applicantUser.isFriendOf(friend);
+        check2 = friendUser.isFriendOf(applicant);
 
         if (check1 != check2)
             throw new Error("Inconsistent relationship");
         else if (check1)
+            throw new AlreadyExistingRelationshipException("\"" + applicant + "\" and \"" + friend + "\" ARE ALREADY FRIENDS");
+
+
+        if (friendUser.hasPendingFriendshipRequest(applicant))
+            throw new RequestAlreadySentException("FRIENDSHIP REQUEST FROM \"" + applicant + "\" to \"" + friend + "\" ALREADY SENT");
+
+        friendUser.addPendingFriendshipRequest(applicant);
+        friendUser.appendRequest(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, applicant, friend));
+        if (friendUser.isLogged())
+            WRITABLE_CONNECTIONS.compute(friend, INCREMENTER);
+
+        return true;
+    }
+
+    public static boolean confirmFriendship(String whoSentRequest, String whoConfirmed) throws UnexpectedMessageException, AlreadyExistingRelationshipException
+    {
+        User whoSentUser  = USERS_ARCHIVE.get(whoSentRequest);
+        User whoConfirmedUser  = USERS_ARCHIVE.get(whoConfirmed);
+
+        if (whoSentUser == null)
+            throw new UnexpectedMessageException("UNKNOWN USER \"" + whoSentRequest + "\"");
+        if (whoConfirmedUser == null)
+            throw new Error("UNKNOWN USER \"" + whoConfirmed + "\"");
+
+        boolean check1;
+        boolean check2;
+
+        if (!whoConfirmedUser.removePendingFriendshipRequest(whoSentRequest))
+            throw new UnexpectedMessageException("CONFIRMATION NOT CORRESPONDS TO ANY REQUEST");
+        whoSentUser.removePendingFriendshipRequest(whoConfirmed);
+
+        check1 = whoSentUser.isFriendOf(whoConfirmed);
+        check2 = whoConfirmedUser.isFriendOf(whoSentRequest);
+
+        if (check1 != check2)
             throw new Error("Inconsistent relationship");
+        else if (check1)
+            throw new AlreadyExistingRelationshipException("\"" + whoSentRequest + "\" and \"" + whoConfirmed + "\" ARE ALREADY FRIENDS");
         else
         {
-            taken1.addFriend(friend);
-            taken2.addFriend(applicant);
+            whoSentUser.addFriend(whoConfirmed);
+            whoConfirmedUser.addFriend(whoSentRequest);
         }
 
-        taken1.unlock();
-        taken2.unlock();
-
         return true;
     }
 
-    public static boolean cancelFriendshipRequest(String applicant, String friend) throws UnexpectedMessageException
+    public static boolean cancelFriendshipRequest(String whoSentRequest, String whoConfirmed) throws UnexpectedMessageException
     {
-        User taken1  = USERS_ARCHIVE.get(applicant);
-        User taken2  = USERS_ARCHIVE.get(friend);
+        User whoSentUser  = USERS_ARCHIVE.get(whoSentRequest);
+        User whoConfirmedUser  = USERS_ARCHIVE.get(whoConfirmed);
 
-        if (taken1 == null)
-            throw new UnexpectedMessageException("UNKNOWN USER \"" + applicant + "\"");
-        if (taken2 == null)
-            throw new Error("UNKNOWN USER \"" + friend + "\"");
+        if (whoSentUser == null)
+            throw new UnexpectedMessageException("UNKNOWN USER \"" + whoSentRequest + "\"");
+        if (whoConfirmedUser == null)
+            throw new Error("UNKNOWN USER \"" + whoConfirmed + "\"");
 
-        boolean check1;
-        boolean check2;
 
-        taken1.lock();
-        taken2.lock();
-
-        check1 = taken1.removeWaitingOutcomeFriendshipRequest(friend);
-        check2 = taken2.removeWaitingIncomeFriendshipRequest(applicant);
-
-        if (check1 != check2)
-            throw new Error("Inconsistent relationship");
-        if (!check1)
-            throw new UnexpectedMessageException("CONFIRMATION NOT CORRESPONDS TO ANY REQUEST");
-
-        taken1.unlock();
-        taken2.unlock();
+        if (!whoConfirmedUser.removePendingFriendshipRequest(whoSentRequest))
+            throw new UnexpectedMessageException("DECLINE NOT CORRESPONDS TO ANY REQUEST");
 
         return true;
-    }
-
-    private static boolean areFriends(String username1, String username2) throws UnknownUserException
-    {
-        User taken1  = USERS_ARCHIVE.get(username1);
-        User taken2  = USERS_ARCHIVE.get(username2);
-        boolean check1;
-        boolean check2;
-
-        if (taken1 == null)
-            throw new UnknownUserException("UNKNOWN USER \"" + username1 + "\"");
-        if (taken2 == null)
-            throw new UnknownUserException("UNKNOWN USER \"" + username2 + "\"");
-
-        taken1.lock();
-        taken2.lock();
-
-        check1 = taken1.isFriendOf(username2);
-        check2 = taken2.isFriendOf(username1);
-
-        if (check1 != check2)
-            throw new Error("Inconsistent relationship");
-
-        taken1.unlock();
-        taken2.unlock();
-
-        return check1;
     }
 
     public static boolean sendMessage(String username, Message message) throws UnknownUserException
@@ -203,48 +217,8 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
 
 
-        if (taken.appendMessage(message))
+        if (taken.appendRequest(message))
             WRITABLE_CONNECTIONS.compute(username, INCREMENTER);
-
-        return true;
-    }
-
-    public static boolean sendFriendshipRequest(String applicant, String friend) throws UnknownUserException, AlreadyExistingRelationshipException, RequestAlreadySentException
-    {
-        User taken1 = USERS_ARCHIVE.get(applicant);
-        User taken2 = USERS_ARCHIVE.get(friend);
-        boolean check1;
-        boolean check2;
-
-        if (taken1 == null)
-            throw new Error("UNKNOWN USER \"" + applicant + "\"");
-        if (taken2 == null)
-            throw new UnknownUserException("UNKNOWN USER \"" + friend + "\"");
-        if (areFriends(applicant, friend))
-            throw new AlreadyExistingRelationshipException("\"" + applicant + "\" and \"" + friend + "\" ARE ALREADY FRIENDS");
-
-        taken1.lock();
-        taken2.lock();
-
-        check1 = taken1.addWaitingOutcomeFriendshipRequest(friend);
-        check2 = taken2.addWaitingIncomeFriendshipRequest(applicant);
-
-        if (check1 != check2)
-            throw new Error("Inconsistent relationship");
-        else if (!check1)
-        {
-            taken1.unlock();
-            taken2.unlock();
-            throw new RequestAlreadySentException();
-        }
-
-        taken1.unlock();
-        taken2.unlock();
-
-        taken2.appendMessage(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, applicant));
-
-        if (taken2.appendMessage(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, applicant)))
-            WRITABLE_CONNECTIONS.compute(friend, INCREMENTER);
 
         return true;
     }
@@ -256,7 +230,7 @@ public class UsersManager extends RemoteServer implements Registrable
         if (taken ==  null)
             throw new Error("UNKNOWN USER \"" + username + "\"");
 
-        if (taken.prependMessage(message))
+        if (taken.storeResponse(message))
             WRITABLE_CONNECTIONS.compute(username, INCREMENTER);
 
         return true;
@@ -269,7 +243,7 @@ public class UsersManager extends RemoteServer implements Registrable
         if (taken ==  null)
             throw new Error("System inconsistency");
 
-        taken.prependMessage(message);
+        taken.prependRequest(message);
 
         return true;
     }
@@ -315,6 +289,7 @@ public class UsersManager extends RemoteServer implements Registrable
         }
         catch (IOException e)
         {
+            e.printStackTrace();
             throw new Error("Backing up server.users system");
         }
     }

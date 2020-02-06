@@ -2,6 +2,7 @@ package client.gui;
 
 import client.gui.constants.GuiConstants;
 import client.operators.LogInOperator;
+import client.operators.SignUpOperator;
 import messages.Message;
 
 import javax.swing.*;
@@ -66,7 +67,7 @@ public class WordQuizzleClientFrame extends JFrame
         panel.setLayout(new FlowLayout());
         JButton logInButton = new JButton("LogIn");
         logInButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        logInButton.addActionListener(e -> SwingUtilities.invokeLater(this::loading));
+        logInButton.addActionListener(e -> SwingUtilities.invokeLater(this::loadLogIn));
         JButton cancelButton = new JButton("Cancel");
         cancelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         cancelButton.addActionListener(e -> SwingUtilities.invokeLater(this::welcomeFrame));
@@ -79,7 +80,7 @@ public class WordQuizzleClientFrame extends JFrame
         this.pack();
     }
 
-    private void signUpProcedure()
+    public void signUpProcedure()
     {
         this.getContentPane().removeAll();
         this.getContentPane().setBackground(Color.WHITE);
@@ -89,7 +90,7 @@ public class WordQuizzleClientFrame extends JFrame
         panel.setLayout(new FlowLayout());
         JButton signUpButton = new JButton("SignUp");
         signUpButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        signUpButton.addActionListener(e -> SwingUtilities.invokeLater(this::loading));
+        signUpButton.addActionListener(e -> SwingUtilities.invokeLater(this::loadSignUp));
         JButton cancelButton = new JButton("Cancel");
         cancelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         cancelButton.addActionListener(e -> SwingUtilities.invokeLater(this::welcomeFrame));
@@ -102,8 +103,7 @@ public class WordQuizzleClientFrame extends JFrame
         this.pack();
     }
 
-
-    private void loading()
+    private void loadLogIn()
     {
         if (this.usernameTextField.getText().equals(""))
         {
@@ -127,6 +127,34 @@ public class WordQuizzleClientFrame extends JFrame
         JLabel loadingGif = new JLabel(GuiConstants.LOADING_GIF);
         this.getContentPane().add(loadingGif);
         LogInOperator operator = new LogInOperator(this);
+        operator.execute();
+        this.pack();
+    }
+
+    private void loadSignUp()
+    {
+        if (this.usernameTextField.getText().equals(""))
+        {
+            this.warningLabel.setText("Username can not be void");
+            if (this.passwordField.getPassword().length == 0)
+                this.warningLabel.setText("Empty fields");
+            return;
+        }
+
+        if (this.passwordField.getPassword().length == 0)
+        {
+            this.warningLabel.setText("Password can not be void");
+            return;
+        }
+
+        this.warningLabel.setText(" ");
+
+        this.getContentPane().removeAll();
+        this.getContentPane().setLayout(new FlowLayout());
+        this.getContentPane().setBackground(Color.WHITE);
+        JLabel loadingGif = new JLabel(GuiConstants.LOADING_GIF);
+        this.getContentPane().add(loadingGif);
+        SignUpOperator operator = new SignUpOperator(this);
         operator.execute();
         this.pack();
     }

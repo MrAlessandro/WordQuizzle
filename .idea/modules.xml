@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Common/Common.iml" filepath="$PROJECT_DIR$/Common/Common.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Test/Test.iml" filepath="$PROJECT_DIR$/Test/Test.iml" />
       <module fileurl="file://$PROJECT_DIR$/WordQuizzleClient/WordQuizzleClient.iml" filepath="$PROJECT_DIR$/WordQuizzleClient/WordQuizzleClient.iml" />
       <module fileurl="file://$PROJECT_DIR$/WordQuizzleServer/WordQuizzleServer.iml" filepath="$PROJECT_DIR$/WordQuizzleServer/WordQuizzleServer.iml" />
     </modules>

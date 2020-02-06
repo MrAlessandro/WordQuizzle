@@ -7,11 +7,15 @@ public enum MessageType
     // Request messages
     LOG_IN((short) 1, "LogIn"),
     LOG_OUT((short) 2, "LogOut"),
-    REQUEST_FOR_FRIENDSHIP((short) 3, "RequestForFriend"),
-    CONFIRM_FRIENDSHIP((short) 6, "ConfirmFriendship"),
-    DECLINE_FRIENDSHIP((short) 15, "DeclineFriendship"),
     FRIENDS_LIST((short) 4, "FriendList"),
-    CHALLENGE((short) 5, "Challenge"),
+
+    // Notifications,
+    REQUEST_FOR_FRIENDSHIP((short) 100, "RequestForFriend"),
+    CONFIRM_FRIENDSHIP((short) 101, "ConfirmFriendship"),
+    DECLINE_FRIENDSHIP((short) 102, "DeclineFriendship"),
+    FRIENDSHIP_CONFIRMED((short) 104, "FriendshipConfirmed"),
+    FRIENDSHIP_DECLINED((short)105, "FriendshipDeclined"),
+    CHALLENGE_REQUEST((short) 103, "NotifyChallenge"),
 
     // Response messages
     OK((short) 7, "Ok"),
@@ -42,11 +46,6 @@ public enum MessageType
         this.name = name;
     }
 
-    public static MessageType valueOf(short type)
-    {
-        return (MessageType) Map.get(type);
-    }
-
     public short getValue()
     {
         return value;
@@ -55,6 +54,16 @@ public enum MessageType
     public String toString()
     {
         return this.name;
+    }
+
+    public static MessageType valueOf(short type)
+    {
+        return (MessageType) Map.get(type);
+    }
+
+    public static boolean isNotification(MessageType type)
+    {
+        return type.value >= 100 && type.value <= 200;
     }
 }
 

@@ -10,7 +10,7 @@ import remote.Registrable;
 import remote.VoidPasswordException;
 import remote.VoidUsernameException;
 
-import javax.swing.*;
+import javax.swing.SwingUtilities;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -25,19 +25,18 @@ public class WordQuizzleClient
 {
     private static ByteBuffer buffer = ByteBuffer.allocate(2048);
     private static SocketChannel server;
-    private static SocketAddress address;
+    private static SocketAddress TCPaddress;
+    private static SocketAddress UDPaddress;
 
     public static void main(String[] args) throws IOException
     {
 
-        address = new InetSocketAddress(ClientConstants.HOST_NAME,ClientConstants.CONNECTION_PORT);
-        server = SocketChannel.open(address);
+        TCPaddress = new InetSocketAddress(ClientConstants.HOST_NAME,ClientConstants.CONNECTION_PORT);
+        server = SocketChannel.open(TCPaddress);
         server.configureBlocking(true);
 
         //just take the idea of this line
         SwingUtilities.invokeLater(WordQuizzleClientFrame::new);
-
-
     }
 
     public static boolean register(String username, char[] password)
@@ -67,6 +66,12 @@ public class WordQuizzleClient
         {
             Message.writeMessage(server, buffer, message);
             message = Message.readMessage(server, buffer);
+
+            if (message.getType().equals(MessageType.OK))
+            {
+                int UDPport = Integer.parseInt(String.valueOf(message.getField(2)));
+                UDPaddress = new InetSocketAddress(UDPport);
+            }
         }
         catch (IOException e)
         {
