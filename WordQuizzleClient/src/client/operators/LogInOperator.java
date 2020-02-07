@@ -3,7 +3,6 @@ package client.operators;
 import client.gui.WordQuizzleClientFrame;
 import client.main.WordQuizzleClient;
 import messages.Message;
-import messages.MessageType;
 
 import javax.swing.*;
 

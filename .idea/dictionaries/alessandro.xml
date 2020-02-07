@@ -10,8 +10,11 @@
       <w>ndeserialize</w>
       <w>nserialize</w>
       <w>outcoming</w>
+      <w>paddress</w>
+      <w>pbuffer</w>
       <w>pchannel</w>
       <w>pclient</w>
+      <w>plock</w>
       <w>pport</w>
       <w>pread</w>
       <w>psend</w>
