@@ -27,8 +27,6 @@ public class AndreaClient
         DatagramChannel udpChannel = DatagramChannel.open();
         udpChannel.socket().bind(new InetSocketAddress(ClientConstants.HOST_NAME, 0));
 
-        buffer.putInt(MessageType.LOG_IN.getValue());
-
         Message message = new Message(MessageType.LOG_IN, "Andrea");
         message.addField(password);
         message.addField(String.valueOf(((InetSocketAddress) udpChannel.getLocalAddress()).getPort()).toCharArray());
@@ -38,14 +36,7 @@ public class AndreaClient
         message = Message.readMessage(server, buffer);
         System.out.println("Received message: "+ message.toString());
 
-        message = new Message(MessageType.REQUEST_FOR_FRIENDSHIP, "Andrea", "Alessandro");
-        System.out.println("Sending message: " + message.toString());
-        Message.writeMessage(server, buffer, message);
-
-        message = Message.readMessage(server, buffer);
-        System.out.println("Received message: "+ message.toString());
-
-        /*message = Message.readNotification(udpChannel, buffer);
+        message = Message.readNotification(udpChannel, buffer);
         System.out.println("Received message: "+ message.toString());
 
         message = new Message(MessageType.CONFIRM_FRIENDSHIP, "Alessandro", "Andrea");
@@ -53,7 +44,7 @@ public class AndreaClient
         Message.writeMessage(server, buffer, message);
 
         message = Message.readMessage(server, buffer);
-        System.out.println("Received message: "+ message.toString());*/
+        System.out.println("Received message: "+ message.toString());
 
         server.close();
 

@@ -2,10 +2,11 @@ package client.main;
 
 import client.constants.ClientConstants;
 import client.gui.WordQuizzleClientFrame;
-import client.operators.FriendshipRequestOperator;
+import client.operators.FriendshipRequestConfirmedOperator;
+import client.operators.FriendshipRequestDeclinedOperator;
+import client.operators.ReplyFriendshipRequestOperator;
 import constants.Constants;
 import messages.Message;
-import messages.MessageType;
 import messages.exceptions.InvalidMessageFormatException;
 import remote.Registrable;
 import remote.VoidPasswordException;
@@ -23,15 +24,19 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class WordQuizzleClient
 {
     private static final Thread MAIN_THREAD = Thread.currentThread();
-    private static final ReentrantLock TCPlock = new ReentrantLock();
-    private static ByteBuffer buffer = ByteBuffer.allocateDirect(2048);
-    private static DatagramChannel notificationChannel;
-    private static SocketChannel server;
+    private static final ReentrantLock TCP_LOCK = new ReentrantLock();
+    private static final ByteBuffer BUFFER = ByteBuffer.allocateDirect(2048);
+    public static final ExecutorService POOL = Executors.newCachedThreadPool();
+
+    public static DatagramChannel notificationChannel;
+    public static SocketChannel server;
 
     private static boolean shut = false;
 
@@ -46,29 +51,25 @@ public class WordQuizzleClient
         notificationChannel.bind(UDPaddress);
 
         //just take the idea of this line
-        SwingUtilities.invokeLater(WordQuizzleClientFrame::new);
+        SwingUtilities.invokeLater(WordQuizzleClientFrame::welcomeFrame);
 
         while (!shut)
         {
             try
             {
-                Message message = Message.readNotification(notificationChannel, buffer);
+                Message message = Message.readNotification(notificationChannel, BUFFER);
 
                 switch (message.getType())
                 {
-                    case REQUEST_FOR_FRIENDSHIP:
-                    {
-                        FriendshipRequestOperator operator = new FriendshipRequestOperator(String.valueOf(message.getField(0)), String.valueOf(message.getField(1)));
-                        operator.execute();
-                    }
+                    case REQUEST_FOR_FRIENDSHIP_CONFIRMATION:
+                        POOL.execute(new ReplyFriendshipRequestOperator(String.valueOf(message.getField(0))));
+                        break;
                     case FRIENDSHIP_CONFIRMED:
-                    {
-
-                    }
+                        POOL.execute(new FriendshipRequestConfirmedOperator(String.valueOf(message.getField(1))));
+                        break;
                     case FRIENDSHIP_DECLINED:
-                    {
-
-                    }
+                        POOL.execute(new FriendshipRequestDeclinedOperator(String.valueOf(message.getField(1))));
+                        break;
                     default:
                     {}
                 }
@@ -102,77 +103,24 @@ public class WordQuizzleClient
         return retValue;
     }
 
-    public static Message logIn(String username, char[] password)
+    public static Message send(Message message)
     {
-        Message message = new Message(MessageType.LOG_IN, username);
-        message.addField(password);
-
+        Message response = null;
 
         try
         {
-            message.addField(String.valueOf(((InetSocketAddress) notificationChannel.getLocalAddress()).getPort()).toCharArray());
-
-            TCPlock.lock();
-            Message.writeMessage(server, buffer, message);
-            message = Message.readMessage(server, buffer);
-            TCPlock.unlock();
+            TCP_LOCK.lock();
+            Message.writeMessage(server, BUFFER, message);
+            response = Message.readMessage(server, BUFFER);
+            TCP_LOCK.unlock();
         }
-        catch (IOException e)
+        catch (IOException | InvalidMessageFormatException e)
         {
-            throw new Error("Server is unreachable");
-        }
-        catch (InvalidMessageFormatException e)
-        {
-            throw new Error("Invalid message received");
+            e.printStackTrace();
         }
 
-        return message;
-    }
+        return response;
 
-    public static boolean confirmFriendshipRequest(String from, String to)
-    {
-        Message message = new Message(MessageType.CONFIRM_FRIENDSHIP, from, to);
-
-        try
-        {
-            TCPlock.lock();
-            Message.writeMessage(server, buffer, message);
-            message = Message.readMessage(server, buffer);
-            TCPlock.unlock();
-        }
-        catch (IOException e)
-        {
-            throw new Error("Server is unreachable");
-        }
-        catch (InvalidMessageFormatException e)
-        {
-            throw new Error("Invalid message received");
-        }
-
-        return true;
-    }
-
-    public static boolean declineFriendshipRequest(String from, String to)
-    {
-        Message message = new Message(MessageType.DECLINE_FRIENDSHIP, from, to);
-
-        try
-        {
-            TCPlock.lock();
-            Message.writeMessage(server, buffer, message);
-            message = Message.readMessage(server, buffer);
-            TCPlock.unlock();
-        }
-        catch (IOException e)
-        {
-            throw new Error("Server is unreachable");
-        }
-        catch (InvalidMessageFormatException e)
-        {
-            throw new Error("Invalid message received");
-        }
-
-        return true;
     }
 
     public void shutDown()

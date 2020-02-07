@@ -37,7 +37,6 @@ public class AlessandroClient
         Message.writeMessage(server, buffer, message);
 
         message = Message.readMessage(server, buffer);
-
         System.out.println("Received message: "+ message.toString());
 
         message = new Message(MessageType.REQUEST_FOR_FRIENDSHIP, "Alessandro", "Andrea");

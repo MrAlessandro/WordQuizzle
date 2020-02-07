@@ -5,36 +5,28 @@ import client.main.WordQuizzleClient;
 
 import javax.swing.*;
 
-public class SignUpOperator extends SwingWorker <Boolean, Void>
+public class SignUpOperator implements Runnable
 {
-    private WordQuizzleClientFrame frame;
     private String username;
     private char[] password;
-    private boolean result;
 
-    public SignUpOperator(WordQuizzleClientFrame frame)
+    public SignUpOperator(String username, char[] password)
     {
-        this.frame = frame;
-        this.username = frame.usernameTextField.getText();
-        this.password = frame.passwordField.getPassword();
+        this.username = username;
+        this.password = password;
     }
 
     @Override
-    protected Boolean doInBackground() throws Exception
+    public void run()
     {
-        this.result = WordQuizzleClient.register(this.username, this.password);
-        return this.result;
-    }
+        boolean result = WordQuizzleClient.register(this.username, this.password);
 
-    @Override
-    protected void done()
-    {
-        if (this.result)
-            SwingUtilities.invokeLater(() -> frame.session());
-        else
+        if (result)
         {
-            this.frame.warningLabel.setText("Username already used");
-            SwingUtilities.invokeLater(() -> frame.signUpProcedure());
+            JOptionPane.showMessageDialog(null, "User \"" + this.username + "\" registered!", "User registered", JOptionPane.INFORMATION_MESSAGE);
+            SwingUtilities.invokeLater(WordQuizzleClientFrame::welcomeFrame);
         }
+        else
+            SwingUtilities.invokeLater(() -> WordQuizzleClientFrame.signUpProcedure("Username already used"));
     }
 }

@@ -1,168 +1,401 @@
 package client.gui;
 
 import client.gui.constants.GuiConstants;
+import client.main.WordQuizzleClient;
 import client.operators.LogInOperator;
+import client.operators.SendFriendshipRequestOperator;
 import client.operators.SignUpOperator;
-import messages.Message;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 
 public class WordQuizzleClientFrame extends JFrame
 {
-    public volatile Message response;
-    public volatile JPlaceholderTextField usernameTextField;
-    public volatile JPlaceholderPasswordField passwordField;
-    public volatile JLabel warningLabel;
+    public static final WordQuizzleClientFrame FRAME = new WordQuizzleClientFrame();
+    public static final DefaultListModel<String> FRIENDS_LIST = new DefaultListModel<>();
+    public static String username = null;
 
-    public WordQuizzleClientFrame()
+    private WordQuizzleClientFrame()
     {
         super("WordQuizzle");
-        this.usernameTextField = new JPlaceholderTextField("Username");
-        this.passwordField = new JPlaceholderPasswordField("Password");
-        this.warningLabel = new JLabel(" ");
-        this.warningLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        this.welcomeFrame();
         this.setResizable(false);
-        this.setVisible(true);
+
+        // Locate in the center of the screen
+        //Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        //this.setLocation(screenSize.width/2-this.getSize().width/2, screenSize.height/2-this.getSize().height/2);
+        this.setLocationRelativeTo(null);
     }
 
-    private void welcomeFrame()
+    public static void welcomeFrame()
     {
-        this.getContentPane().removeAll();
+        // Empty frame
+        FRAME.getContentPane().removeAll();
+
+        // Setup outer container
+        FRAME.getContentPane().setBackground(Color.WHITE);
+        FRAME.getContentPane().setLayout(new FlowLayout());
+
+        // Setup Logo
+        JLabel logo = new JLabel(GuiConstants.LOGO);
+
+        // Setup inner container
         JPanel panel = new JPanel();
-        this.getContentPane().setBackground(Color.WHITE);
-        this.getContentPane().setLayout(new FlowLayout());
-        this.getContentPane().add(new JLabel(GuiConstants.LOGO), BorderLayout.LINE_START);
-        this.getContentPane().add(panel);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(Color.WHITE);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+        // Setup welcome message
         JLabel welcomeLabel = new JLabel("Welcome to WordQuizzle!");
         welcomeLabel.setFont(new Font("", Font.PLAIN, 30));
         welcomeLabel.setForeground(GuiConstants.MAIN_COLOR);
         welcomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Setup login button
         JButton logInButton = new JButton("LogIn");
         logInButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        logInButton.addActionListener(e -> SwingUtilities.invokeLater(this::logInProcedure));
+        logInButton.addActionListener(e -> SwingUtilities.invokeLater(() -> logInProcedure(null)));
+
+        // Setup signup button
         JButton signUpButton = new JButton("SignUp");
         signUpButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        signUpButton.addActionListener(e -> SwingUtilities.invokeLater(this::signUpProcedure));
+        signUpButton.addActionListener(e -> SwingUtilities.invokeLater(() -> signUpProcedure(null)));
+
+        // Include inner components (with borders) to the inner container
         panel.add(welcomeLabel);
         panel.add(Box.createRigidArea(new Dimension(0, 5)));
         panel.add(logInButton);
         panel.add(Box.createRigidArea(new Dimension(0, 5)));
         panel.add(signUpButton);
-        this.getContentPane().add(panel);
-        this.pack();
+
+        // Include all components to the outer container
+        FRAME.getContentPane().add(logo, BorderLayout.LINE_START);
+        FRAME.getContentPane().add(panel);
+
+        // Resize accordingly
+        FRAME.pack();
+        // Make the frame visible
+        FRAME.setVisible(true);
     }
 
-    public void logInProcedure()
+    public static void logInProcedure(String warningMessage)
     {
-        this.getContentPane().removeAll();
-        this.getContentPane().setBackground(Color.WHITE);
-        this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
+        // Initialize components
+        JPlaceholderTextField usernameField = new JPlaceholderTextField("Username");
+        JPlaceholderPasswordField passwordField = new JPlaceholderPasswordField("Password");
+        JLabel warningLabel = new JLabel();
         JPanel panel = new JPanel();
-        panel.setBackground(Color.WHITE);
-        panel.setLayout(new FlowLayout());
         JButton logInButton = new JButton("LogIn");
-        logInButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        logInButton.addActionListener(e -> SwingUtilities.invokeLater(this::loadLogIn));
         JButton cancelButton = new JButton("Cancel");
-        cancelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cancelButton.addActionListener(e -> SwingUtilities.invokeLater(this::welcomeFrame));
-        panel.add(cancelButton);
-        panel.add(logInButton);
-        this.getContentPane().add(this.usernameTextField);
-        this.getContentPane().add(this.passwordField);
-        this.getContentPane().add(this.warningLabel);
-        this.getContentPane().add(panel);
-        this.pack();
-    }
 
-    public void signUpProcedure()
-    {
-        this.getContentPane().removeAll();
-        this.getContentPane().setBackground(Color.WHITE);
-        this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
-        JPanel panel = new JPanel();
+        // Empty frame
+        FRAME.getContentPane().removeAll();
+
+        // Setup outer container
+        FRAME.getContentPane().setBackground(Color.WHITE);
+        FRAME.getContentPane().setLayout(new BoxLayout(FRAME.getContentPane(), BoxLayout.Y_AXIS));
+
+        DocumentListener fieldsChecker = new DocumentListener() {
+            private Border defaultBorders = usernameField.getBorder();
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                check();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                check();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                check();
+            }
+
+            private void check()
+            {
+                boolean checkUsernameField = usernameField.getText().equals("");
+                boolean checkPasswordField = passwordField.getPassword().length == 0;
+                if (checkUsernameField || checkPasswordField)
+                {
+                    if (checkUsernameField && checkPasswordField)
+                    {
+                        usernameField.setBorder(new LineBorder(Color.RED, 1));
+                        passwordField.setBorder(new LineBorder(Color.RED, 1));
+                        warningLabel.setText("Empty fields");
+                    }
+                    else if (checkUsernameField)
+                    {
+                        usernameField.setBorder(new LineBorder(Color.RED, 1));
+                        warningLabel.setText("Empty username");
+                    }
+                    else
+                    {
+                        passwordField.setBorder(new LineBorder(Color.RED, 1));
+                        warningLabel.setText("Empty password");
+                    }
+
+                    logInButton.setEnabled(false);
+                }
+                else
+                {
+                    usernameField.setBorder(defaultBorders);
+                    passwordField.setBorder(defaultBorders);
+                    warningLabel.setText(" ");
+                    logInButton.setEnabled(true);
+                }
+            }
+
+        };
+
+        // Setup username field
+        usernameField.setAlignmentX(Component.CENTER_ALIGNMENT);
+        usernameField.getDocument().addDocumentListener(fieldsChecker);
+
+        // Setup password field
+        passwordField.setAlignmentX(Component.CENTER_ALIGNMENT);
+        passwordField.getDocument().addDocumentListener(fieldsChecker);
+
+        // Setup warning label
+        warningLabel.setForeground(Color.RED);
+        warningLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        if (warningMessage == null)
+            warningLabel.setText(" ");
+        else
+            warningLabel.setText(warningMessage);
+
+        // Setup inner container
         panel.setBackground(Color.WHITE);
         panel.setLayout(new FlowLayout());
-        JButton signUpButton = new JButton("SignUp");
-        signUpButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        signUpButton.addActionListener(e -> SwingUtilities.invokeLater(this::loadSignUp));
-        JButton cancelButton = new JButton("Cancel");
+
+        // Setup login button
+        logInButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        logInButton.addActionListener(e -> {
+            SwingUtilities.invokeLater(WordQuizzleClientFrame::loading);
+            WordQuizzleClient.POOL.execute(new LogInOperator(usernameField.getText(), passwordField.getPassword()));
+        });
+
+        // Setup cancel button
         cancelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cancelButton.addActionListener(e -> SwingUtilities.invokeLater(this::welcomeFrame));
+        cancelButton.addActionListener(e -> SwingUtilities.invokeLater(WordQuizzleClientFrame::welcomeFrame));
+
+        // Include inner components (with borders) to the inner container
+        panel.add(logInButton);
         panel.add(cancelButton);
+
+        // Include all components to the outer container
+        FRAME.getContentPane().add(usernameField);
+        FRAME.getContentPane().add(passwordField);
+        FRAME.getContentPane().add(warningLabel);
+        FRAME.getContentPane().add(panel);
+
+        // Resize accordingly
+        FRAME.pack();
+    }
+
+    public static void signUpProcedure(String warningMessage)
+    {
+        // Initialize components
+        JPlaceholderTextField usernameField = new JPlaceholderTextField("Username");
+        JPlaceholderPasswordField passwordField = new JPlaceholderPasswordField("Password");
+        JLabel warningLabel = new JLabel();
+        JPanel panel = new JPanel();
+        JButton signUpButton = new JButton("SignUp");
+        JButton cancelButton = new JButton("Cancel");
+
+        // Empty frame
+        FRAME.getContentPane().removeAll();
+
+        // Setup outer container
+        FRAME.getContentPane().setBackground(Color.WHITE);
+        FRAME.getContentPane().setLayout(new BoxLayout(FRAME.getContentPane(), BoxLayout.Y_AXIS));
+
+        DocumentListener fieldsChecker = new DocumentListener() {
+            private Border defaultBorders = usernameField.getBorder();
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                check();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                check();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                check();
+            }
+
+            private void check()
+            {
+                boolean checkUsernameField = usernameField.getText().equals("");
+                boolean checkPasswordField = passwordField.getPassword().length == 0;
+                if (checkUsernameField || checkPasswordField)
+                {
+                    if (checkUsernameField && checkPasswordField)
+                    {
+                        usernameField.setBorder(new LineBorder(Color.RED, 1));
+                        passwordField.setBorder(new LineBorder(Color.RED, 1));
+                        warningLabel.setText("Empty fields");
+                    }
+                    else if (checkUsernameField)
+                    {
+                        usernameField.setBorder(new LineBorder(Color.RED, 1));
+                        warningLabel.setText("Empty username");
+                    }
+                    else
+                    {
+                        passwordField.setBorder(new LineBorder(Color.RED, 1));
+                        warningLabel.setText("Empty password");
+                    }
+
+                    signUpButton.setEnabled(false);
+                }
+                else
+                {
+                    usernameField.setBorder(defaultBorders);
+                    passwordField.setBorder(defaultBorders);
+                    warningLabel.setText(" ");
+                    signUpButton.setEnabled(true);
+                }
+            }
+
+        };
+
+        // Setup username field
+        usernameField.setAlignmentX(Component.CENTER_ALIGNMENT);
+        usernameField.getDocument().addDocumentListener(fieldsChecker);
+
+        // Setup password field
+        passwordField.setAlignmentX(Component.CENTER_ALIGNMENT);
+        passwordField.getDocument().addDocumentListener(fieldsChecker);
+
+        // Setup warning label
+        warningLabel.setForeground(Color.RED);
+        warningLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        if (warningMessage == null)
+            warningLabel.setText(" ");
+        else
+            warningLabel.setText(warningMessage);
+
+        // Setup inner container
+        panel.setBackground(Color.WHITE);
+        panel.setLayout(new FlowLayout());
+
+        // Setup signup button
+        signUpButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        signUpButton.addActionListener(e -> {
+            SwingUtilities.invokeLater(WordQuizzleClientFrame::loading);
+            WordQuizzleClient.POOL.execute(new SignUpOperator(usernameField.getText(), passwordField.getPassword()));
+        });
+
+        // Setup cancel button
+        cancelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        cancelButton.addActionListener(e -> SwingUtilities.invokeLater(WordQuizzleClientFrame::welcomeFrame));
+
+        // Include inner components (with borders) to the inner container
         panel.add(signUpButton);
-        this.getContentPane().add(this.usernameTextField);
-        this.getContentPane().add(this.passwordField);
-        this.getContentPane().add(this.warningLabel);
-        this.getContentPane().add(panel);
-        this.pack();
+        panel.add(cancelButton);
+
+        // Include all components to the outer container
+        FRAME.getContentPane().add(usernameField);
+        FRAME.getContentPane().add(passwordField);
+        FRAME.getContentPane().add(warningLabel);
+        FRAME.getContentPane().add(panel);
+
+        // Resize accordingly
+        FRAME.pack();
     }
 
-    private void loadLogIn()
+    private static void loading()
     {
-        if (this.usernameTextField.getText().equals(""))
-        {
-            this.warningLabel.setText("Username can not be void");
-            if (this.passwordField.getPassword().length == 0)
-                this.warningLabel.setText("Empty fields");
-            return;
-        }
-
-        if (this.passwordField.getPassword().length == 0)
-        {
-            this.warningLabel.setText("Password can not be void");
-            return;
-        }
-
-        this.warningLabel.setText(" ");
-
-        this.getContentPane().removeAll();
-        this.getContentPane().setLayout(new FlowLayout());
-        this.getContentPane().setBackground(Color.WHITE);
+        // Initialize components
         JLabel loadingGif = new JLabel(GuiConstants.LOADING_GIF);
-        this.getContentPane().add(loadingGif);
-        LogInOperator operator = new LogInOperator(this);
-        operator.execute();
-        this.pack();
+
+        // Empty frame
+        FRAME.getContentPane().removeAll();
+
+        // Setup outer container
+        FRAME.getContentPane().setBackground(Color.WHITE);
+        FRAME.getContentPane().setLayout(new FlowLayout());
+
+        // Setup loading animation
+        FRAME.getContentPane().add(loadingGif);
+
+        // Resize accordingly
+        FRAME.pack();
     }
 
-    private void loadSignUp()
+    public static void session()
     {
-        if (this.usernameTextField.getText().equals(""))
-        {
-            this.warningLabel.setText("Username can not be void");
-            if (this.passwordField.getPassword().length == 0)
-                this.warningLabel.setText("Empty fields");
-            return;
-        }
+        // Initialize components
+        JPanel friendsPanel = new JPanel();
+        JPanel friendsPanelHeader = new JPanel();
+        JLabel friendListLabel = new JLabel("Friends list:");
+        JButton addFriendButton = new JButton("+");
+        JList<String> jList = new JList<>(FRIENDS_LIST);
+        JScrollPane friendsScrollPane = new JScrollPane(jList);
+        JButton challengeButton = new JButton();
 
-        if (this.passwordField.getPassword().length == 0)
-        {
-            this.warningLabel.setText("Password can not be void");
-            return;
-        }
+        // Empty frame
+        FRAME.getContentPane().removeAll();
 
-        this.warningLabel.setText(" ");
+        // Setup outer container
+        FRAME.getContentPane().setBackground(Color.WHITE);
+        FRAME.getContentPane().setLayout(new BorderLayout());
 
-        this.getContentPane().removeAll();
-        this.getContentPane().setLayout(new FlowLayout());
-        this.getContentPane().setBackground(Color.WHITE);
-        JLabel loadingGif = new JLabel(GuiConstants.LOADING_GIF);
-        this.getContentPane().add(loadingGif);
-        SignUpOperator operator = new SignUpOperator(this);
-        operator.execute();
-        this.pack();
-    }
+        // Setup friends panel
+        friendsPanel.setLayout(new BoxLayout(friendsPanel, BoxLayout.Y_AXIS));
+        friendsPanel.setBackground(Color.WHITE);
+        friendsPanel.setBorder(new CompoundBorder(new LineBorder(GuiConstants.BACKGROUND_COLOR, 1), new EmptyBorder(10,10,10,10)));
 
-    public void session()
-    {
-        this.getContentPane().removeAll();
-        this.setSize(500, 500);
+        // Setup friends panel header
+        friendsPanelHeader.setBackground(Color.WHITE);
+        friendsPanelHeader.setLayout(new BorderLayout());
+        friendsPanelHeader.setPreferredSize(new Dimension(160, 25));
+        friendsPanelHeader.setMaximumSize(new Dimension(160, 25));
+
+        // Setup add friend button
+        addFriendButton.setPreferredSize(new Dimension(20, 20));
+        addFriendButton.addActionListener(e -> WordQuizzleClient.POOL.execute(new SendFriendshipRequestOperator()));
+
+        // Setup friend list
+        jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        jList.addListSelectionListener(e -> challengeButton.setEnabled(true));
+
+        // Setup friends scroll pane
+        friendsScrollPane.setPreferredSize(new Dimension(160, 220));
+        friendsScrollPane.setMaximumSize(new Dimension(160, 220));
+
+        // Setup challenge button
+        challengeButton.setText("Challenge");
+        challengeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        challengeButton.setEnabled(false);
+
+        // Add components to friends panel header
+        friendsPanelHeader.add(friendListLabel, BorderLayout.WEST);
+        friendsPanelHeader.add(addFriendButton, BorderLayout.EAST);
+
+        // Add components (with margins) to friends panel
+        friendsPanel.add(friendsPanelHeader);
+        friendsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        friendsPanel.add(friendsScrollPane);
+        friendsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        friendsPanel.add(challengeButton);
+
+        // Add all components to outer container
+        FRAME.getContentPane().add(friendsPanel, BorderLayout.WEST);
+
+        // Resize accordingly
+        FRAME.pack();
     }
 
 }

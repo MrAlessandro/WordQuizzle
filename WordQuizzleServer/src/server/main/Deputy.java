@@ -185,7 +185,14 @@ class Deputy extends Thread
 
                     printer.print("Logging in user \"" + username + "\"... ");
 
+                    // Opening session
                     UsersManager.openSession(username, password, UDPclientAddress);
+
+                    // Send response containing friends list
+                    String serializedFriendsList = UsersManager.retrieveSerializedFriendList(username);
+                    Message response = new Message(MessageType.OK, serializedFriendsList);
+                    UsersManager.sendResponse(username, response);
+
                     printer.printlnGreen("LOGGED");
                     selected.attach(username);
                 }
@@ -237,8 +244,11 @@ class Deputy extends Thread
                     UsersManager.confirmFriendship(applicant, friend);
                     printer.printlnGreen("CONFIRMED");
 
+                    // Sending updated friends list to friend
+                    String serializedFriendList = UsersManager.retrieveSerializedFriendList(friend);
+                    response = new Message(MessageType.FRIENDS_LIST, serializedFriendList);
+
                     // Sending confirm message to the applicant
-                    response = new Message(MessageType.OK);
                     UsersManager.sendMessage(applicant, new Message(MessageType.FRIENDSHIP_CONFIRMED, applicant, friend));
                 }
                 catch (CommunicableException e)
@@ -281,6 +291,18 @@ class Deputy extends Thread
 
                 break;
             }
+            case REQUEST_FOR_FRIENDS_LIST:
+            {
+                assert attachment instanceof String;
+                Message response;
+
+                printer.print("Sending friends list to \"" + attachment + "\"... ");
+
+                String serializedFriendsList = UsersManager.retrieveSerializedFriendList((String) attachment);
+                response = new Message(MessageType.FRIENDS_LIST, serializedFriendsList);
+                UsersManager.sendResponse((String) attachment, response);
+                printer.printlnGreen("SENT");
+            }
             default:
             {}
         }
@@ -318,7 +340,7 @@ class Deputy extends Thread
             try
             {
                 outcome = UsersManager.retrieveMessage((String) attachment);
-                if (MessageType.isNotification(outcome.getType()))
+                if (outcome.getType().isNotification())
                     Message.writeNotification(this.UDPchannel, UsersManager.getUserAddress((String) attachment), buffer, outcome);
                 else
                     Message.writeMessage(client, buffer, outcome);
@@ -328,7 +350,8 @@ class Deputy extends Thread
             catch (IOException e)
             {
                 printer.printlnYellow("CLIENT CLOSED CONNECTION");
-                UsersManager.restoreUnsentMessage((String) attachment, outcome);
+                if (outcome.getType().isNotification())
+                    UsersManager.restoreUnsentMessage((String) attachment, outcome);
                 UsersManager.closeSession((String) attachment);
                 printer.print("Closing connection with \"" + attachment + "\"... ");
                 selected.cancel();

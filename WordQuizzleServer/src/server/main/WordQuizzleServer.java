@@ -54,7 +54,6 @@ class WordQuizzleServer
             deputies[i].start();
         }
 
-
         try
         {
             // Variable for select deputies sequentially

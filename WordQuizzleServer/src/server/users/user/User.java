@@ -64,11 +64,6 @@ public class User
         return this.friends.add(userName);
     }
 
-    public boolean removeFriend(String username)
-    {
-        return this.friends.remove(username);
-    }
-
     public boolean hasPendingFriendshipRequest(String friend)
     {
         return this.friendshipRequest.contains(friend);
@@ -146,6 +141,15 @@ public class User
     public SocketAddress getAddress()
     {
         return this.address;
+    }
+
+    public String JSONserializeFriendsList()
+    {
+        JSONArray friendsList = new JSONArray();
+
+        friendsList.addAll(this.friends);
+
+        return friendsList.toJSONString();
     }
 
     public JSONObject JSONserialize()

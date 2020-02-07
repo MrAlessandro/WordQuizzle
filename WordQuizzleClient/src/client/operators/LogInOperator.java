@@ -3,53 +3,87 @@ package client.operators;
 import client.gui.WordQuizzleClientFrame;
 import client.main.WordQuizzleClient;
 import messages.Message;
+import messages.MessageType;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import javax.swing.*;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.LinkedList;
 
-public class LogInOperator extends SwingWorker<Message, Void>
+public class LogInOperator implements Runnable
 {
-    private WordQuizzleClientFrame frame;
     private String username;
     private char[] password;
-    private Message result = null;
 
-    public LogInOperator(WordQuizzleClientFrame frame)
+    public LogInOperator(String username, char[] password)
     {
-        this.frame = frame;
-        this.username = frame.usernameTextField.getText();
-        this.password = frame.passwordField.getPassword();
+        this.username = username;
+        this.password = password;
     }
 
     @Override
-    protected Message doInBackground() throws Exception
+    public void run()
     {
-        this.result = WordQuizzleClient.logIn(this.username, this.password);
+        // Prepare login message
+        Message logInMessage = new Message(MessageType.LOG_IN);
+        logInMessage.addField(this.username.toCharArray());
+        logInMessage.addField(this.password);
 
-        return this.result;
-    }
+        try
+        {// Add notification channel port to the message
+            logInMessage.addField(String.valueOf(((InetSocketAddress) WordQuizzleClient.notificationChannel.getLocalAddress()).getPort()).toCharArray());
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            throw new Error("Sequence inconsistency");
+        }
 
-    @Override
-    protected void done()
-    {
-        Message message = this.result;
+        // Send login message and get the response
+        Message response = WordQuizzleClient.send(logInMessage);
 
-        switch (message.getType())
+        switch (response.getType())
         {
             case OK:
             {
-                SwingUtilities.invokeLater(() -> frame.session());
+                // Setting the global logged username
+                WordQuizzleClientFrame.username = this.username;
+
+                // Parsing friends list
+                String jsonString = new String(response.getField(0));
+                JSONParser parser = new JSONParser();
+                JSONArray DEfriendsList;
+
+                try
+                {
+                    DEfriendsList = (JSONArray) parser.parse(jsonString);
+                }
+                catch (ParseException e)
+                {
+                    throw new Error("Parsing friends list");
+                }
+
+                // Inserts deserialized friends' username in the global friends list
+                for (String friend : (Iterable<String>) DEfriendsList)
+                {
+                    WordQuizzleClientFrame.FRIENDS_LIST.addElement(friend);
+                }
+
+
+                SwingUtilities.invokeLater(WordQuizzleClientFrame::session);
                 break;
             }
             case USERNAME_UNKNOWN:
             {
-                frame.warningLabel.setText("Username unknown");
-                SwingUtilities.invokeLater(() -> frame.logInProcedure());
+                SwingUtilities.invokeLater(() -> WordQuizzleClientFrame.logInProcedure("Username unknown"));
                 break;
             }
             case PASSWORD_WRONG:
             {
-                frame.warningLabel.setText("Password wrong");
-                SwingUtilities.invokeLater(() -> frame.logInProcedure());
+                SwingUtilities.invokeLater(() -> WordQuizzleClientFrame.logInProcedure("Password wrong"));
                 break;
             }
             default:

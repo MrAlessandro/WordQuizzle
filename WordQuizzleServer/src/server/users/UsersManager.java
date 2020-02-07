@@ -92,12 +92,10 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new WrongPasswordException();
 
         taken.logIn(clientAddress);
-        taken.storeResponse(new Message(MessageType.OK));
 
-        int backLogRequestsAmount = 1;
-        backLogRequestsAmount += taken.getBackLogAmount();
+        int backLogRequestsAmount = taken.getBackLogAmount();
 
-        if(WRITABLE_CONNECTIONS.putIfAbsent(username, (short) backLogRequestsAmount) != null)
+        if(backLogRequestsAmount > 0 && WRITABLE_CONNECTIONS.putIfAbsent(username, (short) backLogRequestsAmount) != null)
             throw new Error("Writable channels management inconsistency");
 
         return true;
@@ -152,11 +150,21 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new RequestAlreadySentException("FRIENDSHIP REQUEST FROM \"" + applicant + "\" to \"" + friend + "\" ALREADY SENT");
 
         friendUser.addPendingFriendshipRequest(applicant);
-        friendUser.appendRequest(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, applicant, friend));
+        friendUser.appendRequest(new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, applicant, friend));
         if (friendUser.isLogged())
             WRITABLE_CONNECTIONS.compute(friend, INCREMENTER);
 
         return true;
+    }
+
+    public static String retrieveSerializedFriendList(String username)
+    {
+        User user = USERS_ARCHIVE.get(username);
+
+        if (user == null)
+            throw new Error("UNKNOWN USER \"" + username + "\"");
+
+        return user.JSONserializeFriendsList();
     }
 
     public static boolean confirmFriendship(String whoSentRequest, String whoConfirmed) throws UnexpectedMessageException, AlreadyExistingRelationshipException
@@ -211,13 +219,13 @@ public class UsersManager extends RemoteServer implements Registrable
 
     public static boolean sendMessage(String username, Message message) throws UnknownUserException
     {
-        User taken  = USERS_ARCHIVE.get(username);
+        User user  = USERS_ARCHIVE.get(username);
 
-        if (taken ==  null)
+        if (user ==  null)
             throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
 
-
-        if (taken.appendRequest(message))
+        user.appendRequest(message);
+        if (user.isLogged())
             WRITABLE_CONNECTIONS.compute(username, INCREMENTER);
 
         return true;
