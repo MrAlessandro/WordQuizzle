@@ -28,8 +28,6 @@ public class WordQuizzleClientFrame extends JFrame
         this.setResizable(false);
 
         // Locate in the center of the screen
-        //Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        //this.setLocation(screenSize.width/2-this.getSize().width/2, screenSize.height/2-this.getSize().height/2);
         this.setLocationRelativeTo(null);
     }
 
