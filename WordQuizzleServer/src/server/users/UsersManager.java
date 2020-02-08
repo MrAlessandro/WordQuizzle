@@ -30,22 +30,6 @@ public class UsersManager extends RemoteServer implements Registrable
 {
     private static final UsersManager INSTANCE = new UsersManager();
     private static final ConcurrentHashMap<String, User> USERS_ARCHIVE = new ConcurrentHashMap<>(ServerConstants.INITIAL_USERS_DATABASE_SIZE);
-    private static final ConcurrentHashMap<String, Short> WRITABLE_CONNECTIONS = new ConcurrentHashMap<>();
-    private static final BiFunction<String, Short, Short> INCREMENTER = (String user, Short relatedCounter) -> {
-        if (relatedCounter == null)
-            return (short) 1;
-        else
-            return ++relatedCounter;
-    };
-    private static final BiFunction<String, Short, Short> DECREMENTER = (String user, Short relatedCounter) -> {
-        if (relatedCounter == null)
-            return null;
-        else
-            if (relatedCounter == 1)
-                return null;
-            else
-                return  --relatedCounter;
-    };
 
     private UsersManager()
     {}
@@ -83,44 +67,37 @@ public class UsersManager extends RemoteServer implements Registrable
 
     public static boolean openSession(String username, char[] password, SocketAddress clientAddress) throws UnknownUserException, WrongPasswordException
     {
-        User taken  = USERS_ARCHIVE.get(username);
+        User user  = USERS_ARCHIVE.get(username);
 
-        if (taken ==  null)
+        if (user ==  null)
             throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
 
-        if (!taken.checkPassword(password))
+        if (!user.checkPassword(password))
             throw new WrongPasswordException();
 
-        taken.logIn(clientAddress);
-
-        int backLogRequestsAmount = taken.getBackLogAmount();
-
-        if(backLogRequestsAmount > 0 && WRITABLE_CONNECTIONS.putIfAbsent(username, (short) backLogRequestsAmount) != null)
-            throw new Error("Writable channels management inconsistency");
+        user.logIn(clientAddress);
 
         return true;
     }
 
     public static SocketAddress getUserAddress(String username)
     {
-        User taken  = USERS_ARCHIVE.get(username);
+        User user  = USERS_ARCHIVE.get(username);
 
-        if (taken ==  null)
+        if (user ==  null)
             throw new Error("UNKNOWN USER \"" + username + "\"");
 
-        return taken.getAddress();
+        return user.getAddress();
     }
 
     public static boolean closeSession(String username)
     {
-        User taken  = USERS_ARCHIVE.get(username);
+        User user  = USERS_ARCHIVE.get(username);
 
-        if (taken ==  null)
+        if (user ==  null)
             throw new Error("Attempt to close a not existing session");
 
-        WRITABLE_CONNECTIONS.remove(username);
-
-        taken.logOut();
+        user.logOut();
 
         return true;
     }
@@ -151,8 +128,6 @@ public class UsersManager extends RemoteServer implements Registrable
 
         friendUser.addPendingFriendshipRequest(applicant);
         friendUser.appendRequest(new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, applicant, friend));
-        if (friendUser.isLogged())
-            WRITABLE_CONNECTIONS.compute(friend, INCREMENTER);
 
         return true;
     }
@@ -225,22 +200,18 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
 
         user.appendRequest(message);
-        if (user.isLogged())
-            WRITABLE_CONNECTIONS.compute(username, INCREMENTER);
 
         return true;
     }
 
     public static boolean sendResponse(String username, Message message)
     {
-        User taken  = USERS_ARCHIVE.get(username);
+        User user  = USERS_ARCHIVE.get(username);
 
-        if (taken ==  null)
+        if (user ==  null)
             throw new Error("UNKNOWN USER \"" + username + "\"");
 
-        if (taken.storeResponse(message))
-            WRITABLE_CONNECTIONS.compute(username, INCREMENTER);
-
+        user.storeResponse(message);
         return true;
     }
 
@@ -258,23 +229,25 @@ public class UsersManager extends RemoteServer implements Registrable
 
     public static Message retrieveMessage(String username)
     {
-        User taken  = USERS_ARCHIVE.get(username);
+        User user  = USERS_ARCHIVE.get(username);
         Message message;
 
-        if (taken ==  null)
+        if (user ==  null)
             throw new Error("UNKNOWN USER \"" + username + "\"");
 
-        message = taken.getMessage();
-
-        if (message != null)
-            WRITABLE_CONNECTIONS.compute(username, DECREMENTER);
+        message = user.getMessage();
 
         return message;
     }
 
     public static boolean hasPendingMessages(String username)
     {
-        return WRITABLE_CONNECTIONS.containsKey(username);
+        User user  = USERS_ARCHIVE.get(username);
+
+        if (user ==  null)
+            throw new Error("UNKNOWN USER \"" + username + "\"");
+
+        return user.hasPendingMessages();
     }
 
     public static void backUp()

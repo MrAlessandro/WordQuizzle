@@ -112,6 +112,11 @@ public class User
         return message;
     }
 
+    public boolean hasPendingMessages()
+    {
+        return (this.responseBackLog != null) || !(this.requestsBackLog.isEmpty());
+    }
+
     public int getBackLogAmount()
     {
         return this.requestsBackLog.size();
