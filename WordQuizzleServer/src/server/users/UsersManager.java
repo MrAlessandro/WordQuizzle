@@ -9,10 +9,7 @@ import org.json.simple.parser.ParseException;
 import remote.Registrable;
 import remote.VoidPasswordException;
 import remote.VoidUsernameException;
-import server.users.exceptions.AlreadyExistingRelationshipException;
-import server.users.exceptions.RequestAlreadySentException;
-import server.users.exceptions.UnknownUserException;
-import server.users.exceptions.WrongPasswordException;
+import server.users.exceptions.*;
 import server.users.user.User;
 import server.constants.ServerConstants;
 
@@ -24,7 +21,6 @@ import java.rmi.RemoteException;
 import java.rmi.server.RemoteServer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
 
 public class UsersManager extends RemoteServer implements Registrable
 {
@@ -123,11 +119,47 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new AlreadyExistingRelationshipException("\"" + applicant + "\" and \"" + friend + "\" ARE ALREADY FRIENDS");
 
 
-        if (friendUser.hasPendingFriendshipRequest(applicant))
+        if (friendUser.hasPendingFriendshipRequestFrom(applicant))
             throw new RequestAlreadySentException("FRIENDSHIP REQUEST FROM \"" + applicant + "\" to \"" + friend + "\" ALREADY SENT");
 
         friendUser.addPendingFriendshipRequest(applicant);
         friendUser.appendRequest(new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, applicant, friend));
+
+        return true;
+    }
+
+    public static boolean sendChallengeRequest(String applicant, String opponent) throws UnknownUserException, OpponentAlreadyEngagedException, UnexpectedMessageException, OpponentOfflineException
+    {
+        User applicantUser = USERS_ARCHIVE.get(applicant);
+        User opponentUser = USERS_ARCHIVE.get(opponent);
+        boolean check2;
+        boolean check1;
+
+        if (applicantUser == null)
+            throw new Error("UNKNOWN USER \"" + applicant + "\"");
+        if (opponentUser == null)
+            throw new UnknownUserException("UNKNOWN USER \"" + opponent + "\"");
+        if (!opponentUser.isLogged())
+            throw new OpponentOfflineException("USER \"" + opponent + "\" IS OFFLINE");
+
+        check1 = applicantUser.storePendingChallengeRequest(opponent);
+        if (check1)
+        {
+            check2 = opponentUser.storePendingChallengeRequest(applicant);
+            if (!check2)
+            {
+                applicantUser.cancelPendingChallengeRequest();
+                throw new OpponentAlreadyEngagedException("\"" + opponent + "\" ALREADY ENGAGED IN OTHER CHALLENGE");
+            }
+
+        }
+        else
+            throw new UnexpectedMessageException();
+
+        if(!opponentUser.appendRequestIfOnline(new Message(MessageType.CHALLENGE_REQUEST, applicant, opponent)))
+            throw new OpponentOfflineException("USER \"" + opponent + "\" IS OFFLINE");
+
+        /* TODO: timer */
 
         return true;
     }
@@ -235,7 +267,7 @@ public class UsersManager extends RemoteServer implements Registrable
         if (user ==  null)
             throw new Error("UNKNOWN USER \"" + username + "\"");
 
-        message = user.getMessage();
+        message = user.retrieveMessage();
 
         return message;
     }

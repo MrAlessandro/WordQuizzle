@@ -21,13 +21,15 @@ public enum MessageType
     // Response messages
     OK((short) 200, "Ok"),
     FRIENDS_LIST((short) 201, "YourFriendList"),
-    USERNAME_USED((short) 202, "UsernameUsed"),
     ALREADY_FRIENDS((short) 203, "AlreadyFriends"),
     USERNAME_UNKNOWN((short) 204, "UsernameUnknown"),
     PASSWORD_WRONG((short) 205, "PasswordWrong"),
     INVALID_MESSAGE_FORMAT((short) 206, "InvalidMessage"),
     UNEXPECTED_MESSAGE((short) 207, "UnexpectedMessage"),
-    FRIENDSHIP_REQUEST_ALREADY_SENT ((short) 208, "FriendshipRequestAlreadySent");
+    FRIENDSHIP_REQUEST_ALREADY_SENT ((short) 208, "FriendshipRequestAlreadySent"),
+    OPPONENT_OFFLINE ((short) 209, "OpponentOffline"),
+    OPPONENT_ALREADY_ENGAGED ((short) 210, "OpponentAlreadyEngaged");
+
 
 
     private short value;

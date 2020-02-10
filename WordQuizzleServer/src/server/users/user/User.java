@@ -9,15 +9,17 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 public class User
 {
     private String username;
     private Password password;
-    private SocketAddress address;
     private HashSet<String> friends;
-    private Set<String> friendshipRequest;
+    private Set<String> friendshipRequests;
+    private AtomicReference<String> challengeRequests;
+    private AtomicReference<SocketAddress> address;
     private ConcurrentLinkedDeque<Message> requestsBackLog;
     private Message responseBackLog;
     private int score;
@@ -27,20 +29,22 @@ public class User
         this.username = username;
         this.password = new Password(password);
         this.friends = new HashSet<>(20);
-        this.friendshipRequest = ConcurrentHashMap.newKeySet(10);
+        this.friendshipRequests = ConcurrentHashMap.newKeySet(10);
+        this.challengeRequests = new AtomicReference<>(null);
         this.requestsBackLog = new ConcurrentLinkedDeque<>();
-        this.address = null;
+        this.address = new AtomicReference<>(null);
         this.score = 0;
     }
 
-    public User(String username, Password password, int score, HashSet<String> friends, ConcurrentLinkedDeque<Message> backLog, Set<String> friendshipRequest)
+    public User(String username, Password password, int score, HashSet<String> friends, ConcurrentLinkedDeque<Message> backLog, Set<String> friendshipRequests)
     {
         this.username = username;
         this.password = password;
         this.friends = friends;
-        this.friendshipRequest = friendshipRequest;
+        this.friendshipRequests = friendshipRequests;
+        this.challengeRequests = new AtomicReference<>(null);
         this.requestsBackLog = backLog;
-        this.address = null;
+        this.address = new AtomicReference<>(null);
         this.score = score;
     }
 
@@ -64,24 +68,45 @@ public class User
         return this.friends.add(userName);
     }
 
-    public boolean hasPendingFriendshipRequest(String friend)
+    public boolean hasPendingFriendshipRequestFrom(String friend)
     {
-        return this.friendshipRequest.contains(friend);
+        return this.friendshipRequests.contains(friend);
     }
 
     public boolean removePendingFriendshipRequest(String friend)
     {
-        return this.friendshipRequest.remove(friend);
+        return this.friendshipRequests.remove(friend);
     }
 
     public boolean addPendingFriendshipRequest(String friend)
     {
-        return this.friendshipRequest.add(friend);
+        return this.friendshipRequests.add(friend);
+    }
+
+    public boolean storePendingChallengeRequest(String from)
+    {
+        return this.challengeRequests.compareAndSet(null, from);
+    }
+
+    public boolean cancelPendingChallengeRequest()
+    {
+        this.challengeRequests.set(null);
+        return true;
     }
 
     public boolean appendRequest(Message message)
     {
         this.requestsBackLog.addLast(message);
+        return true;
+    }
+
+    public boolean appendRequestIfOnline(Message message)
+    {
+        if (this.address.get() == null)
+            return false;
+        else
+            this.requestsBackLog.addLast(message);
+
         return true;
     }
 
@@ -97,7 +122,7 @@ public class User
         return true;
     }
 
-    public Message getMessage()
+    public Message retrieveMessage()
     {
         Message message;
 
@@ -117,23 +142,19 @@ public class User
         return (this.responseBackLog != null) || !(this.requestsBackLog.isEmpty());
     }
 
-    public int getBackLogAmount()
-    {
-        return this.requestsBackLog.size();
-    }
-
     public boolean logIn(SocketAddress address)
     {
-        this.address = address;
+        this.address.set(address);
         return true;
     }
 
     public boolean logOut()
     {
-        if (this.address == null)
+        if (this.address.get() == null)
             return false;
 
-        this.address = null;
+        this.challengeRequests.set(null);
+        this.address.set(null);
 
         return true;
     }
@@ -145,7 +166,7 @@ public class User
 
     public SocketAddress getAddress()
     {
-        return this.address;
+        return this.address.get();
     }
 
     public String JSONserializeFriendsList()
@@ -170,7 +191,7 @@ public class User
 
         friendList.addAll(this.friends);
 
-        requests.addAll(this.friendshipRequest);
+        requests.addAll(this.friendshipRequests);
 
         for (Message mex : this.requestsBackLog)
         {
