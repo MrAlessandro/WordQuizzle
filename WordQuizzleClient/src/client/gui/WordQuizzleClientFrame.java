@@ -1,6 +1,10 @@
 package client.gui;
 
 import client.gui.constants.GuiConstants;
+import client.gui.fields.JPlaceholderPasswordField;
+import client.gui.fields.JPlaceholderTextField;
+import client.gui.panels.ChallengePanel;
+import client.gui.panels.FriendsPanel;
 import client.main.WordQuizzleClient;
 import client.operators.LogInOperator;
 import client.operators.SendFriendshipRequestOperator;
@@ -18,7 +22,8 @@ import java.awt.*;
 public class WordQuizzleClientFrame extends JFrame
 {
     public static final WordQuizzleClientFrame FRAME = new WordQuizzleClientFrame();
-    public static final DefaultListModel<String> FRIENDS_LIST = new DefaultListModel<>();
+    public static ChallengePanel challengePanel = null;
+    public static FriendsPanel friendsPanel = null;
     public static String username = null;
 
     private WordQuizzleClientFrame()
@@ -31,7 +36,7 @@ public class WordQuizzleClientFrame extends JFrame
         this.setLocationRelativeTo(null);
     }
 
-    public static void welcomeFrame()
+    public static void welcome()
     {
         // Empty frame
         FRAME.getContentPane().removeAll();
@@ -57,12 +62,12 @@ public class WordQuizzleClientFrame extends JFrame
         // Setup login button
         JButton logInButton = new JButton("LogIn");
         logInButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        logInButton.addActionListener(e -> SwingUtilities.invokeLater(() -> logInProcedure(null)));
+        logInButton.addActionListener(e -> SwingUtilities.invokeLater(() -> logIn(null)));
 
         // Setup signup button
         JButton signUpButton = new JButton("SignUp");
         signUpButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        signUpButton.addActionListener(e -> SwingUtilities.invokeLater(() -> signUpProcedure(null)));
+        signUpButton.addActionListener(e -> SwingUtilities.invokeLater(() -> signUp(null)));
 
         // Include inner components (with borders) to the inner container
         panel.add(welcomeLabel);
@@ -81,7 +86,7 @@ public class WordQuizzleClientFrame extends JFrame
         FRAME.setVisible(true);
     }
 
-    public static void logInProcedure(String warningMessage)
+    public static void logIn(String warningMessage)
     {
         // Initialize components
         JPlaceholderTextField usernameField = new JPlaceholderTextField("Username");
@@ -181,7 +186,7 @@ public class WordQuizzleClientFrame extends JFrame
 
         // Setup cancel button
         cancelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cancelButton.addActionListener(e -> SwingUtilities.invokeLater(WordQuizzleClientFrame::welcomeFrame));
+        cancelButton.addActionListener(e -> SwingUtilities.invokeLater(WordQuizzleClientFrame::welcome));
 
         // Include inner components (with borders) to the inner container
         panel.add(logInButton);
@@ -197,7 +202,7 @@ public class WordQuizzleClientFrame extends JFrame
         FRAME.pack();
     }
 
-    public static void signUpProcedure(String warningMessage)
+    public static void signUp(String warningMessage)
     {
         // Initialize components
         JPlaceholderTextField usernameField = new JPlaceholderTextField("Username");
@@ -297,7 +302,7 @@ public class WordQuizzleClientFrame extends JFrame
 
         // Setup cancel button
         cancelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cancelButton.addActionListener(e -> SwingUtilities.invokeLater(WordQuizzleClientFrame::welcomeFrame));
+        cancelButton.addActionListener(e -> SwingUtilities.invokeLater(WordQuizzleClientFrame::welcome));
 
         // Include inner components (with borders) to the inner container
         panel.add(signUpButton);
@@ -335,13 +340,8 @@ public class WordQuizzleClientFrame extends JFrame
     public static void session()
     {
         // Initialize components
-        JPanel friendsPanel = new JPanel();
-        JPanel friendsPanelHeader = new JPanel();
-        JLabel friendListLabel = new JLabel("Friends list:");
-        JButton addFriendButton = new JButton("+");
-        JList<String> jList = new JList<>(FRIENDS_LIST);
-        JScrollPane friendsScrollPane = new JScrollPane(jList);
-        JButton challengeButton = new JButton();
+        friendsPanel = new FriendsPanel();
+        challengePanel = new ChallengePanel();
 
         // Empty frame
         FRAME.getContentPane().removeAll();
@@ -350,47 +350,10 @@ public class WordQuizzleClientFrame extends JFrame
         FRAME.getContentPane().setBackground(Color.WHITE);
         FRAME.getContentPane().setLayout(new BorderLayout());
 
-        // Setup friends panel
-        friendsPanel.setLayout(new BoxLayout(friendsPanel, BoxLayout.Y_AXIS));
-        friendsPanel.setBackground(Color.WHITE);
-        friendsPanel.setBorder(new CompoundBorder(new LineBorder(GuiConstants.BACKGROUND_COLOR, 1), new EmptyBorder(10,10,10,10)));
-
-        // Setup friends panel header
-        friendsPanelHeader.setBackground(Color.WHITE);
-        friendsPanelHeader.setLayout(new BorderLayout());
-        friendsPanelHeader.setPreferredSize(new Dimension(160, 25));
-        friendsPanelHeader.setMaximumSize(new Dimension(160, 25));
-
-        // Setup add friend button
-        addFriendButton.setPreferredSize(new Dimension(20, 20));
-        addFriendButton.addActionListener(e -> WordQuizzleClient.POOL.execute(new SendFriendshipRequestOperator()));
-
-        // Setup friend list
-        jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        jList.addListSelectionListener(e -> challengeButton.setEnabled(true));
-
-        // Setup friends scroll pane
-        friendsScrollPane.setPreferredSize(new Dimension(160, 220));
-        friendsScrollPane.setMaximumSize(new Dimension(160, 220));
-
-        // Setup challenge button
-        challengeButton.setText("Challenge");
-        challengeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        challengeButton.setEnabled(false);
-
-        // Add components to friends panel header
-        friendsPanelHeader.add(friendListLabel, BorderLayout.WEST);
-        friendsPanelHeader.add(addFriendButton, BorderLayout.EAST);
-
-        // Add components (with margins) to friends panel
-        friendsPanel.add(friendsPanelHeader);
-        friendsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-        friendsPanel.add(friendsScrollPane);
-        friendsPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-        friendsPanel.add(challengeButton);
 
         // Add all components to outer container
         FRAME.getContentPane().add(friendsPanel, BorderLayout.WEST);
+        FRAME.getContentPane().add(challengePanel, BorderLayout.CENTER);
 
         // Resize accordingly
         FRAME.pack();

@@ -1,5 +1,6 @@
 package server.users;
 
+import challenges.ChallengesManager;
 import messages.*;
 import messages.exceptions.UnexpectedMessageException;
 import org.json.simple.JSONArray;
@@ -119,7 +120,7 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new AlreadyExistingRelationshipException("\"" + applicant + "\" and \"" + friend + "\" ARE ALREADY FRIENDS");
 
         friendUser.addPendingFriendshipRequest(applicant);
-        friendUser.appendRequest(new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, applicant, friend));
+        friendUser.storeMessage(new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, applicant, friend));
 
         return true;
     }
@@ -136,7 +137,7 @@ public class UsersManager extends RemoteServer implements Registrable
 
         try
         {
-            applicantUser.storePendingChallengeRequest(opponent);
+            applicantUser.setPendingChallengeRequest(opponent);
         }
         catch (OpponentOfflineException e)
         {
@@ -150,32 +151,22 @@ public class UsersManager extends RemoteServer implements Registrable
 
         try
         {
-            opponentUser.storePendingChallengeRequest(applicant);
+            opponentUser.setPendingChallengeRequest(applicant);
         }
         catch (OpponentOfflineException e)
         {
-            applicantUser.cancelPendingChallengeRequest();
+            applicantUser.removePendingChallengeRequest(opponent);
             throw new OpponentOfflineException(e.getMessage());
         }
 
-        opponentUser.appendRequest(new Message(MessageType.REQUEST_FOR_CHALLENGE, applicant, opponent));
+        opponentUser.storeMessage(new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, applicant, opponent));
 
-        /* TODO: timer */
+        ChallengesManager.scheduleRequestTimeOut(applicant, opponent);
 
         return true;
     }
 
-    public static String retrieveSerializedFriendList(String username)
-    {
-        User user = USERS_ARCHIVE.get(username);
-
-        if (user == null)
-            throw new Error("UNKNOWN USER \"" + username + "\"");
-
-        return user.JSONserializeFriendsList();
-    }
-
-    public static boolean confirmFriendship(String whoSentRequest, String whoConfirmed) throws UnexpectedMessageException, AlreadyExistingRelationshipException
+    public static boolean confirmFriendshipRequest(String whoSentRequest, String whoConfirmed) throws UnexpectedMessageException, AlreadyExistingRelationshipException
     {
         User whoSentUser  = USERS_ARCHIVE.get(whoSentRequest);
         User whoConfirmedUser  = USERS_ARCHIVE.get(whoConfirmed);
@@ -196,16 +187,53 @@ public class UsersManager extends RemoteServer implements Registrable
     public static boolean cancelFriendshipRequest(String whoSentRequest, String whoDeclined) throws UnexpectedMessageException
     {
         User whoSentUser  = USERS_ARCHIVE.get(whoSentRequest);
-        User whoConfirmedUser  = USERS_ARCHIVE.get(whoDeclined);
+        User whoDeclinedUser  = USERS_ARCHIVE.get(whoDeclined);
 
         if (whoSentUser == null)
             throw new UnexpectedMessageException("UNKNOWN USER \"" + whoSentRequest + "\"");
-        if (whoConfirmedUser == null)
+        if (whoDeclinedUser == null)
             throw new Error("UNKNOWN USER \"" + whoDeclined + "\"");
 
-        whoConfirmedUser.removePendingFriendshipRequest(whoSentRequest);
+        whoDeclinedUser.removePendingFriendshipRequest(whoSentRequest);
 
         return true;
+    }
+
+    public static boolean cancelChallengeRequest(String whoSentRequest, String whoDeclined, boolean timeout) throws UnexpectedMessageException
+    {
+        User whoSentUser  = USERS_ARCHIVE.get(whoSentRequest);
+        User whoDeclinedUser  = USERS_ARCHIVE.get(whoDeclined);
+
+        if (whoSentUser == null)
+            if (timeout)
+                throw new Error("Challenge system inconsistency");
+            else
+                throw new UnexpectedMessageException("UNKNOWN USER \"" + whoSentRequest + "\"");
+        if (whoDeclinedUser == null)
+            throw new Error("UNKNOWN USER \"" + whoDeclined + "\"");
+
+        if (timeout)
+            ChallengesManager.dequeueTimeOut(whoSentRequest, whoDeclined);
+        else
+            ChallengesManager.quitScheduledTimeOut(whoSentRequest, whoDeclined);
+
+        whoSentUser.removePendingChallengeRequest(whoDeclined);
+        whoDeclinedUser.removePendingChallengeRequest(whoSentRequest);
+
+        if (timeout)
+            whoDeclinedUser.storeMessage(new Message(MessageType.CHALLENGE_REQUEST_TIMEOUT_EXPIRED));
+
+        return true;
+    }
+
+    public static String retrieveSerializedFriendList(String username)
+    {
+        User user = USERS_ARCHIVE.get(username);
+
+        if (user == null)
+            throw new Error("UNKNOWN USER \"" + username + "\"");
+
+        return user.JSONserializeFriendsList();
     }
 
     public static boolean sendMessage(String username, Message message) throws UnknownUserException
@@ -215,7 +243,7 @@ public class UsersManager extends RemoteServer implements Registrable
         if (user ==  null)
             throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
 
-        user.appendRequest(message);
+        user.storeMessage(message);
 
         return true;
     }
@@ -238,7 +266,7 @@ public class UsersManager extends RemoteServer implements Registrable
         if (taken ==  null)
             throw new Error("System inconsistency");
 
-        taken.prependRequest(message);
+        taken.restoreMessage(message);
 
         return true;
     }

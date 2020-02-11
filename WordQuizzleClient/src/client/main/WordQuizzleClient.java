@@ -51,7 +51,7 @@ public class WordQuizzleClient
         notificationChannel.bind(UDPaddress);
 
         //just take the idea of this line
-        SwingUtilities.invokeLater(WordQuizzleClientFrame::welcomeFrame);
+        SwingUtilities.invokeLater(WordQuizzleClientFrame::welcome);
 
         while (!shut)
         {

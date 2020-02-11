@@ -1,6 +1,7 @@
 package client.operators;
 
 import client.gui.WordQuizzleClientFrame;
+import client.gui.panels.FriendsPanel;
 import client.main.WordQuizzleClient;
 import messages.Message;
 import messages.MessageType;
@@ -11,7 +12,6 @@ import org.json.simple.parser.ParseException;
 import javax.swing.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.LinkedList;
 
 public class LogInOperator implements Runnable
 {
@@ -69,7 +69,7 @@ public class LogInOperator implements Runnable
                 // Inserts deserialized friends' username in the global friends list
                 for (String friend : (Iterable<String>) DEfriendsList)
                 {
-                    WordQuizzleClientFrame.FRIENDS_LIST.addElement(friend);
+                    FriendsPanel.FRIENDS_LIST.addElement(friend);
                 }
 
 
@@ -78,12 +78,12 @@ public class LogInOperator implements Runnable
             }
             case USERNAME_UNKNOWN:
             {
-                SwingUtilities.invokeLater(() -> WordQuizzleClientFrame.logInProcedure("Username unknown"));
+                SwingUtilities.invokeLater(() -> WordQuizzleClientFrame.logIn("Username unknown"));
                 break;
             }
             case PASSWORD_WRONG:
             {
-                SwingUtilities.invokeLater(() -> WordQuizzleClientFrame.logInProcedure("Password wrong"));
+                SwingUtilities.invokeLater(() -> WordQuizzleClientFrame.logIn("Password wrong"));
                 break;
             }
             default:

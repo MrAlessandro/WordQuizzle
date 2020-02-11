@@ -1,4 +1,4 @@
-package client.gui;
+package client.gui.fields;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;

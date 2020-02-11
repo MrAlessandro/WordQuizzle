@@ -1,6 +1,7 @@
 package client.operators;
 
 import client.gui.WordQuizzleClientFrame;
+import client.gui.panels.FriendsPanel;
 import client.main.WordQuizzleClient;
 import messages.Message;
 import messages.MessageType;
@@ -47,12 +48,12 @@ public class FriendshipRequestConfirmedOperator implements Runnable
         }
 
         // Remove all friends from the global friends list
-        WordQuizzleClientFrame.FRIENDS_LIST.removeAllElements();
+        FriendsPanel.FRIENDS_LIST.removeAllElements();
 
         // Inserts deserialized friends' username in the global friends list
         for (String friend : (Iterable<String>) DEfriendsList)
         {
-            WordQuizzleClientFrame.FRIENDS_LIST.addElement(friend);
+            FriendsPanel.FRIENDS_LIST.addElement(friend);
         }
     }
 }

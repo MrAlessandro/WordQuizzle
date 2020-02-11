@@ -14,7 +14,7 @@ public class SendFriendshipRequestOperator implements Runnable
     {
         // Show add friend dialog
         String friend = (String) JOptionPane.showInputDialog(null, "Send a friendship request to:", "Send a friendship request", JOptionPane.PLAIN_MESSAGE, null, null, "");
-        if (friend.equals(""))
+        if (friend == null || friend.equals(""))
             // If nothing have benn inserted do nothing
             return;
 

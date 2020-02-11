@@ -5,7 +5,6 @@ import messages.MessageType;
 import messages.exceptions.UnexpectedMessageException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import server.users.exceptions.AlreadyExistingRelationshipException;
 import server.users.exceptions.OpponentAlreadyEngagedException;
 import server.users.exceptions.OpponentOfflineException;
 import server.users.exceptions.RequestAlreadySentException;
@@ -33,7 +32,7 @@ public class User
 
     // Pending requests
     private Set<String> friendshipRequests;
-    private AtomicReference<String> challengeRequests;
+    private AtomicReference<String> challengeRequest;
 
     // Backlogs
     private ConcurrentLinkedDeque<Message> requestsBackLog;
@@ -45,7 +44,7 @@ public class User
         this.password = new Password(password);
         this.friends = new HashSet<>(20);
         this.friendshipRequests = ConcurrentHashMap.newKeySet(10);
-        this.challengeRequests = new AtomicReference<>(null);
+        this.challengeRequest = new AtomicReference<>(null);
         this.requestsBackLog = new ConcurrentLinkedDeque<>();
         this.logLock = new ReentrantLock();
         this.address = null;
@@ -58,7 +57,7 @@ public class User
         this.password = password;
         this.friends = friends;
         this.friendshipRequests = friendshipRequests;
-        this.challengeRequests = new AtomicReference<>(null);
+        this.challengeRequest = new AtomicReference<>(null);
         this.requestsBackLog = backLog;
         this.logLock = new ReentrantLock();
         this.address = null;
@@ -96,16 +95,16 @@ public class User
     {
         boolean check = this.friendshipRequests.remove(applicant);
         if (!check)
-            throw new UnexpectedMessageException("CONFIRMATION OF FRIENDSHIP BETWEEN \"" + username + "\" AND \"" + applicant + "\" DO NOT CORRESPONDS TO ANY REQUEST");
+            throw new UnexpectedMessageException("RESPONSE TO THE FRIENDSHIP BETWEEN \"" + username + "\" AND \"" + applicant + "\" DO NOT CORRESPONDS TO ANY REQUEST");
     }
 
-    public void storePendingChallengeRequest(String from) throws OpponentOfflineException, OpponentAlreadyEngagedException
+    public void setPendingChallengeRequest(String from) throws OpponentOfflineException, OpponentAlreadyEngagedException
     {
         this.logLock.lock();
 
         if (this.address != null)
         {
-            boolean check = this.challengeRequests.compareAndSet(null, from);
+            boolean check = this.challengeRequest.compareAndSet(null, from);
             if (!check)
             {
                 this.logLock.unlock();
@@ -121,19 +120,26 @@ public class User
         this.logLock.unlock();
     }
 
-    public boolean cancelPendingChallengeRequest()
+    public boolean removePendingChallengeRequest(String opponent) throws UnexpectedMessageException
     {
-        this.challengeRequests.set(null);
+        this.logLock.lock();
+
+        boolean check = this.challengeRequest.compareAndSet(opponent, null);
+        if (!check)
+            throw new UnexpectedMessageException("RESPONSE TO THE CHALLENGE BETWEEN \"" + username + "\" AND \"" + opponent + "\" DO NOT CORRESPONDS TO ANY REQUEST");
+
+        this.logLock.unlock();
+
         return true;
     }
 
-    public boolean appendRequest(Message message)
+    public boolean storeMessage(Message message)
     {
         this.requestsBackLog.addLast(message);
         return true;
     }
 
-    public boolean prependRequest(Message message)
+    public boolean restoreMessage(Message message)
     {
         this.requestsBackLog.addFirst(message);
         return true;
@@ -177,7 +183,7 @@ public class User
     {
         this.logLock.lock();
 
-        this.challengeRequests.set(null);
+        this.challengeRequest.set(null);
         this.address = null;
 
         this.logLock.unlock();

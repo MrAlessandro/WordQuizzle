@@ -24,9 +24,9 @@ public class SignUpOperator implements Runnable
         if (result)
         {
             JOptionPane.showMessageDialog(null, "User \"" + this.username + "\" registered!", "User registered", JOptionPane.INFORMATION_MESSAGE);
-            SwingUtilities.invokeLater(WordQuizzleClientFrame::welcomeFrame);
+            SwingUtilities.invokeLater(WordQuizzleClientFrame::welcome);
         }
         else
-            SwingUtilities.invokeLater(() -> WordQuizzleClientFrame.signUpProcedure("Username already used"));
+            SwingUtilities.invokeLater(() -> WordQuizzleClientFrame.signUp("Username already used"));
     }
 }

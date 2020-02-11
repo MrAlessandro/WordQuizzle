@@ -241,7 +241,7 @@ class Deputy extends Thread
 
                 try
                 {   // Constructing friendship
-                    UsersManager.confirmFriendship(applicant, friend);
+                    UsersManager.confirmFriendshipRequest(applicant, friend);
                     printer.printlnGreen("CONFIRMED");
 
                     // Sending updated friends list to friend
@@ -302,6 +302,61 @@ class Deputy extends Thread
                 response = new Message(MessageType.FRIENDS_LIST, serializedFriendsList);
                 UsersManager.sendResponse((String) attachment, response);
                 printer.printlnGreen("SENT");
+            }
+            case REQUEST_FOR_CHALLENGE:
+            {
+                assert attachment instanceof String;
+                String applicant = (String) attachment;
+                String opponent = String.valueOf(message.getField(1));
+                Message response;
+
+                printer.print("Sending a challenge request from \"" + applicant + "\" to \"" + opponent + "\"... ");
+
+                // Send confirmation message to requested user
+                try
+                {
+                    UsersManager.sendChallengeRequest(applicant, opponent);
+                    printer.printlnGreen("SENT");
+                    response = new Message(MessageType.OK);
+                }
+                catch (CommunicableException e)
+                {
+                    printer.printlnRed(e.getMessage());
+                    response = new Message(e.getResponseType());
+                }
+
+                // Send response to applicant
+                UsersManager.sendResponse(applicant, response);
+                break;
+            }
+            case DECLINE_CHALLENGE:
+            {
+                assert attachment instanceof String;
+                String opponent = (String) attachment;
+                String applicant = String.valueOf(message.getField(0));
+                Message response;
+
+                printer.print("Declining challenge between \"" + applicant + "\" and \"" + opponent + "\"... ");
+
+                try
+                {   // Removing request from system
+                    UsersManager.cancelChallengeRequest(applicant, opponent, false);
+                    printer.printlnGreen("DECLINED");
+
+                    // Sending confirm message to the applicant
+                    response = new Message(MessageType.OK);
+                    UsersManager.sendMessage(applicant, new Message(MessageType.CHALLENGE_DECLINED, applicant, opponent));
+                }
+                catch (CommunicableException e)
+                {
+                    printer.printlnRed(e.getMessage());
+                    response = new Message(e.getResponseType());
+                }
+
+                // Send response to applicant
+                UsersManager.sendResponse(opponent, response);
+
+                break;
             }
             default:
             {}
