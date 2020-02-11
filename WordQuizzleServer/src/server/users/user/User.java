@@ -1,8 +1,14 @@
 package server.users.user;
 
 import messages.Message;
+import messages.MessageType;
+import messages.exceptions.UnexpectedMessageException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import server.users.exceptions.AlreadyExistingRelationshipException;
+import server.users.exceptions.OpponentAlreadyEngagedException;
+import server.users.exceptions.OpponentOfflineException;
+import server.users.exceptions.RequestAlreadySentException;
 
 import java.net.SocketAddress;
 import java.util.HashSet;
@@ -10,19 +16,28 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 public class User
 {
+    // User info
     private String username;
     private Password password;
     private HashSet<String> friends;
+    private int score;
+
+    // LogIn address flag
+    private ReentrantLock logLock;
+    private SocketAddress address;
+
+    // Pending requests
     private Set<String> friendshipRequests;
     private AtomicReference<String> challengeRequests;
-    private AtomicReference<SocketAddress> address;
+
+    // Backlogs
     private ConcurrentLinkedDeque<Message> requestsBackLog;
     private Message responseBackLog;
-    private int score;
 
     public User(String username, char[] password)
     {
@@ -32,7 +47,8 @@ public class User
         this.friendshipRequests = ConcurrentHashMap.newKeySet(10);
         this.challengeRequests = new AtomicReference<>(null);
         this.requestsBackLog = new ConcurrentLinkedDeque<>();
-        this.address = new AtomicReference<>(null);
+        this.logLock = new ReentrantLock();
+        this.address = null;
         this.score = 0;
     }
 
@@ -44,7 +60,8 @@ public class User
         this.friendshipRequests = friendshipRequests;
         this.challengeRequests = new AtomicReference<>(null);
         this.requestsBackLog = backLog;
-        this.address = new AtomicReference<>(null);
+        this.logLock = new ReentrantLock();
+        this.address = null;
         this.score = score;
     }
 
@@ -68,24 +85,40 @@ public class User
         return this.friends.add(userName);
     }
 
-    public boolean hasPendingFriendshipRequestFrom(String friend)
+    public void addPendingFriendshipRequest(String applicant) throws RequestAlreadySentException
     {
-        return this.friendshipRequests.contains(friend);
+        boolean check = this.friendshipRequests.add(applicant);
+        if (!check)
+            throw new RequestAlreadySentException("FRIENDSHIP REQUEST FROM \"" + applicant + "\" TO \"" + username + "\" HAS ALREADY BEEN SENT");
     }
 
-    public boolean removePendingFriendshipRequest(String friend)
+    public void removePendingFriendshipRequest(String applicant) throws UnexpectedMessageException
     {
-        return this.friendshipRequests.remove(friend);
+        boolean check = this.friendshipRequests.remove(applicant);
+        if (!check)
+            throw new UnexpectedMessageException("CONFIRMATION OF FRIENDSHIP BETWEEN \"" + username + "\" AND \"" + applicant + "\" DO NOT CORRESPONDS TO ANY REQUEST");
     }
 
-    public boolean addPendingFriendshipRequest(String friend)
+    public void storePendingChallengeRequest(String from) throws OpponentOfflineException, OpponentAlreadyEngagedException
     {
-        return this.friendshipRequests.add(friend);
-    }
+        this.logLock.lock();
 
-    public boolean storePendingChallengeRequest(String from)
-    {
-        return this.challengeRequests.compareAndSet(null, from);
+        if (this.address != null)
+        {
+            boolean check = this.challengeRequests.compareAndSet(null, from);
+            if (!check)
+            {
+                this.logLock.unlock();
+                throw new OpponentAlreadyEngagedException("\"" + username + "\" IS ALREADY ENGAGED IN OTHER CHALLENGE");
+            }
+        }
+        else
+        {
+            this.logLock.unlock();
+            throw new OpponentOfflineException("USER \"" + username + "\" IS OFFLINE");
+        }
+
+        this.logLock.unlock();
     }
 
     public boolean cancelPendingChallengeRequest()
@@ -97,16 +130,6 @@ public class User
     public boolean appendRequest(Message message)
     {
         this.requestsBackLog.addLast(message);
-        return true;
-    }
-
-    public boolean appendRequestIfOnline(Message message)
-    {
-        if (this.address.get() == null)
-            return false;
-        else
-            this.requestsBackLog.addLast(message);
-
         return true;
     }
 
@@ -144,29 +167,32 @@ public class User
 
     public boolean logIn(SocketAddress address)
     {
-        this.address.set(address);
+        this.logLock.lock();
+        this.address = address;
+        this.logLock.unlock();
         return true;
     }
 
     public boolean logOut()
     {
-        if (this.address.get() == null)
-            return false;
+        this.logLock.lock();
 
         this.challengeRequests.set(null);
-        this.address.set(null);
+        this.address = null;
 
+        this.logLock.unlock();
         return true;
-    }
-
-    public boolean isLogged()
-    {
-        return this.address != null;
     }
 
     public SocketAddress getAddress()
     {
-        return this.address.get();
+        SocketAddress address;
+
+        this.logLock.lock();
+        address =  this.address;
+        this.logLock.unlock();
+
+        return address;
     }
 
     public String JSONserializeFriendsList()
@@ -195,7 +221,8 @@ public class User
 
         for (Message mex : this.requestsBackLog)
         {
-            backLogs.add(mex.JSONserialize());
+            if (mex.getType() != MessageType.REQUEST_FOR_CHALLENGE)
+                backLogs.add(mex.JSONserialize());
         }
 
         retValue.put("Friends", friendList);

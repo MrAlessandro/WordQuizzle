@@ -118,10 +118,6 @@ public class UsersManager extends RemoteServer implements Registrable
         else if (check1)
             throw new AlreadyExistingRelationshipException("\"" + applicant + "\" and \"" + friend + "\" ARE ALREADY FRIENDS");
 
-
-        if (friendUser.hasPendingFriendshipRequestFrom(applicant))
-            throw new RequestAlreadySentException("FRIENDSHIP REQUEST FROM \"" + applicant + "\" to \"" + friend + "\" ALREADY SENT");
-
         friendUser.addPendingFriendshipRequest(applicant);
         friendUser.appendRequest(new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, applicant, friend));
 
@@ -132,32 +128,37 @@ public class UsersManager extends RemoteServer implements Registrable
     {
         User applicantUser = USERS_ARCHIVE.get(applicant);
         User opponentUser = USERS_ARCHIVE.get(opponent);
-        boolean check2;
-        boolean check1;
 
         if (applicantUser == null)
             throw new Error("UNKNOWN USER \"" + applicant + "\"");
         if (opponentUser == null)
             throw new UnknownUserException("UNKNOWN USER \"" + opponent + "\"");
-        if (!opponentUser.isLogged())
-            throw new OpponentOfflineException("USER \"" + opponent + "\" IS OFFLINE");
 
-        check1 = applicantUser.storePendingChallengeRequest(opponent);
-        if (check1)
+        try
         {
-            check2 = opponentUser.storePendingChallengeRequest(applicant);
-            if (!check2)
-            {
-                applicantUser.cancelPendingChallengeRequest();
-                throw new OpponentAlreadyEngagedException("\"" + opponent + "\" ALREADY ENGAGED IN OTHER CHALLENGE");
-            }
-
+            applicantUser.storePendingChallengeRequest(opponent);
         }
-        else
-            throw new UnexpectedMessageException();
+        catch (OpponentOfflineException e)
+        {
+            e.printStackTrace();
+            throw new Error("LogIn system inconsistency");
+        }
+        catch (OpponentAlreadyEngagedException e)
+        {
+            throw new UnexpectedMessageException("USER \"" + applicant + "\" SENT A CHALLENGE REQUEST BUT IS ALREADY ENGAGED IN A CHALLENGE");
+        }
 
-        if(!opponentUser.appendRequestIfOnline(new Message(MessageType.CHALLENGE_REQUEST, applicant, opponent)))
-            throw new OpponentOfflineException("USER \"" + opponent + "\" IS OFFLINE");
+        try
+        {
+            opponentUser.storePendingChallengeRequest(applicant);
+        }
+        catch (OpponentOfflineException e)
+        {
+            applicantUser.cancelPendingChallengeRequest();
+            throw new OpponentOfflineException(e.getMessage());
+        }
+
+        opponentUser.appendRequest(new Message(MessageType.REQUEST_FOR_CHALLENGE, applicant, opponent));
 
         /* TODO: timer */
 
@@ -184,42 +185,25 @@ public class UsersManager extends RemoteServer implements Registrable
         if (whoConfirmedUser == null)
             throw new Error("UNKNOWN USER \"" + whoConfirmed + "\"");
 
-        boolean check1;
-        boolean check2;
+        whoConfirmedUser.removePendingFriendshipRequest(whoSentRequest);
 
-        if (!whoConfirmedUser.removePendingFriendshipRequest(whoSentRequest))
-            throw new UnexpectedMessageException("CONFIRMATION NOT CORRESPONDS TO ANY REQUEST");
-        whoSentUser.removePendingFriendshipRequest(whoConfirmed);
-
-        check1 = whoSentUser.isFriendOf(whoConfirmed);
-        check2 = whoConfirmedUser.isFriendOf(whoSentRequest);
-
-        if (check1 != check2)
-            throw new Error("Inconsistent relationship");
-        else if (check1)
-            throw new AlreadyExistingRelationshipException("\"" + whoSentRequest + "\" and \"" + whoConfirmed + "\" ARE ALREADY FRIENDS");
-        else
-        {
-            whoSentUser.addFriend(whoConfirmed);
-            whoConfirmedUser.addFriend(whoSentRequest);
-        }
+        whoSentUser.addFriend(whoConfirmed);
+        whoConfirmedUser.addFriend(whoSentRequest);
 
         return true;
     }
 
-    public static boolean cancelFriendshipRequest(String whoSentRequest, String whoConfirmed) throws UnexpectedMessageException
+    public static boolean cancelFriendshipRequest(String whoSentRequest, String whoDeclined) throws UnexpectedMessageException
     {
         User whoSentUser  = USERS_ARCHIVE.get(whoSentRequest);
-        User whoConfirmedUser  = USERS_ARCHIVE.get(whoConfirmed);
+        User whoConfirmedUser  = USERS_ARCHIVE.get(whoDeclined);
 
         if (whoSentUser == null)
             throw new UnexpectedMessageException("UNKNOWN USER \"" + whoSentRequest + "\"");
         if (whoConfirmedUser == null)
-            throw new Error("UNKNOWN USER \"" + whoConfirmed + "\"");
+            throw new Error("UNKNOWN USER \"" + whoDeclined + "\"");
 
-
-        if (!whoConfirmedUser.removePendingFriendshipRequest(whoSentRequest))
-            throw new UnexpectedMessageException("DECLINE NOT CORRESPONDS TO ANY REQUEST");
+        whoConfirmedUser.removePendingFriendshipRequest(whoSentRequest);
 
         return true;
     }

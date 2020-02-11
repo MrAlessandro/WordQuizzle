@@ -9,6 +9,7 @@ public enum MessageType
     LOG_OUT((short) 2, "LogOut"),
     REQUEST_FOR_FRIENDSHIP((short) 3, "RequestForFriend"),
     REQUEST_FOR_FRIENDS_LIST((short) 4, "FriendList"),
+    REQUEST_FOR_CHALLENGE((short) 5, "RequestForChallenge"),
 
     // Notifications,
     REQUEST_FOR_FRIENDSHIP_CONFIRMATION((short) 100, "RequestForFriend"),
@@ -16,7 +17,7 @@ public enum MessageType
     DECLINE_FRIENDSHIP((short) 102, "DeclineFriendship"),
     FRIENDSHIP_CONFIRMED((short) 104, "FriendshipConfirmed"),
     FRIENDSHIP_DECLINED((short)105, "FriendshipDeclined"),
-    CHALLENGE_REQUEST((short) 103, "NotifyChallenge"), // Non viene inviata se offline
+    REQUEST_FOR_CHALLENGE_CONFIRMATION((short) 103, "NotifyChallenge"),
 
     // Response messages
     OK((short) 200, "Ok"),
@@ -38,7 +39,8 @@ public enum MessageType
 
     static
     {
-        for (MessageType type : MessageType.values()) {
+        for (MessageType type : MessageType.values())
+        {
             Map.put(type.value, type);
         }
     }
