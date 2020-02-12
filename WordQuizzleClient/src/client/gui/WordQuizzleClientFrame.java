@@ -42,7 +42,7 @@ public class WordQuizzleClientFrame extends JFrame
         FRAME.getContentPane().removeAll();
 
         // Setup outer container
-        FRAME.getContentPane().setBackground(Color.WHITE);
+        FRAME.getContentPane().setBackground(GuiConstants.BACKGROUND_COLOR);
         FRAME.getContentPane().setLayout(new FlowLayout());
 
         // Setup Logo
@@ -50,7 +50,7 @@ public class WordQuizzleClientFrame extends JFrame
 
         // Setup inner container
         JPanel panel = new JPanel();
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(GuiConstants.BACKGROUND_COLOR);
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
         // Setup welcome message
@@ -100,7 +100,7 @@ public class WordQuizzleClientFrame extends JFrame
         FRAME.getContentPane().removeAll();
 
         // Setup outer container
-        FRAME.getContentPane().setBackground(Color.WHITE);
+        FRAME.getContentPane().setBackground(GuiConstants.BACKGROUND_COLOR);
         FRAME.getContentPane().setLayout(new BoxLayout(FRAME.getContentPane(), BoxLayout.Y_AXIS));
 
         DocumentListener fieldsChecker = new DocumentListener() {
@@ -174,7 +174,7 @@ public class WordQuizzleClientFrame extends JFrame
             warningLabel.setText(warningMessage);
 
         // Setup inner container
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(GuiConstants.BACKGROUND_COLOR);
         panel.setLayout(new FlowLayout());
 
         // Setup login button
@@ -216,7 +216,7 @@ public class WordQuizzleClientFrame extends JFrame
         FRAME.getContentPane().removeAll();
 
         // Setup outer container
-        FRAME.getContentPane().setBackground(Color.WHITE);
+        FRAME.getContentPane().setBackground(GuiConstants.BACKGROUND_COLOR);
         FRAME.getContentPane().setLayout(new BoxLayout(FRAME.getContentPane(), BoxLayout.Y_AXIS));
 
         DocumentListener fieldsChecker = new DocumentListener() {
@@ -290,7 +290,7 @@ public class WordQuizzleClientFrame extends JFrame
             warningLabel.setText(warningMessage);
 
         // Setup inner container
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(GuiConstants.BACKGROUND_COLOR);
         panel.setLayout(new FlowLayout());
 
         // Setup signup button
@@ -347,7 +347,7 @@ public class WordQuizzleClientFrame extends JFrame
         FRAME.getContentPane().removeAll();
 
         // Setup outer container
-        FRAME.getContentPane().setBackground(Color.WHITE);
+        FRAME.getContentPane().setBackground(GuiConstants.BACKGROUND_COLOR);
         FRAME.getContentPane().setLayout(new BorderLayout());
 
 

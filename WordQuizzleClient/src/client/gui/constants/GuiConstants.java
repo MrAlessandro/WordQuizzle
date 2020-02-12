@@ -15,5 +15,6 @@ public class GuiConstants
     public static final ImageIcon STOPWATCH_SYMBOL = new ImageIcon(STOPWATCH_SYMBOL_PATH.toString());
     public static final Color MAIN_COLOR = new Color(51, 172, 224, 255);
     public static final Color BACKGROUND_COLOR = new Color(49, 57, 60, 255);
+    public static final Color SCROLL_PANE_BACKGROUND_COLOR = new Color(56,61,59,255);
     public static final Color FOREGROUND_COLOR = new Color(34, 116, 165, 255);
 }

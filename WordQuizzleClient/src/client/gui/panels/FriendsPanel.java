@@ -28,14 +28,17 @@ public class FriendsPanel extends JPanel
 
         // Setup outer container
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        this.setBackground(Color.WHITE);
+        this.setBackground(GuiConstants.BACKGROUND_COLOR);
         this.setBorder(new CompoundBorder(new LineBorder(GuiConstants.MAIN_COLOR, 1), new EmptyBorder(10,10,10,10)));
 
         // Setup friends panel header
-        friendsPanelHeader.setBackground(Color.WHITE);
+        friendsPanelHeader.setBackground(GuiConstants.BACKGROUND_COLOR);
         friendsPanelHeader.setLayout(new BorderLayout());
         friendsPanelHeader.setPreferredSize(new Dimension(160, 25));
         friendsPanelHeader.setMaximumSize(new Dimension(160, 25));
+
+        // Setup the friends list label
+        friendListLabel.setForeground(GuiConstants.MAIN_COLOR);
 
         // Setup add friend button
         addFriendButton.setPreferredSize(new Dimension(20, 20));
@@ -46,6 +49,9 @@ public class FriendsPanel extends JPanel
         jList.addListSelectionListener(e -> challengeButton.setEnabled(true));
 
         // Setup friends scroll pane
+        friendsScrollPane.setBorder(new LineBorder(GuiConstants.MAIN_COLOR, 1));
+        friendsScrollPane.setBackground(GuiConstants.SCROLL_PANE_BACKGROUND_COLOR);
+        friendsScrollPane.setForeground(GuiConstants.FOREGROUND_COLOR);
         friendsScrollPane.setPreferredSize(new Dimension(160, 220));
         friendsScrollPane.setMaximumSize(new Dimension(160, 220));
 

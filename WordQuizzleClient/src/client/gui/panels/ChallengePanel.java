@@ -18,17 +18,17 @@ public class ChallengePanel extends JPanel
         JLabel stopWatchLabel = new JLabel(GuiConstants.STOPWATCH_SYMBOL);
         JPanel labelContainer = new JPanel();
         JLabel placeHolderLabel1 = new JLabel("No challenge in progress.");
-        JLabel placeHolderLabel2 = new JLabel("Select a friend and challenge him within the left panel.");
+        JLabel placeHolderLabel2 = new JLabel("Select a friend and challenge him using the left panel.");
 
         // Setup outer panel
-        this.setBackground(Color.WHITE);
+        this.setBackground(GuiConstants.BACKGROUND_COLOR);
         this.setLayout(new BorderLayout());
         this.setBorder(new CompoundBorder(new LineBorder(GuiConstants.MAIN_COLOR, 1), new EmptyBorder(10,10,10,10)));
         this.setMinimumSize(new Dimension(500, 400));
         this.setPreferredSize(new Dimension(500, 400));
 
         // Setup label container
-        labelContainer.setBackground(Color.WHITE);
+        labelContainer.setBackground(GuiConstants.BACKGROUND_COLOR);
         labelContainer.setLayout(new BoxLayout(labelContainer, BoxLayout.PAGE_AXIS));
 
         // Setup placeholder labels
