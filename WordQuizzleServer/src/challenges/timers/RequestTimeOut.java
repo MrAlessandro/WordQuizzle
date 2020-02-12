@@ -21,6 +21,7 @@ public class RequestTimeOut extends TimerTask
     @Override
     public void run()
     {
+        System.out.println("Timer relative to challenge request from \"" + requestFrom + "\" to \"" + requestTo + "\" has expired");
         try
         {
             UsersManager.cancelChallengeRequest(this.requestFrom, this.requestTo, true);

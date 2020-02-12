@@ -7,13 +7,10 @@ import client.gui.panels.ChallengePanel;
 import client.gui.panels.FriendsPanel;
 import client.main.WordQuizzleClient;
 import client.operators.LogInOperator;
-import client.operators.SendFriendshipRequestOperator;
 import client.operators.SignUpOperator;
 
 import javax.swing.*;
 import javax.swing.border.Border;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -22,8 +19,6 @@ import java.awt.*;
 public class WordQuizzleClientFrame extends JFrame
 {
     public static final WordQuizzleClientFrame FRAME = new WordQuizzleClientFrame();
-    public static ChallengePanel challengePanel = null;
-    public static FriendsPanel friendsPanel = null;
     public static String username = null;
 
     private WordQuizzleClientFrame()
@@ -339,9 +334,6 @@ public class WordQuizzleClientFrame extends JFrame
 
     public static void session()
     {
-        // Initialize components
-        friendsPanel = new FriendsPanel();
-        challengePanel = new ChallengePanel();
 
         // Empty frame
         FRAME.getContentPane().removeAll();
@@ -352,8 +344,14 @@ public class WordQuizzleClientFrame extends JFrame
 
 
         // Add all components to outer container
-        FRAME.getContentPane().add(friendsPanel, BorderLayout.WEST);
-        FRAME.getContentPane().add(challengePanel, BorderLayout.CENTER);
+        FRAME.getContentPane().add(FriendsPanel.PANEL, BorderLayout.WEST);
+        FRAME.getContentPane().add(ChallengePanel.PANEL, BorderLayout.CENTER);
+
+        // Delegate Friends panel setup
+        SwingUtilities.invokeLater(FriendsPanel::setUp);
+
+        // Delegate Challenge panel setup
+        SwingUtilities.invokeLater(ChallengePanel::waitForChallengeRequest);
 
         // Resize accordingly
         FRAME.pack();

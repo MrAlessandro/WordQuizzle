@@ -221,7 +221,7 @@ public class UsersManager extends RemoteServer implements Registrable
         whoDeclinedUser.removePendingChallengeRequest(whoSentRequest);
 
         if (timeout)
-            whoDeclinedUser.storeMessage(new Message(MessageType.CHALLENGE_REQUEST_TIMEOUT_EXPIRED));
+            whoSentUser.storeMessage(new Message(MessageType.CHALLENGE_REQUEST_TIMEOUT_EXPIRED, whoSentRequest, whoDeclined));
 
         return true;
     }

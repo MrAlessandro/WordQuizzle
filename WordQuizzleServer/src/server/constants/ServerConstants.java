@@ -14,6 +14,6 @@ public class ServerConstants extends Constants
     public static final int DEPUTIES_POOL_SIZE = 1;
     public static final int BUFFERS_SIZE = 2048;
     public static final Path SERVER_LOG_FILES_PATH = Paths.get(System.getProperty("user.dir"), "WordQuizzleServer/logs/");
-    public static final int CHALLENGE_REQUEST_TIMEOUT = 30000;
+    public static final int CHALLENGE_REQUEST_TIMEOUT = 5000;
     public static final boolean LOG_IN_FILE = false;
 }

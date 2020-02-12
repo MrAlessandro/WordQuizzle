@@ -2,6 +2,7 @@ package client.main;
 
 import client.constants.ClientConstants;
 import client.gui.WordQuizzleClientFrame;
+import client.operators.ChallengeRequestTimeoutExpiredOperator;
 import client.operators.FriendshipRequestConfirmedOperator;
 import client.operators.FriendshipRequestDeclinedOperator;
 import client.operators.ReplyFriendshipRequestOperator;
@@ -42,17 +43,20 @@ public class WordQuizzleClient
 
     public static void main(String[] args) throws IOException
     {
+        // Initialize the TCP connection
         SocketAddress TCPaddress = new InetSocketAddress(ClientConstants.HOST_NAME, ClientConstants.CONNECTION_PORT);
         server = SocketChannel.open(TCPaddress);
         server.configureBlocking(true);
 
+        // Initialize the UDP socket
         SocketAddress UDPaddress = new InetSocketAddress(ClientConstants.HOST_NAME, 0);
         notificationChannel = DatagramChannel.open();
         notificationChannel.bind(UDPaddress);
 
-        //just take the idea of this line
+        // Start gui
         SwingUtilities.invokeLater(WordQuizzleClientFrame::welcome);
 
+        // Client's notifications listening cycle
         while (!shut)
         {
             try
@@ -69,6 +73,10 @@ public class WordQuizzleClient
                         break;
                     case FRIENDSHIP_DECLINED:
                         POOL.execute(new FriendshipRequestDeclinedOperator(String.valueOf(message.getField(1))));
+                        break;
+                    case CHALLENGE_REQUEST_TIMEOUT_EXPIRED:
+                        System.out.println(message);
+                        POOL.execute(new ChallengeRequestTimeoutExpiredOperator(String.valueOf(message.getField(1))));
                         break;
                     default:
                     {}

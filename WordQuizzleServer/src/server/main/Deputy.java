@@ -391,14 +391,19 @@ class Deputy extends Thread
         {
             Message outcome = null;
 
-            printer.print("Writing message to user \"" + attachment + "\"... ");
             try
             {
                 outcome = UsersManager.retrieveMessage((String) attachment);
                 if (outcome.getType().isNotification())
+                {
+                    printer.print("Writing notification to user \"" + attachment + "\"... ");
                     Message.writeNotification(this.UDPchannel, UsersManager.getUserAddress((String) attachment), buffer, outcome);
+                }
                 else
+                {
+                    printer.print("Writing message to user \"" + attachment + "\"... ");
                     Message.writeMessage(client, buffer, outcome);
+                }
 
                 printer.printlnGreen("WRITTEN");
             }

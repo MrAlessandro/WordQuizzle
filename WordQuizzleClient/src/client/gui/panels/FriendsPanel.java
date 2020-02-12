@@ -2,6 +2,7 @@ package client.gui.panels;
 
 import client.gui.constants.GuiConstants;
 import client.main.WordQuizzleClient;
+import client.operators.SendChallengeRequestOperator;
 import client.operators.SendFriendshipRequestOperator;
 
 import javax.swing.*;
@@ -12,11 +13,24 @@ import java.awt.*;
 
 public class FriendsPanel extends JPanel
 {
+    public static final FriendsPanel PANEL = new FriendsPanel();
     public static final DefaultListModel<String> FRIENDS_LIST = new DefaultListModel<>();
+    public static JButton challengeButton;
 
-    public FriendsPanel()
+    private FriendsPanel()
     {
         super();
+
+        // Setup Friend panel
+        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        this.setBackground(GuiConstants.BACKGROUND_COLOR);
+        this.setBorder(new CompoundBorder(new LineBorder(GuiConstants.MAIN_COLOR, 1), new EmptyBorder(10,10,10,10)));
+    }
+
+    public static void setUp()
+    {
+        // Empty panel
+        PANEL.removeAll();
 
         // Initialize components
         JPanel friendsPanelHeader = new JPanel();
@@ -24,12 +38,7 @@ public class FriendsPanel extends JPanel
         JButton addFriendButton = new JButton("+");
         JList<String> jList = new JList<>(FRIENDS_LIST);
         JScrollPane friendsScrollPane = new JScrollPane(jList);
-        JButton challengeButton = new JButton();
-
-        // Setup outer container
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        this.setBackground(GuiConstants.BACKGROUND_COLOR);
-        this.setBorder(new CompoundBorder(new LineBorder(GuiConstants.MAIN_COLOR, 1), new EmptyBorder(10,10,10,10)));
+        challengeButton = new JButton();
 
         // Setup friends panel header
         friendsPanelHeader.setBackground(GuiConstants.BACKGROUND_COLOR);
@@ -46,7 +55,10 @@ public class FriendsPanel extends JPanel
 
         // Setup friend list
         jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        jList.addListSelectionListener(e -> challengeButton.setEnabled(true));
+        jList.addListSelectionListener(listSelectionEvent -> {
+            if (ChallengePanel.challengeable)
+                challengeButton.setEnabled(true);
+        });
 
         // Setup friends scroll pane
         friendsScrollPane.setBorder(new LineBorder(GuiConstants.MAIN_COLOR, 1));
@@ -58,6 +70,7 @@ public class FriendsPanel extends JPanel
         // Setup challenge button
         challengeButton.setText("Challenge");
         challengeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        challengeButton.addActionListener(e -> WordQuizzleClient.POOL.execute(new SendChallengeRequestOperator(jList.getSelectedValue())));
         challengeButton.setEnabled(false);
 
         // Add components to friends panel header
@@ -65,11 +78,10 @@ public class FriendsPanel extends JPanel
         friendsPanelHeader.add(addFriendButton, BorderLayout.EAST);
 
         // Add components (with margins) to friends panel
-        this.add(friendsPanelHeader);
-        this.add(Box.createRigidArea(new Dimension(0, 5)));
-        this.add(friendsScrollPane);
-        this.add(Box.createRigidArea(new Dimension(0, 5)));
-        this.add(challengeButton);
-
+        PANEL.add(friendsPanelHeader);
+        PANEL.add(Box.createRigidArea(new Dimension(0, 5)));
+        PANEL.add(friendsScrollPane);
+        PANEL.add(Box.createRigidArea(new Dimension(0, 5)));
+        PANEL.add(challengeButton);
     }
 }
