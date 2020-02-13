@@ -24,6 +24,7 @@ public enum MessageType
     CHALLENGE_DECLINED((short) 105, "ChallengeDeclined"),
     CHALLENGE_REQUEST_TIMEOUT_EXPIRED((short) 106, "ChallengeRequestTimeoutExpired"),
     OPPONENT_LOGGED_OUT((short) 107, "OpponentLoggedOut"),
+    OPPONENT_DID_NOT_REPLY((short) 108, "OpponentDidNotReply"),
 
     // Response messages
     OK((short) 200, "Ok"),

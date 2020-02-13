@@ -4,11 +4,11 @@ import client.gui.panels.ChallengePanel;
 
 import javax.swing.*;
 
-public class ChallengeRequestTimeoutExpiredOperator implements Runnable
+public class OpponentDidNotReplyOperator implements Runnable
 {
     private String whoMissedRequest;
 
-    public ChallengeRequestTimeoutExpiredOperator(String whoMissedRequest)
+    public OpponentDidNotReplyOperator(String whoMissedRequest)
     {
         this.whoMissedRequest = whoMissedRequest;
     }
@@ -17,7 +17,7 @@ public class ChallengeRequestTimeoutExpiredOperator implements Runnable
     public void run()
     {
         // Show information message about the expiration of the request
-        JOptionPane.showMessageDialog(null, "Challenge request to \"" + whoMissedRequest + "\" is expired", "Request timeout expired", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(null, "Opponent \"" + whoMissedRequest + "\" did not reply in time", "Request expired", JOptionPane.INFORMATION_MESSAGE);
 
         // Restore challenge panel to initial configuration
         SwingUtilities.invokeLater(ChallengePanel::waitForChallengeRequest);

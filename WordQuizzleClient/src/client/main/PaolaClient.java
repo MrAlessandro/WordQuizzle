@@ -36,7 +36,8 @@ public class PaolaClient
         message = Message.readMessage(server, buffer);
         System.out.println("Received message: "+ message.toString());
 
-        message = Message.readNotification(udpChannel, buffer);
+        message = new Message(MessageType.REQUEST_FOR_CHALLENGE, "Paola", "Alessandro");
+        Message.writeMessage(server, buffer, message);
         System.out.println("Received message: "+ message.toString());
 
         // Unreachable

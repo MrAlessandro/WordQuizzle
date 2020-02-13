@@ -1,6 +1,5 @@
 package challenges.timers;
 
-import challenges.ChallengesManager;
 import messages.exceptions.UnexpectedMessageException;
 import server.users.UsersManager;
 

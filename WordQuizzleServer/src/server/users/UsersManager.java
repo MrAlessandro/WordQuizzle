@@ -205,6 +205,8 @@ public class UsersManager extends RemoteServer implements Registrable
         User whoSentUser  = USERS_ARCHIVE.get(whoSentRequest);
         User whoDeclinedUser  = USERS_ARCHIVE.get(whoDeclined);
 
+        System.out.println("canceling challenge request");
+
         if (whoSentUser == null)
             if (timeout)
                 throw new Error("Challenge system inconsistency");
@@ -223,9 +225,12 @@ public class UsersManager extends RemoteServer implements Registrable
 
         if (timeout)
         {
-            whoSentUser.storeMessage(new Message(MessageType.CHALLENGE_REQUEST_TIMEOUT_EXPIRED, whoSentRequest, whoDeclined));
-
+            System.out.println("Storing notification");
+            whoSentUser.storeMessage(new Message(MessageType.OPPONENT_DID_NOT_REPLY, whoSentRequest, whoDeclined));
+            whoDeclinedUser.storeMessage(new Message(MessageType.CHALLENGE_REQUEST_TIMEOUT_EXPIRED, whoSentRequest, whoDeclined));
         }
+        else
+            whoSentUser.storeMessage(new Message(MessageType.CHALLENGE_DECLINED, whoSentRequest, whoDeclined));
 
         return true;
     }

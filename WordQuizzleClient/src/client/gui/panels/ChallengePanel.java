@@ -95,7 +95,7 @@ public class ChallengePanel extends JPanel
         stopwatchLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
 
         // Adding labels to labels container
-        labelContainer.add(Box.createRigidArea(new Dimension(0, 140)));
+        labelContainer.add(Box.createRigidArea(new Dimension(0, 80)));
         labelContainer.add(waitingLabel);
         labelContainer.add(stopwatchLabel);
 

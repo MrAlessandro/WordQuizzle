@@ -61,6 +61,7 @@ class Deputy extends Thread
                 Iterator<SelectionKey> iter;
                 // Ready channels counter
                 int ready;
+
                 // Extract any eventual new incoming connections
                 SocketChannel incoming;
                 while ((incoming = dispatch.poll()) != null)
@@ -73,12 +74,7 @@ class Deputy extends Thread
 
                 // Channel selection to detect ready channels
                 ready = selector.select();
-                // Check if there are ready channels
-                if (ready == 0)
-                    // No ready operations, come back to the beginning of the listening cycle
-                    continue;
 
-                // There are some ready channel to read/write;
                 // Iterate the ready channels set
                 iter = selector.selectedKeys().iterator();
                 while (iter.hasNext())
@@ -89,16 +85,14 @@ class Deputy extends Thread
 
                     // Check if the serving channel is readable
                     if (currentKey.isValid() && currentKey.isReadable())
-                    {
                          receive(currentKey);
-                    }
+
                     // Check if the serving channel is writable
                     if (currentKey.isValid() && currentKey.isWritable())
-                    {
                         send(currentKey);
-                    }
                 }
 
+                // Checking if some users relative to the registered channels have pending messages
                 for (SelectionKey currentKey : selector.keys())
                 {
                     // Check if some logged users have pending messages

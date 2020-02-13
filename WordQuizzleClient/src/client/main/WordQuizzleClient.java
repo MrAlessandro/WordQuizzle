@@ -2,10 +2,7 @@ package client.main;
 
 import client.constants.ClientConstants;
 import client.gui.WordQuizzleClientFrame;
-import client.operators.ChallengeRequestTimeoutExpiredOperator;
-import client.operators.FriendshipRequestConfirmedOperator;
-import client.operators.FriendshipRequestDeclinedOperator;
-import client.operators.ReplyFriendshipRequestOperator;
+import client.operators.*;
 import constants.Constants;
 import messages.Message;
 import messages.exceptions.InvalidMessageFormatException;
@@ -74,9 +71,20 @@ public class WordQuizzleClient
                     case FRIENDSHIP_DECLINED:
                         POOL.execute(new FriendshipRequestDeclinedOperator(String.valueOf(message.getField(1))));
                         break;
+                    case REQUEST_FOR_CHALLENGE_CONFIRMATION:
+                        POOL.execute(new ReplyChallengeRequestOperator(String.valueOf(message.getField(0))));
+                        break;
+                    case OPPONENT_DID_NOT_REPLY:
+                        POOL.execute(new OpponentDidNotReplyOperator(String.valueOf(message.getField(1))));
+                        break;
                     case CHALLENGE_REQUEST_TIMEOUT_EXPIRED:
-                        System.out.println(message);
-                        POOL.execute(new ChallengeRequestTimeoutExpiredOperator(String.valueOf(message.getField(1))));
+                        ReplyChallengeRequestOperator.CHOICE.set(0);
+
+                        synchronized (ReplyChallengeRequestOperator.CHOICE)
+                        {
+                            ReplyChallengeRequestOperator.CHOICE.notifyAll();
+                        }
+
                         break;
                     default:
                     {}

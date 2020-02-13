@@ -64,9 +64,7 @@ public class ReplyFriendshipRequestOperator implements Runnable
             Message message = new Message(MessageType.DECLINE_FRIENDSHIP, this.from, WordQuizzleClientFrame.username);
             // Send message and get the response
             Message response = WordQuizzleClient.send(message);
-            if (response.getType() != MessageType.OK)
-                // If message is different from ok ignore it
-            {}
+            // If message is different from ok ignore it
         }
     }
 }
