@@ -4,18 +4,21 @@ import challenges.ChallengesManager;
 import messages.exceptions.UnexpectedMessageException;
 import server.users.UsersManager;
 
+import java.nio.channels.Selector;
 import java.util.TimerTask;
 
 public class RequestTimeOut extends TimerTask
 {
     private String requestFrom;
     private String requestTo;
+    private Selector toWake;
 
-    public RequestTimeOut(String requestFrom, String requestTo)
+    public RequestTimeOut(String requestFrom, String requestTo, Selector toWake)
     {
         super();
         this.requestFrom = requestFrom;
         this.requestTo = requestTo;
+        this.toWake = toWake;
     }
 
     @Override
@@ -25,6 +28,7 @@ public class RequestTimeOut extends TimerTask
         try
         {
             UsersManager.cancelChallengeRequest(this.requestFrom, this.requestTo, true);
+            toWake.wakeup();
         } catch (UnexpectedMessageException ignore)
         {}
     }

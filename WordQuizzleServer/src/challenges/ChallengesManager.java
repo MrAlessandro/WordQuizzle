@@ -3,6 +3,7 @@ package challenges;
 import challenges.timers.RequestTimeOut;
 import server.constants.ServerConstants;
 
+import java.nio.channels.Selector;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Timer;
@@ -17,9 +18,9 @@ public class ChallengesManager
     private ChallengesManager()
     {}
 
-    public static void scheduleRequestTimeOut(String requestFrom, String requestTo)
+    public static void scheduleRequestTimeOut(String requestFrom, String requestTo, Selector toWake)
     {
-        RequestTimeOut timeOut = new RequestTimeOut(requestFrom, requestTo);
+        RequestTimeOut timeOut = new RequestTimeOut(requestFrom, requestTo, toWake);
 
         boolean check = TIMEOUT_COLLECTION.add(timeOut);
         if (!check)

@@ -315,7 +315,7 @@ class Deputy extends Thread
                 // Send confirmation message to requested user
                 try
                 {
-                    UsersManager.sendChallengeRequest(applicant, opponent);
+                    UsersManager.sendChallengeRequest(applicant, opponent, selector);
                     printer.printlnGreen("SENT");
                     response = new Message(MessageType.OK);
                 }

@@ -16,6 +16,7 @@ import server.constants.ServerConstants;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.channels.Selector;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.rmi.RemoteException;
@@ -125,7 +126,7 @@ public class UsersManager extends RemoteServer implements Registrable
         return true;
     }
 
-    public static boolean sendChallengeRequest(String applicant, String opponent) throws UnknownUserException, OpponentAlreadyEngagedException, UnexpectedMessageException, OpponentOfflineException
+    public static boolean sendChallengeRequest(String applicant, String opponent, Selector toWake) throws UnknownUserException, OpponentAlreadyEngagedException, UnexpectedMessageException, OpponentOfflineException
     {
         User applicantUser = USERS_ARCHIVE.get(applicant);
         User opponentUser = USERS_ARCHIVE.get(opponent);
@@ -161,7 +162,7 @@ public class UsersManager extends RemoteServer implements Registrable
 
         opponentUser.storeMessage(new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, applicant, opponent));
 
-        ChallengesManager.scheduleRequestTimeOut(applicant, opponent);
+        ChallengesManager.scheduleRequestTimeOut(applicant, opponent, toWake);
 
         return true;
     }
@@ -221,7 +222,10 @@ public class UsersManager extends RemoteServer implements Registrable
         whoDeclinedUser.removePendingChallengeRequest(whoSentRequest);
 
         if (timeout)
+        {
             whoSentUser.storeMessage(new Message(MessageType.CHALLENGE_REQUEST_TIMEOUT_EXPIRED, whoSentRequest, whoDeclined));
+
+        }
 
         return true;
     }
