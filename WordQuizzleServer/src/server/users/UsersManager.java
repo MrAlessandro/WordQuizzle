@@ -167,7 +167,7 @@ public class UsersManager extends RemoteServer implements Registrable
         return true;
     }
 
-    public static boolean confirmFriendshipRequest(String whoSentRequest, String whoConfirmed) throws UnexpectedMessageException, AlreadyExistingRelationshipException
+    public static boolean confirmFriendshipRequest(String whoSentRequest, String whoConfirmed) throws UnexpectedMessageException
     {
         User whoSentUser  = USERS_ARCHIVE.get(whoSentRequest);
         User whoConfirmedUser  = USERS_ARCHIVE.get(whoConfirmed);

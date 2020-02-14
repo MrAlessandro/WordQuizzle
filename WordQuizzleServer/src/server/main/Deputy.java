@@ -59,8 +59,6 @@ class Deputy extends Thread
             {
                 // Iterator of the ready channel set
                 Iterator<SelectionKey> iter;
-                // Ready channels counter
-                int ready;
 
                 // Extract any eventual new incoming connections
                 SocketChannel incoming;
@@ -73,7 +71,7 @@ class Deputy extends Thread
                 }
 
                 // Channel selection to detect ready channels
-                ready = selector.select();
+                selector.select();
 
                 // Iterate the ready channels set
                 iter = selector.selectedKeys().iterator();

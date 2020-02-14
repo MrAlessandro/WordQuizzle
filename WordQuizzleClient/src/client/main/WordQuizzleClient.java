@@ -2,6 +2,7 @@ package client.main;
 
 import client.constants.ClientConstants;
 import client.gui.WordQuizzleClientFrame;
+import client.gui.dialogs.ChallengeDialog;
 import client.operators.*;
 import constants.Constants;
 import messages.Message;
@@ -72,19 +73,17 @@ public class WordQuizzleClient
                         POOL.execute(new FriendshipRequestDeclinedOperator(String.valueOf(message.getField(1))));
                         break;
                     case REQUEST_FOR_CHALLENGE_CONFIRMATION:
-                        POOL.execute(new ReplyChallengeRequestOperator(String.valueOf(message.getField(0))));
+                        SwingUtilities.invokeLater(() -> {
+                            ChallengeDialog.CHALLENGE_DIALOG.requestFrom(String.valueOf(message.getField(0)));
+                            ChallengeDialog.CHALLENGE_DIALOG.setVisible(true);
+                        });
                         break;
                     case OPPONENT_DID_NOT_REPLY:
                         POOL.execute(new OpponentDidNotReplyOperator(String.valueOf(message.getField(1))));
                         break;
                     case CHALLENGE_REQUEST_TIMEOUT_EXPIRED:
-                        ReplyChallengeRequestOperator.CHOICE.set(0);
-
-                        synchronized (ReplyChallengeRequestOperator.CHOICE)
-                        {
-                            ReplyChallengeRequestOperator.CHOICE.notifyAll();
-                        }
-
+                        POOL.execute(new RequestExpiredOperator());
+                        SwingUtilities.invokeLater(() -> ChallengeDialog.CHALLENGE_DIALOG.setVisible(false));
                         break;
                     default:
                     {}
