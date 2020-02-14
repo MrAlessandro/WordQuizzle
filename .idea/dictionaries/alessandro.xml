@@ -4,12 +4,14 @@
       <w>challengeable</w>
       <w>chiara</w>
       <w>decrementer</w>
+      <w>dequeue</w>
       <w>deserialized</w>
       <w>efriend</w>
       <w>efriends</w>
       <w>epassword</w>
       <w>erequests</w>
       <w>iter</w>
+      <w>langpair</w>
       <w>ndeserialize</w>
       <w>nserialize</w>
       <w>outcoming</w>
@@ -22,6 +24,7 @@
       <w>pread</w>
       <w>psend</w>
       <w>quizzle</w>
+      <w>randomizer</w>
       <w>signup</w>
       <w>unlogged</w>
       <w>writables</w>

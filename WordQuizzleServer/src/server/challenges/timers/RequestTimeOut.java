@@ -1,4 +1,4 @@
-package challenges.timers;
+package server.challenges.timers;
 
 import messages.exceptions.UnexpectedMessageException;
 import server.users.UsersManager;

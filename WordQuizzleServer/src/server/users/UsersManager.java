@@ -1,6 +1,6 @@
 package server.users;
 
-import challenges.ChallengesManager;
+import server.challenges.ChallengesManager;
 import messages.*;
 import messages.exceptions.UnexpectedMessageException;
 import org.json.simple.JSONArray;
@@ -216,9 +216,9 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new Error("UNKNOWN USER \"" + whoDeclined + "\"");
 
         if (timeout)
-            ChallengesManager.dequeueTimeOut(whoSentRequest, whoDeclined);
+            ChallengesManager.dequeueScheduledRequestTimeOut(whoSentRequest, whoDeclined);
         else
-            ChallengesManager.quitScheduledTimeOut(whoSentRequest, whoDeclined);
+            ChallengesManager.quitScheduledRequestTimeOut(whoSentRequest, whoDeclined);
 
         whoSentUser.removePendingChallengeRequest(whoDeclined);
         whoDeclinedUser.removePendingChallengeRequest(whoSentRequest);

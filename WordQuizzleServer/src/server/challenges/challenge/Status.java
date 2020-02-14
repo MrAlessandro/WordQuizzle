@@ -1,4 +1,4 @@
-package challenges.challenge;
+package server.challenges.challenge;
 
 public enum Status
 {

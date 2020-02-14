@@ -18,18 +18,25 @@ public class TraducingTest
         try
         {
             StringBuilder builder = new StringBuilder();
-            URL url = new URL("https://api.mymemory.translated.net/get?q=Hello!&langpair=en|it");
+            URL url = new URL("https://api.mymemory.translated.net/get?q=letto&langpair=it|en&mt=0");
             BufferedReader reader;
             HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
             httpURLConnection.setRequestMethod("GET");
+            httpURLConnection.setDoOutput(true);
+
+            int responseCode = httpURLConnection.getResponseCode();
+            System.out.println("Response code: " + responseCode);
 
             reader = new BufferedReader(new InputStreamReader(httpURLConnection.getInputStream()));
 
             String line;
             while ((line = reader.readLine()) != null)
             {
+                System.out.println(line);
                 builder.append(line);
             }
+
+            System.out.println(builder.toString());
 
             JSONObject obj = (JSONObject) JSONValue.parse(builder.toString());
             String translated = (String) ((JSONObject)obj.get("responseData")).get("translatedText");
