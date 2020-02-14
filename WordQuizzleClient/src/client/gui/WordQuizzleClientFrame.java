@@ -322,14 +322,12 @@ public class WordQuizzleClientFrame extends JFrame
         FRAME.getContentPane().removeAll();
 
         // Setup outer container
-        FRAME.getContentPane().setBackground(Color.WHITE);
+        FRAME.getContentPane().setBackground(GuiConstants.BACKGROUND_COLOR);
         FRAME.getContentPane().setLayout(new FlowLayout());
 
         // Setup loading animation
         FRAME.getContentPane().add(loadingGif);
 
-        // Resize accordingly
-        FRAME.pack();
     }
 
     public static void session()
