@@ -1,6 +1,7 @@
 package client.operators;
 
 import client.gui.WordQuizzleClientFrame;
+import client.gui.constants.GuiConstants;
 import client.gui.panels.FriendsPanel;
 import client.main.WordQuizzleClient;
 import messages.Message;
@@ -24,7 +25,7 @@ public class FriendshipRequestConfirmedOperator implements Runnable
     public void run()
     {
         // Show information dialog
-        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "User \"" + to + "\" accepted your friendship request", "Friendship request confirmed", JOptionPane.INFORMATION_MESSAGE));
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "User \"" + to + "\" accepted your friendship request", "Friendship request confirmed", JOptionPane.INFORMATION_MESSAGE, GuiConstants.THUMB_UP_ICON));
 
         // Get the updated friends list
         // Prepare request message

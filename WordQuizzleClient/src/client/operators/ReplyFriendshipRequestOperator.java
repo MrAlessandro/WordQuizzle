@@ -1,6 +1,7 @@
 package client.operators;
 
 import client.gui.WordQuizzleClientFrame;
+import client.gui.constants.GuiConstants;
 import client.gui.panels.FriendsPanel;
 import client.main.WordQuizzleClient;
 import messages.Message;
@@ -24,7 +25,7 @@ public class ReplyFriendshipRequestOperator implements Runnable
     public void run()
     {
         // Show confirmation dialog and get the choice
-        int choice = JOptionPane.showConfirmDialog(null, "User \"" + this.from + "\" sent you a friendship request \n Do you want to accept it?", "Friendship request", JOptionPane.YES_NO_OPTION);
+        int choice = JOptionPane.showConfirmDialog(null, "User \"" + this.from + "\" sent you a friendship request \n Do you want to accept it?", "Friendship request", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,GuiConstants.HANDSHAKE_ICON);
         if (choice == 0)
         {// Yes
             // Prepare message

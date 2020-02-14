@@ -1,6 +1,7 @@
 package client.operators;
 
 import client.gui.WordQuizzleClientFrame;
+import client.gui.constants.GuiConstants;
 import client.main.WordQuizzleClient;
 
 import javax.swing.*;
@@ -23,7 +24,7 @@ public class SignUpOperator implements Runnable
 
         if (result)
         {
-            JOptionPane.showMessageDialog(null, "User \"" + this.username + "\" registered!", "User registered", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(null, "User \"" + this.username + "\" registered!", "User registered", JOptionPane.INFORMATION_MESSAGE, GuiConstants.THUMB_UP_ICON);
             SwingUtilities.invokeLater(WordQuizzleClientFrame::welcome);
         }
         else

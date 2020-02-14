@@ -69,7 +69,7 @@ public class ChallengePanel extends JPanel
         // Initializing components
         JPanel labelContainer = new JPanel();
         JLabel waitingLabel = new JLabel("Waiting for response from \"" + opponent + "\"...");
-        JLabel stopwatchLabel = new JLabel(GuiConstants.STOPWATCH_SYMBOL);
+        JLabel stopwatchLabel = new JLabel(GuiConstants.STOPWATCH_ICON);
 
         // Set the waiting flag
         challengeable = false;
