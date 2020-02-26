@@ -14,6 +14,7 @@ public enum MessageType
     DECLINE_CHALLENGE((short) 7, "DeclineChallenge"),
     CONFIRM_FRIENDSHIP((short) 8, "ConfirmFriendship"),
     DECLINE_FRIENDSHIP((short) 9, "DeclineFriendship"),
+    PROVIDE_TRANSLATION((short) 10, "NextWord"),
 
     // Notifications,
     REQUEST_FOR_FRIENDSHIP_CONFIRMATION((short) 100, "RequestForFriend"),
@@ -23,8 +24,14 @@ public enum MessageType
     CHALLENGE_CONFIRMED((short) 104, "ChallengeConfirmed"),
     CHALLENGE_DECLINED((short) 105, "ChallengeDeclined"),
     CHALLENGE_REQUEST_TIMEOUT_EXPIRED((short) 106, "ChallengeRequestTimeoutExpired"),
-    OPPONENT_LOGGED_OUT((short) 107, "OpponentLoggedOut"),
-    OPPONENT_DID_NOT_REPLY((short) 108, "OpponentDidNotReply"),
+    OPPONENT_WENT_OFFLINE_DURING_REQUEST((short) 107, "OpponentWentOfflineDuringRequest"),
+    APPLICANT_WENT_OFFLINE_DURING_REQUEST((short) 108, "ApplicantWentOfflineDuringRequest"),
+    OPPONENT_DID_NOT_REPLY((short) 109, "OpponentDidNotReply"),
+    CHALLENGE_TIMEOUT_EXPIRED((short)110, "ChallengeTimeoutExpired"),
+    CHALLENGE_REPORT((short) 111, "Challenge report"),
+    OPPONENT_CANCELED_CHALLENGE((short)112, "OpponentCanceledChallenge"),
+    APPLICANT_WENT_OFFLINE_DURING_CHALLENGE ((short)113, "ApplicantWentOfflineDuringChallenge"),
+    OPPONENT_WENT_OFFLINE_DURING_CHALLENGE ((short)114, "OpponentWentOfflineDuringChallenge"),
 
     // Response messages
     OK((short) 200, "Ok"),
@@ -36,7 +43,10 @@ public enum MessageType
     UNEXPECTED_MESSAGE((short) 207, "UnexpectedMessage"),
     FRIENDSHIP_REQUEST_ALREADY_SENT ((short) 208, "FriendshipRequestAlreadySent"),
     OPPONENT_OFFLINE ((short) 209, "OpponentOffline"),
-    OPPONENT_ALREADY_ENGAGED ((short) 210, "OpponentAlreadyEngaged");
+    OPPONENT_ALREADY_ENGAGED ((short) 210, "OpponentAlreadyEngaged"),
+    APPLICANT_ALREADY_ENGAGED ((short) 221, "ApplicantAlreadyEngaged"),
+    OPPONENT_NOT_FRIEND ((short) 212, "OpponentNotFriend"),
+    TRANSLATION_WRONG((short) 213, "TranslationWrong");
 
 
 

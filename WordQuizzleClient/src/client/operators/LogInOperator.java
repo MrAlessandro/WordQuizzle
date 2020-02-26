@@ -69,7 +69,7 @@ public class LogInOperator implements Runnable
                 // Inserts deserialized friends' username in the global friends list
                 for (String friend : (Iterable<String>) DEfriendsList)
                 {
-                    FriendsPanel.FRIENDS_LIST.addElement(friend);
+                    FriendsPanel.FRIENDS_LIST_MODEL.addElement(friend);
                 }
 
 

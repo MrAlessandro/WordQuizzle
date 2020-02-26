@@ -11,10 +11,11 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
+import java.util.TreeMap;
 
 public class PaolaClient
 {
-    public static void main(String[] args) throws IOException, InvalidMessageFormatException
+    public static void main(String[] args) throws IOException, InvalidMessageFormatException, InterruptedException
     {
         char[] password = {'1', '2', '3', '4'};
 
@@ -36,12 +37,20 @@ public class PaolaClient
         message = Message.readMessage(server, buffer);
         System.out.println("Received message: "+ message.toString());
 
+        //message = new Message(MessageType.REQUEST_FOR_CHALLENGE, "Paola", "Alessandro");
+        //Message.writeMessage(server, buffer, message);
+        //System.out.println("Received message: "+ message.toString());
+
         message = new Message(MessageType.REQUEST_FOR_CHALLENGE, "Paola", "Alessandro");
+        System.out.println("Sending message: " + message.toString());
         Message.writeMessage(server, buffer, message);
+
+        message = Message.readMessage(server, buffer);
         System.out.println("Received message: "+ message.toString());
 
-        // Unreachable
         message = Message.readNotification(udpChannel, buffer);
         System.out.println("Received message: "+ message.toString());
+
+        Thread.sleep(500000);
     }
 }

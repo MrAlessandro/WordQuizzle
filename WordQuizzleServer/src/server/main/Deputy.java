@@ -5,6 +5,8 @@ import messages.Message;
 import messages.MessageType;
 import messages.exceptions.InvalidMessageFormatException;
 import messages.exceptions.UnexpectedMessageException;
+import server.challenges.ChallengesManager;
+import server.challenges.challenge.ChallengeCheckPoint;
 import server.constants.ServerConstants;
 import server.printer.Printer;
 import server.users.UsersManager;
@@ -71,7 +73,7 @@ class Deputy extends Thread
                 }
 
                 // Channel selection to detect ready channels
-                selector.select();
+                selector.select(10);
 
                 // Iterate the ready channels set
                 iter = selector.selectedKeys().iterator();
@@ -96,6 +98,8 @@ class Deputy extends Thread
                     // Check if some logged users have pending messages
                     if (currentKey.isValid() && ((currentKey.attachment() instanceof String && UsersManager.hasPendingMessages((String) currentKey.attachment())) || (currentKey.attachment() instanceof Message)))
                         currentKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                    else
+                        currentKey.interestOps(SelectionKey.OP_READ);
                 }
 
             }
@@ -156,7 +160,6 @@ class Deputy extends Thread
             else
                 selected.attach(response);
 
-            selected.interestOps(SelectionKey.OP_WRITE);
             return;
         }
 
@@ -178,7 +181,7 @@ class Deputy extends Thread
                     printer.print("Logging in user \"" + username + "\"... ");
 
                     // Opening session
-                    UsersManager.openSession(username, password, UDPclientAddress);
+                    UsersManager.openSession(username, password, UDPclientAddress, selected);
 
                     // Send response containing friends list
                     String serializedFriendsList = UsersManager.retrieveSerializedFriendList(username);
@@ -238,7 +241,7 @@ class Deputy extends Thread
 
                     // Sending updated friends list to friend
                     String serializedFriendList = UsersManager.retrieveSerializedFriendList(friend);
-                    response = new Message(MessageType.FRIENDS_LIST, serializedFriendList);
+                    response = new Message(MessageType.OK, serializedFriendList);
 
                     // Sending confirm message to the applicant
                     UsersManager.sendMessage(applicant, new Message(MessageType.FRIENDSHIP_CONFIRMED, applicant, friend));
@@ -294,6 +297,7 @@ class Deputy extends Thread
                 response = new Message(MessageType.FRIENDS_LIST, serializedFriendsList);
                 UsersManager.sendResponse((String) attachment, response);
                 printer.printlnGreen("SENT");
+                break;
             }
             case REQUEST_FOR_CHALLENGE:
             {
@@ -307,7 +311,7 @@ class Deputy extends Thread
                 // Send confirmation message to requested user
                 try
                 {
-                    UsersManager.sendChallengeRequest(applicant, opponent, selector);
+                    UsersManager.sendChallengeRequest(applicant, opponent);
                     printer.printlnGreen("SENT");
                     response = new Message(MessageType.OK);
                 }
@@ -319,6 +323,33 @@ class Deputy extends Thread
 
                 // Send response to applicant
                 UsersManager.sendResponse(applicant, response);
+                break;
+            }
+            case CONFIRM_CHALLENGE:
+            {
+                assert attachment instanceof String;
+                String opponent = (String) attachment;
+                String applicant = String.valueOf(message.getField(0));
+                Message response;
+
+                printer.print("Confirming challenge between \"" + applicant + "\" and \"" + opponent + "\"... ");
+
+                try
+                {
+                    String firstWord = UsersManager.confirmChallengeRequest(applicant, opponent);
+                    printer.printlnGreen("CONFIRMED");
+
+                    response = new Message(MessageType.OK, applicant, opponent, String.valueOf(ServerConstants.CHALLENGE_DURATION_SECONDS), String.valueOf(ServerConstants.CHALLENGE_WORDS_QUANTITY), firstWord);
+                    UsersManager.sendMessage(applicant, new Message(MessageType.CHALLENGE_CONFIRMED, applicant, opponent, String.valueOf(ServerConstants.CHALLENGE_DURATION_SECONDS),
+                            String.valueOf(ServerConstants.CHALLENGE_WORDS_QUANTITY), firstWord));
+                }
+                catch (CommunicableException e)
+                {
+                    printer.printlnRed(e.getMessage());
+                    response = new Message(e.getResponseType());
+                }
+
+                UsersManager.sendResponse(opponent, response);
                 break;
             }
             case DECLINE_CHALLENGE:
@@ -335,9 +366,8 @@ class Deputy extends Thread
                     UsersManager.cancelChallengeRequest(applicant, opponent, false);
                     printer.printlnGreen("DECLINED");
 
-                    // Sending confirm message to the applicant
+                    // Sending confirm message to client who declined
                     response = new Message(MessageType.OK);
-                    UsersManager.sendMessage(applicant, new Message(MessageType.CHALLENGE_DECLINED, applicant, opponent));
                 }
                 catch (CommunicableException e)
                 {
@@ -349,6 +379,48 @@ class Deputy extends Thread
                 UsersManager.sendResponse(opponent, response);
 
                 break;
+            }
+            case PROVIDE_TRANSLATION:
+            {
+                assert attachment instanceof String;
+                String player = (String) attachment;
+                String applicant = String.valueOf(message.getField(0));
+                String opponent = String.valueOf(message.getField(1));
+                String translation = String.valueOf(message.getField(2));
+                ChallengeCheckPoint challengeCheckPoint;
+                Message response;
+
+                printer.print("Checking translation provided by \"" + player + "\"... ");
+
+                // Responding to translation
+                try
+                {
+                    challengeCheckPoint = ChallengesManager.checkTranslation(applicant, opponent, player, translation);
+                    if (challengeCheckPoint.correct)
+                    {
+                        printer.printlnGreen("CORRECT");
+                        response = new Message(MessageType.OK);
+                    }
+                    else
+                    {
+                        printer.printlnRed("WRONG");
+                        response = new Message(MessageType.TRANSLATION_WRONG);
+                    }
+
+                    // Fill response message
+                    response.addField(applicant.toCharArray());
+                    response.addField(opponent.toCharArray());
+                    if (challengeCheckPoint.nextWord != null)
+                        response.addField(challengeCheckPoint.nextWord.toCharArray());
+                }
+                catch (CommunicableException e)
+                {
+                    printer.printlnRed(e.getMessage());
+                    response = new Message(e.getResponseType());
+                }
+
+                // Send response
+                UsersManager.sendResponse(player, response);
             }
             default:
             {}
@@ -376,7 +448,6 @@ class Deputy extends Thread
                 selected.cancel();
                 client.close();
                 printer.printlnGreen("CLOSED");
-                return;
             }
         }
         else if (attachment instanceof String)
@@ -409,11 +480,8 @@ class Deputy extends Thread
                 selected.cancel();
                 client.close();
                 printer.printlnGreen("CLOSED");
-                return;
             }
         }
-
-        selected.interestOps(SelectionKey.OP_READ);
     }
 
     public void shutDown()

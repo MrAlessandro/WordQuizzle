@@ -10,11 +10,11 @@ import server.users.exceptions.OpponentOfflineException;
 import server.users.exceptions.RequestAlreadySentException;
 
 import java.net.SocketAddress;
+import java.nio.channels.SelectionKey;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -26,13 +26,19 @@ public class User
     private HashSet<String> friends;
     private int score;
 
-    // LogIn address flag
+    // LogIn address and selection key
     private ReentrantLock logLock;
     private SocketAddress address;
+    private SelectionKey key;
 
-    // Pending requests
+    // Pending friendship requests
     private Set<String> friendshipRequests;
-    private AtomicReference<String> challengeRequest;
+
+    // Pending challenge request
+    private String challengeRequest;
+
+    // Challenge ID flag
+    private String opponent;
 
     // Backlogs
     private ConcurrentLinkedDeque<Message> requestsBackLog;
@@ -44,10 +50,12 @@ public class User
         this.password = new Password(password);
         this.friends = new HashSet<>(20);
         this.friendshipRequests = ConcurrentHashMap.newKeySet(10);
-        this.challengeRequest = new AtomicReference<>(null);
+        this.challengeRequest = null;
+        this.opponent = null;
         this.requestsBackLog = new ConcurrentLinkedDeque<>();
         this.logLock = new ReentrantLock();
         this.address = null;
+        this.key = null;
         this.score = 0;
     }
 
@@ -57,10 +65,11 @@ public class User
         this.password = password;
         this.friends = friends;
         this.friendshipRequests = friendshipRequests;
-        this.challengeRequest = new AtomicReference<>(null);
+        this.opponent = null;
         this.requestsBackLog = backLog;
         this.logLock = new ReentrantLock();
         this.address = null;
+        this.key = null;
         this.score = score;
     }
 
@@ -84,6 +93,16 @@ public class User
         return this.friends.add(userName);
     }
 
+    public int getScore()
+    {
+        return this.score;
+    }
+
+    public void updateScore(int gain)
+    {
+        this.score += gain;
+    }
+
     public void addPendingFriendshipRequest(String applicant) throws RequestAlreadySentException
     {
         boolean check = this.friendshipRequests.add(applicant);
@@ -98,39 +117,63 @@ public class User
             throw new UnexpectedMessageException("RESPONSE TO THE FRIENDSHIP BETWEEN \"" + username + "\" AND \"" + applicant + "\" DO NOT CORRESPONDS TO ANY REQUEST");
     }
 
-    public void setPendingChallengeRequest(String from) throws OpponentOfflineException, OpponentAlreadyEngagedException
+    public void setPendingChallengeRequest(String from, String to) throws OpponentOfflineException, OpponentAlreadyEngagedException
     {
         this.logLock.lock();
 
         if (this.address != null)
         {
-            boolean check = this.challengeRequest.compareAndSet(null, from);
-            if (!check)
+            if (this.challengeRequest != null || this.opponent != null)
             {
                 this.logLock.unlock();
-                throw new OpponentAlreadyEngagedException("\"" + username + "\" IS ALREADY ENGAGED IN OTHER CHALLENGE");
+                throw new OpponentAlreadyEngagedException("OPPONENT \"" + username + "\" IS ALREADY ENGAGED IN OTHER CHALLENGE");
             }
+            else
+                this.challengeRequest = from + ":" + to;
         }
         else
         {
             this.logLock.unlock();
-            throw new OpponentOfflineException("USER \"" + username + "\" IS OFFLINE");
+            throw new OpponentOfflineException("OPPONENT USER \"" + username + "\" IS OFFLINE");
         }
 
         this.logLock.unlock();
     }
 
-    public boolean removePendingChallengeRequest(String opponent) throws UnexpectedMessageException
+    public String removePendingChallengeRequest()
     {
+        String retValue = null;
+
         this.logLock.lock();
 
-        boolean check = this.challengeRequest.compareAndSet(opponent, null);
-        if (!check)
-            throw new UnexpectedMessageException("RESPONSE TO THE CHALLENGE BETWEEN \"" + username + "\" AND \"" + opponent + "\" DO NOT CORRESPONDS TO ANY REQUEST");
+        if (this.challengeRequest != null )
+        {
+            retValue = this.challengeRequest;
+            this.challengeRequest = null;
+        }
 
         this.logLock.unlock();
 
-        return true;
+        return retValue;
+    }
+
+    public void setOpponent(String opponent)
+    {
+        this.logLock.lock();
+        this.opponent = opponent;
+        this.logLock.unlock();
+    }
+
+    public String removeOpponent()
+    {
+        String retValue;
+
+        this.logLock.lock();
+        retValue = this.opponent;
+        this.opponent = null;
+        this.logLock.unlock();
+
+        return retValue;
     }
 
     public boolean storeMessage(Message message)
@@ -171,11 +214,15 @@ public class User
         return (this.responseBackLog != null) || !(this.requestsBackLog.isEmpty());
     }
 
-    public boolean logIn(SocketAddress address)
+    public boolean logIn(SocketAddress address, SelectionKey key)
     {
         this.logLock.lock();
+
         this.address = address;
+        this.key = key;
+
         this.logLock.unlock();
+
         return true;
     }
 
@@ -183,10 +230,13 @@ public class User
     {
         this.logLock.lock();
 
-        this.challengeRequest.set(null);
         this.address = null;
+        this.key = null;
 
         this.logLock.unlock();
+
+        this.requestsBackLog.removeIf(message -> message.getType() != MessageType.REQUEST_FOR_FRIENDSHIP);
+
         return true;
     }
 
@@ -199,6 +249,18 @@ public class User
         this.logLock.unlock();
 
         return address;
+    }
+
+    public boolean wakeUpDeputy()
+    {
+        this.logLock.lock();
+
+        if (this.key != null)
+            this.key.selector().wakeup();
+
+        this.logLock.unlock();
+
+        return true;
     }
 
     public String JSONserializeFriendsList()

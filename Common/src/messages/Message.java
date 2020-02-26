@@ -67,9 +67,19 @@ public class Message
         this.fields.addLast(field);
     }
 
+    public Field[] getFields()
+    {
+        return (Field[]) this.fields.toArray();
+    }
+
     public char[] getField(int index)
     {
         return this.fields.get(index).getBody();
+    }
+
+    public int fieldsQuantity()
+    {
+        return this.fields.size();
     }
 
     protected static short readShort(SocketChannel sender, ByteBuffer buffer) throws IOException
@@ -182,7 +192,7 @@ public class Message
         for (int i = 0; i < fieldsNum; i++)
         {
             short length = buffer.getShort();
-            if (length <= 0)
+            if (length < 0)
                 throw new InvalidMessageFormatException("INVALID FIELD LENGTH");
 
             char[] body = new char[length];

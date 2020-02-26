@@ -32,7 +32,7 @@ public class WordQuizzleClient
     private static final Thread MAIN_THREAD = Thread.currentThread();
     private static final ReentrantLock TCP_LOCK = new ReentrantLock();
     private static final ByteBuffer BUFFER = ByteBuffer.allocateDirect(2048);
-    public static final ExecutorService POOL = Executors.newCachedThreadPool();
+    public static final ExecutorService POOL = Executors.newSingleThreadExecutor();
 
     public static DatagramChannel notificationChannel;
     public static SocketChannel server;
@@ -73,17 +73,39 @@ public class WordQuizzleClient
                         POOL.execute(new FriendshipRequestDeclinedOperator(String.valueOf(message.getField(1))));
                         break;
                     case REQUEST_FOR_CHALLENGE_CONFIRMATION:
-                        SwingUtilities.invokeLater(() -> {
-                            ChallengeDialog.CHALLENGE_DIALOG.requestFrom(String.valueOf(message.getField(0)));
-                            ChallengeDialog.CHALLENGE_DIALOG.setVisible(true);
-                        });
+                        POOL.execute(new ReplyChallengeRequestOperator(String.valueOf(message.getField(0))));
                         break;
                     case OPPONENT_DID_NOT_REPLY:
                         POOL.execute(new OpponentDidNotReplyOperator(String.valueOf(message.getField(1))));
                         break;
                     case CHALLENGE_REQUEST_TIMEOUT_EXPIRED:
-                        POOL.execute(new RequestExpiredOperator());
-                        SwingUtilities.invokeLater(() -> ChallengeDialog.CHALLENGE_DIALOG.setVisible(false));
+                        ChallengeDialog.CHALLENGE_DIALOG.setVisible(false);
+                        ChallengeDialog.OPTION_PANE.setValue(ClientConstants.TIMER_EXPIRED_NOTIFICATION_VALUE);
+                        break;
+                    case OPPONENT_WENT_OFFLINE_DURING_REQUEST:
+                        POOL.execute(new OpponentWentOfflineOperator(String.valueOf(message.getField(1))));
+                        break;
+                    case APPLICANT_WENT_OFFLINE_DURING_REQUEST:
+                        ChallengeDialog.CHALLENGE_DIALOG.setVisible(false);
+                        ChallengeDialog.OPTION_PANE.setValue(ClientConstants.APPLICANT_WENT_OFFLINE_NOTIFICATION_VALUE);
+                        break;
+                    case CHALLENGE_CONFIRMED:
+                        POOL.execute(new ChallengeRequestConfirmedOperator(String.valueOf(message.getField(0)), String.valueOf(message.getField(1)),
+                                String.valueOf(message.getField(2)), String.valueOf(message.getField(3)), String.valueOf(message.getField(4))));
+                        break;
+                    case CHALLENGE_DECLINED:
+                        POOL.execute(new ChallengeRequestDeclinedOperator(String.valueOf(message.getField(1))));
+                        break;
+                    case CHALLENGE_TIMEOUT_EXPIRED:
+                        POOL.execute(new ChallengeTimeoutExpiredOperator(String.valueOf(message.getField(2)),
+                                Integer.parseInt(String.valueOf(message.getField(3))),
+                                Integer.parseInt(String.valueOf(message.getField(4)))));
+                        break;
+                    case APPLICANT_WENT_OFFLINE_DURING_CHALLENGE:
+                    case OPPONENT_WENT_OFFLINE_DURING_CHALLENGE:
+                        POOL.execute(new OtherPlayerWentOfflineDuringChallengeOperator(String.valueOf(message.getField(2)),
+                                Integer.parseInt(String.valueOf(message.getField(3))),
+                                Integer.parseInt(String.valueOf(message.getField(4)))));
                         break;
                     default:
                     {}
@@ -94,10 +116,10 @@ public class WordQuizzleClient
                 e.printStackTrace();
             }
             catch (AsynchronousCloseException ignored)
-            {
-
-            }
+            {}
         }
+
+
     }
 
     public static boolean register(String username, char[] password)

@@ -20,7 +20,7 @@ public class Printer
 
     public Printer(String name)
     {
-        if (!(name.equals("Main")) && ServerConstants.LOG_IN_FILE)
+        if (!(name.equals("Main")) && ServerConstants.LOG_FILES)
         {
             OutputStream outStream;
             try {

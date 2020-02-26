@@ -14,8 +14,7 @@ import java.nio.channels.SocketChannel;
 
 public class AlessandroClient
 {
-    public static void main(String[] args) throws IOException, InvalidMessageFormatException
-    {
+    public static void main(String[] args) throws IOException, InvalidMessageFormatException, InterruptedException {
         char[] password = {'1', '2', '3', '4'};
 
         ByteBuffer buffer = ByteBuffer.allocate(2048);
@@ -39,7 +38,8 @@ public class AlessandroClient
         message = Message.readMessage(server, buffer);
         System.out.println("Received message: "+ message.toString());
 
-        message = new Message(MessageType.REQUEST_FOR_FRIENDSHIP, "Alessandro", "Andrea");
+
+        message = new Message(MessageType.REQUEST_FOR_CHALLENGE, "Alessandro", "Paola");
         System.out.println("Sending message: " + message.toString());
         Message.writeMessage(server, buffer, message);
 
@@ -48,7 +48,6 @@ public class AlessandroClient
 
         message = Message.readNotification(udpChannel, buffer);
         System.out.println("Received message: "+ message.toString());
-
 
         server.close();
     }

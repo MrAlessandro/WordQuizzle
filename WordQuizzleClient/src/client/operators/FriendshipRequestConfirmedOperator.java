@@ -25,7 +25,7 @@ public class FriendshipRequestConfirmedOperator implements Runnable
     public void run()
     {
         // Show information dialog
-        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "User \"" + to + "\" accepted your friendship request", "Friendship request confirmed", JOptionPane.INFORMATION_MESSAGE, GuiConstants.THUMB_UP_ICON));
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(WordQuizzleClientFrame.FRAME, "User \"" + to + "\" accepted your friendship request", "Friendship request confirmed", JOptionPane.INFORMATION_MESSAGE, GuiConstants.THUMB_UP_ICON));
 
         // Get the updated friends list
         // Prepare request message
@@ -35,7 +35,7 @@ public class FriendshipRequestConfirmedOperator implements Runnable
         Message response = WordQuizzleClient.send(message);
 
         // Parse friend list
-        String jsonString = new String(message.getField(0));
+        String jsonString = new String(response.getField(0));
         JSONParser parser = new JSONParser();
         JSONArray DEfriendsList;
 
@@ -49,12 +49,12 @@ public class FriendshipRequestConfirmedOperator implements Runnable
         }
 
         // Remove all friends from the global friends list
-        FriendsPanel.FRIENDS_LIST.removeAllElements();
+        FriendsPanel.FRIENDS_LIST_MODEL.removeAllElements();
 
         // Inserts deserialized friends' username in the global friends list
         for (String friend : (Iterable<String>) DEfriendsList)
         {
-            FriendsPanel.FRIENDS_LIST.addElement(friend);
+            FriendsPanel.FRIENDS_LIST_MODEL.addElement(friend);
         }
     }
 }

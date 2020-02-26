@@ -25,7 +25,7 @@ public class ReplyFriendshipRequestOperator implements Runnable
     public void run()
     {
         // Show confirmation dialog and get the choice
-        int choice = JOptionPane.showConfirmDialog(null, "User \"" + this.from + "\" sent you a friendship request \n Do you want to accept it?", "Friendship request", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,GuiConstants.HANDSHAKE_ICON);
+        int choice = JOptionPane.showConfirmDialog(WordQuizzleClientFrame.FRAME, "User \"" + this.from + "\" sent you a friendship request \n Do you want to accept it?", "Friendship request", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,GuiConstants.HANDSHAKE_ICON);
         if (choice == 0)
         {// Yes
             // Prepare message
@@ -51,12 +51,12 @@ public class ReplyFriendshipRequestOperator implements Runnable
             }
 
             // Remove all friends from the global friends list
-            FriendsPanel.FRIENDS_LIST.removeAllElements();
+            FriendsPanel.FRIENDS_LIST_MODEL.removeAllElements();
 
             // Inserts deserialized friends' username in the global friends list
             for (String friend : (Iterable<String>) DEfriendsList)
             {
-                FriendsPanel.FRIENDS_LIST.addElement(friend);
+                FriendsPanel.FRIENDS_LIST_MODEL.addElement(friend);
             }
         }
         else

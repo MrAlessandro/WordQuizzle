@@ -60,7 +60,7 @@ public class Field
         length = buffer.getShort();
         buffer.clear();
 
-        if (length <= 0)
+        if (length < 0)
             throw new InvalidMessageFormatException("INVALID FIELD LENGTH");
 
         field.length = length;

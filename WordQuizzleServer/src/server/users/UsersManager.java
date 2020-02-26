@@ -10,14 +10,19 @@ import org.json.simple.parser.ParseException;
 import remote.Registrable;
 import remote.VoidPasswordException;
 import remote.VoidUsernameException;
+import server.challenges.challenge.ChallengeReport;
 import server.users.exceptions.*;
 import server.users.user.User;
 import server.constants.ServerConstants;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.channels.Selector;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.channels.SelectionKey;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteServer;
@@ -63,7 +68,7 @@ public class UsersManager extends RemoteServer implements Registrable
         return result;
     }
 
-    public static boolean openSession(String username, char[] password, SocketAddress clientAddress) throws UnknownUserException, WrongPasswordException
+    public static boolean openSession(String username, char[] password, SocketAddress clientAddress, SelectionKey key) throws UnknownUserException, WrongPasswordException
     {
         User user  = USERS_ARCHIVE.get(username);
 
@@ -73,7 +78,7 @@ public class UsersManager extends RemoteServer implements Registrable
         if (!user.checkPassword(password))
             throw new WrongPasswordException();
 
-        user.logIn(clientAddress);
+        user.logIn(clientAddress, key);
 
         return true;
     }
@@ -90,10 +95,67 @@ public class UsersManager extends RemoteServer implements Registrable
 
     public static boolean closeSession(String username)
     {
-        User user  = USERS_ARCHIVE.get(username);
+        User user = USERS_ARCHIVE.get(username);
 
         if (user ==  null)
             throw new Error("Attempt to close a not existing session");
+
+        String challengeRequest = user.removePendingChallengeRequest();
+        if (challengeRequest != null)
+        {
+            String[] split = challengeRequest.split(":");
+            MessageType messageType;
+            String applicant = split[0];
+            String opponent = split[1];
+
+
+            ChallengesManager.quitScheduledRequestTimeOut(applicant, opponent);
+
+            User otherPlayer;
+            if (applicant.equals(username))
+            {
+                otherPlayer = USERS_ARCHIVE.get(opponent);
+                messageType = MessageType.APPLICANT_WENT_OFFLINE_DURING_REQUEST;
+            }
+            else
+            {
+                otherPlayer = USERS_ARCHIVE.get(applicant);
+                messageType = MessageType.OPPONENT_WENT_OFFLINE_DURING_REQUEST;
+            }
+
+            otherPlayer.removePendingChallengeRequest();
+            otherPlayer.storeMessage(new Message(messageType, applicant, opponent));
+            otherPlayer.wakeUpDeputy();
+
+        }
+
+        String eventualOpponent = user.removeOpponent();
+        if (eventualOpponent != null)
+        {
+            ChallengeReport report = null;
+            Message message;
+
+            report = ChallengesManager.abortChallenge(username, eventualOpponent);
+            if (report != null)
+            {// Disconnecting user is applicant
+                message = new Message(MessageType.APPLICANT_WENT_OFFLINE_DURING_CHALLENGE, username, eventualOpponent,
+                report.winner, String.valueOf(report.opponentProgress), String.valueOf(report.opponentScore));
+            }
+            else
+            {
+                report = ChallengesManager.abortChallenge(eventualOpponent, username);
+                if (report == null)
+                    throw new Error("Challenge system inconsistency");
+
+                message = new Message(MessageType.OPPONENT_WENT_OFFLINE_DURING_CHALLENGE, username, eventualOpponent,
+                        report.winner, String.valueOf(report.applicantProgress), String.valueOf(report.applicantScore));
+            }
+
+            User otherPlayer = USERS_ARCHIVE.get(eventualOpponent);
+            otherPlayer.removeOpponent();
+            otherPlayer.storeMessage(message);
+            otherPlayer.wakeUpDeputy();
+        }
 
         user.logOut();
 
@@ -122,11 +184,12 @@ public class UsersManager extends RemoteServer implements Registrable
 
         friendUser.addPendingFriendshipRequest(applicant);
         friendUser.storeMessage(new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, applicant, friend));
+        friendUser.wakeUpDeputy();
 
         return true;
     }
 
-    public static boolean sendChallengeRequest(String applicant, String opponent, Selector toWake) throws UnknownUserException, OpponentAlreadyEngagedException, UnexpectedMessageException, OpponentOfflineException
+    public static boolean sendChallengeRequest(String applicant, String opponent) throws UnknownUserException, OpponentAlreadyEngagedException, UnexpectedMessageException, OpponentOfflineException, OpponentNotFriendException
     {
         User applicantUser = USERS_ARCHIVE.get(applicant);
         User opponentUser = USERS_ARCHIVE.get(opponent);
@@ -136,9 +199,12 @@ public class UsersManager extends RemoteServer implements Registrable
         if (opponentUser == null)
             throw new UnknownUserException("UNKNOWN USER \"" + opponent + "\"");
 
+        if (!applicantUser.isFriendOf(opponent))
+            throw new OpponentNotFriendException("USER \"" + applicant + "\" AND USER \"" + opponent + "\" ARE NOT FRIENDS");
+
         try
         {
-            applicantUser.setPendingChallengeRequest(opponent);
+            applicantUser.setPendingChallengeRequest(applicant, opponent);
         }
         catch (OpponentOfflineException e)
         {
@@ -150,19 +216,22 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new UnexpectedMessageException("USER \"" + applicant + "\" SENT A CHALLENGE REQUEST BUT IS ALREADY ENGAGED IN A CHALLENGE");
         }
 
+
         try
         {
-            opponentUser.setPendingChallengeRequest(applicant);
+            opponentUser.setPendingChallengeRequest(applicant, opponent);
         }
         catch (OpponentOfflineException e)
         {
-            applicantUser.removePendingChallengeRequest(opponent);
+            applicantUser.removePendingChallengeRequest();
             throw new OpponentOfflineException(e.getMessage());
         }
 
-        opponentUser.storeMessage(new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, applicant, opponent));
 
-        ChallengesManager.scheduleRequestTimeOut(applicant, opponent, toWake);
+        opponentUser.storeMessage(new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, applicant, opponent));
+        opponentUser.wakeUpDeputy();
+
+        ChallengesManager.scheduleRequestTimeOut(applicant, opponent);
 
         return true;
     }
@@ -185,6 +254,28 @@ public class UsersManager extends RemoteServer implements Registrable
         return true;
     }
 
+    public static String confirmChallengeRequest(String applicant, String opponent) throws UnexpectedMessageException
+    {
+        User applicantUser  = USERS_ARCHIVE.get(applicant);
+        User opponentUser  = USERS_ARCHIVE.get(opponent);
+
+        if (applicantUser == null)
+            throw new UnexpectedMessageException("UNKNOWN USER \"" + applicant + "\"");
+        if (opponentUser == null)
+            throw new Error("UNKNOWN USER \"" + opponent + "\"");
+
+        ChallengesManager.quitScheduledRequestTimeOut(applicant, opponent);
+        String firstWord = ChallengesManager.registerChallenge(applicant, opponent);
+
+        applicantUser.removePendingChallengeRequest();
+        opponentUser.removePendingChallengeRequest();
+        
+        applicantUser.setOpponent(opponent);
+        opponentUser.setOpponent(applicant);
+
+        return firstWord;
+    }
+
     public static boolean cancelFriendshipRequest(String whoSentRequest, String whoDeclined) throws UnexpectedMessageException
     {
         User whoSentUser  = USERS_ARCHIVE.get(whoSentRequest);
@@ -195,6 +286,8 @@ public class UsersManager extends RemoteServer implements Registrable
         if (whoDeclinedUser == null)
             throw new Error("UNKNOWN USER \"" + whoDeclined + "\"");
 
+        ChallengesManager.quitScheduledRequestTimeOut(whoSentRequest, whoDeclined);
+
         whoDeclinedUser.removePendingFriendshipRequest(whoSentRequest);
 
         return true;
@@ -204,8 +297,7 @@ public class UsersManager extends RemoteServer implements Registrable
     {
         User whoSentUser  = USERS_ARCHIVE.get(whoSentRequest);
         User whoDeclinedUser  = USERS_ARCHIVE.get(whoDeclined);
-
-        System.out.println("canceling challenge request");
+        boolean check;
 
         if (whoSentUser == null)
             if (timeout)
@@ -216,21 +308,39 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new Error("UNKNOWN USER \"" + whoDeclined + "\"");
 
         if (timeout)
-            ChallengesManager.dequeueScheduledRequestTimeOut(whoSentRequest, whoDeclined);
+            check = ChallengesManager.dequeueScheduledRequestTimeOut(whoSentRequest, whoDeclined);
         else
-            ChallengesManager.quitScheduledRequestTimeOut(whoSentRequest, whoDeclined);
+            check = ChallengesManager.quitScheduledRequestTimeOut(whoSentRequest, whoDeclined);
 
-        whoSentUser.removePendingChallengeRequest(whoDeclined);
-        whoDeclinedUser.removePendingChallengeRequest(whoSentRequest);
+        if (!check)
+            throw new Error("Timers storing inconsistency");
+
+        if (whoSentUser.removePendingChallengeRequest() == null)
+            throw new UnexpectedMessageException("CANCELING CHALLENGE REQUEST BETWEEN \"" + whoSentRequest + "\" AND \"" + whoDeclined + "\" DOES NOT CORRESPOND TO ANY REQUEST");
+        if (whoDeclinedUser.removePendingChallengeRequest() == null)
+            throw new UnexpectedMessageException("CANCELING CHALLENGE REQUEST BETWEEN \"" + whoSentRequest + "\" AND \"" + whoDeclined + "\" DOES NOT CORRESPOND TO ANY REQUEST");
 
         if (timeout)
         {
-            System.out.println("Storing notification");
             whoSentUser.storeMessage(new Message(MessageType.OPPONENT_DID_NOT_REPLY, whoSentRequest, whoDeclined));
             whoDeclinedUser.storeMessage(new Message(MessageType.CHALLENGE_REQUEST_TIMEOUT_EXPIRED, whoSentRequest, whoDeclined));
+            whoDeclinedUser.wakeUpDeputy();
         }
         else
             whoSentUser.storeMessage(new Message(MessageType.CHALLENGE_DECLINED, whoSentRequest, whoDeclined));
+
+        whoSentUser.wakeUpDeputy();
+
+        return true;
+    }
+
+    public static boolean quitChallenge(String username)
+    {
+        User user = USERS_ARCHIVE.get(username);
+        if (user ==  null)
+            throw new Error("Users database inconsistency");
+
+        user.removeOpponent();
 
         return true;
     }
@@ -253,6 +363,7 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new UnknownUserException("UNKNOWN USER \"" + username + "\"");
 
         user.storeMessage(message);
+        user.wakeUpDeputy();
 
         return true;
     }
@@ -265,6 +376,7 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new Error("UNKNOWN USER \"" + username + "\"");
 
         user.storeResponse(message);
+
         return true;
     }
 
@@ -303,6 +415,16 @@ public class UsersManager extends RemoteServer implements Registrable
         return user.hasPendingMessages();
     }
 
+    public static void updateUserScore(String username, int gain)
+    {
+        User user  = USERS_ARCHIVE.get(username);
+
+        if (user ==  null)
+            throw new Error("UNKNOWN USER \"" + username + "\"");
+
+        user.updateScore(gain);
+    }
+
     public static void backUp()
     {
         byte[] jsonBytes;
@@ -318,8 +440,8 @@ public class UsersManager extends RemoteServer implements Registrable
 
         try
         {
-            Files.deleteIfExists(ServerConstants.USERS_DATABASE_BACKUP_PATH);
-            Files.write(ServerConstants.USERS_DATABASE_BACKUP_PATH, jsonBytes, StandardOpenOption.CREATE_NEW);
+            Files.deleteIfExists(Paths.get(ServerConstants.USERS_DATABASE_BACKUP_PATH.getPath()));
+            Files.write(Paths.get(ServerConstants.USERS_DATABASE_BACKUP_PATH.getPath()), jsonBytes, StandardOpenOption.CREATE_NEW);
         }
         catch (IOException e)
         {
@@ -330,42 +452,47 @@ public class UsersManager extends RemoteServer implements Registrable
 
     public static void restore()
     {
-        if (!Files.exists(ServerConstants.USERS_DATABASE_BACKUP_PATH))
-            return;
-
-        byte[] jsonBytes;
-
         try
         {
-            jsonBytes = Files.readAllBytes(ServerConstants.USERS_DATABASE_BACKUP_PATH);
+            File backUpFile = Paths.get(ServerConstants.USERS_DATABASE_BACKUP_PATH.toURI()).toFile();
+
+            if (!backUpFile.exists())
+                return;
+
+            String jsonString = new String(Files.readAllBytes(backUpFile.toPath()));
+
+            JSONParser parser = new JSONParser();
+            Map<String, User> DEusersArchive = new HashMap<>();
+            JSONArray DEusersArray;
+
+            DEusersArray = (JSONArray) parser.parse(jsonString);
+
+
+            for (JSONObject currentUser : (Iterable<JSONObject>) DEusersArray)
+            {
+                // Deserialize user and add to users archive
+                User DEuser = User.JSONdeserialize(currentUser);
+                DEusersArchive.put(DEuser.getUsername(), DEuser);
+            }
+
+            USERS_ARCHIVE.putAll(DEusersArchive);
+
         }
         catch (IOException e)
         {
+            e.printStackTrace();
             throw new Error("Reading server.users system back up file");
         }
-
-        String jsonString = new String(jsonBytes);
-
-        JSONParser parser = new JSONParser();
-        Map<String, User> DEusersArchive = new HashMap<>();
-        JSONArray DEusersArray;
-
-        try
+        catch (URISyntaxException e)
         {
-            DEusersArray = (JSONArray) parser.parse(jsonString);
+            e.printStackTrace();
+            throw new Error("URI generation error");
         }
         catch (ParseException e)
         {
+            e.printStackTrace();
             throw new Error("Parsing server.users system back up file");
         }
-
-        for (JSONObject currentUser : (Iterable<JSONObject>) DEusersArray)
-        {
-            User DEuser = User.JSONdeserialize(currentUser);
-            DEusersArchive.put(DEuser.getUsername(), DEuser);
-        }
-
-        USERS_ARCHIVE.putAll(DEusersArchive);
     }
 
     public static void print()

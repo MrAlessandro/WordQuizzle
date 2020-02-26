@@ -1,5 +1,6 @@
 package client.operators;
 
+import client.gui.WordQuizzleClientFrame;
 import client.gui.constants.GuiConstants;
 
 import javax.swing.*;
@@ -17,6 +18,6 @@ public class FriendshipRequestDeclinedOperator implements Runnable
     public void run()
     {
         // Show information dialog
-        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(null, "User \"" + to + "\" declined your friendship request", "Friendship request declined", JOptionPane.INFORMATION_MESSAGE, GuiConstants.THUMB_DOWN_ICON));
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(WordQuizzleClientFrame.FRAME, "User \"" + to + "\" declined your friendship request", "Friendship request declined", JOptionPane.INFORMATION_MESSAGE, GuiConstants.THUMB_DOWN_ICON));
     }
 }
