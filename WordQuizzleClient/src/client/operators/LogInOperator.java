@@ -2,10 +2,12 @@ package client.operators;
 
 import client.gui.WordQuizzleClientFrame;
 import client.gui.panels.FriendsPanel;
+import client.gui.panels.ScoresPanel;
 import client.main.WordQuizzleClient;
 import messages.Message;
 import messages.MessageType;
 import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -72,6 +74,32 @@ public class LogInOperator implements Runnable
                     FriendsPanel.FRIENDS_LIST_MODEL.addElement(friend);
                 }
 
+                // Get friends' scores list
+                response = WordQuizzleClient.send(new Message(MessageType.REQUEST_FOR_FRIENDS_SCORES));
+                if (response.getType() == MessageType.FRIENDS_SCORES)
+                {
+                    jsonString = new String(response.getField(0));
+                    JSONArray DEscoresList;
+
+                    try
+                    {
+                        DEscoresList = (JSONArray) parser.parse(jsonString);
+                    }
+                    catch (ParseException e)
+                    {
+                        throw new Error("Parsing friends list");
+                    }
+
+                    // Inserts deserialized sores  in the global scores list
+                    for (JSONObject object : (Iterable<JSONObject>) DEscoresList)
+                    {
+                        String username = (String) object.get("Username");
+                        String score = String.valueOf(object.get("Score"));
+
+                        ScoresPanel.SCORES_LIST_MODEL.addElement(username + " : " + score);
+                    }
+
+                }
 
                 SwingUtilities.invokeLater(WordQuizzleClientFrame::session);
                 break;

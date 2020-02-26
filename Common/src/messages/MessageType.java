@@ -15,6 +15,7 @@ public enum MessageType
     CONFIRM_FRIENDSHIP((short) 8, "ConfirmFriendship"),
     DECLINE_FRIENDSHIP((short) 9, "DeclineFriendship"),
     PROVIDE_TRANSLATION((short) 10, "NextWord"),
+    REQUEST_FOR_FRIENDS_SCORES((short) 11, "FriendsScore"),
 
     // Notifications,
     REQUEST_FOR_FRIENDSHIP_CONFIRMATION((short) 100, "RequestForFriend"),
@@ -32,6 +33,7 @@ public enum MessageType
     OPPONENT_CANCELED_CHALLENGE((short)112, "OpponentCanceledChallenge"),
     APPLICANT_WENT_OFFLINE_DURING_CHALLENGE ((short)113, "ApplicantWentOfflineDuringChallenge"),
     OPPONENT_WENT_OFFLINE_DURING_CHALLENGE ((short)114, "OpponentWentOfflineDuringChallenge"),
+    SCORE_UPDATE ((short) 115, "ScoreUpdate"),
 
     // Response messages
     OK((short) 200, "Ok"),
@@ -46,7 +48,8 @@ public enum MessageType
     OPPONENT_ALREADY_ENGAGED ((short) 210, "OpponentAlreadyEngaged"),
     APPLICANT_ALREADY_ENGAGED ((short) 221, "ApplicantAlreadyEngaged"),
     OPPONENT_NOT_FRIEND ((short) 212, "OpponentNotFriend"),
-    TRANSLATION_WRONG((short) 213, "TranslationWrong");
+    TRANSLATION_WRONG((short) 213, "TranslationWrong"),
+    FRIENDS_SCORES((short) 214, "FriendsScores");
 
 
 

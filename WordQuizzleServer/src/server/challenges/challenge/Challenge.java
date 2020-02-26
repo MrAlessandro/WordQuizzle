@@ -101,9 +101,15 @@ public class Challenge
         String winner;
 
         if (this.applicantScore.get() > this.opponentScore.get())
+        {
             winner = this.applicant;
+            this.applicantScore.addAndGet(ServerConstants.WINNER_EXTRA_SCORE);
+        }
         else if (this.opponentScore.get() > this.applicantScore.get())
+        {
             winner = this.opponent;
+            this.opponentScore.addAndGet(ServerConstants.WINNER_EXTRA_SCORE);
+        }
         else
             winner = "";
 

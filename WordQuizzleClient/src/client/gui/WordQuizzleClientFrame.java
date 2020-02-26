@@ -347,14 +347,13 @@ public class WordQuizzleClientFrame extends JFrame
         FRAME.getContentPane().add(ScoresPanel.PANEL, BorderLayout.EAST);
 
         // Delegate Friends panel setup
-        SwingUtilities.invokeLater(FriendsPanel::setUp);
+        FriendsPanel.setUp();
 
         // Delegate Scores panel setup
-        SwingUtilities.invokeLater(ScoresPanel::setUp);
+        ScoresPanel.setUp();
 
         // Delegate Challenge panel setup
-        SwingUtilities.invokeLater(ChallengePanel::waitForChallengeRequest);
-
+        ChallengePanel.waitForChallengeRequest();
 
         // Resize accordingly
         FRAME.pack();

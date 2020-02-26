@@ -421,6 +421,21 @@ class Deputy extends Thread
 
                 // Send response
                 UsersManager.sendResponse(player, response);
+                break;
+            }
+            case REQUEST_FOR_FRIENDS_SCORES:
+            {
+                assert attachment instanceof String;
+                Message response;
+
+                printer.print("Sending friends' scores to \"" + attachment + "\"... ");
+
+                String serializedFriendsAndScores = UsersManager.retrieveSerializedFriendListAndScores((String) attachment);
+                response = new Message(MessageType.FRIENDS_SCORES, serializedFriendsAndScores);
+                UsersManager.sendResponse((String) attachment, response);
+
+                printer.printlnGreen("SENT");
+                break;
             }
             default:
             {}

@@ -97,11 +97,12 @@ public class ChallengesManager
             Message opponentMessage = new Message(MessageType.CHALLENGE_REPORT, applicant, opponent,
                     report.winner, String.valueOf(report.opponentProgress), String.valueOf(report.opponentScore));
 
-            UsersManager.updateUserScore(applicant, report.applicantScore);
-            UsersManager.updateUserScore(opponent, report.opponentScore);
 
             UsersManager.sendMessage(applicant, applicantMessage);
             UsersManager.sendMessage(opponent, opponentMessage);
+
+            UsersManager.updateUserScore(applicant, report.applicantScore);
+            UsersManager.updateUserScore(opponent, report.opponentScore);
 
             // Remove challenge from archive
             CHALLENGES_ARCHIVE.remove(applicant + ":" + opponent);
@@ -132,11 +133,12 @@ public class ChallengesManager
             Message opponentMessage = new Message(MessageType.CHALLENGE_TIMEOUT_EXPIRED, applicant, opponent,
                     report.winner, String.valueOf(report.opponentProgress), String.valueOf(report.opponentScore));
 
-            UsersManager.updateUserScore(applicant, report.applicantScore);
-            UsersManager.updateUserScore(opponent, report.opponentScore);
 
             UsersManager.sendMessage(applicant, applicantMessage);
             UsersManager.sendMessage(opponent, opponentMessage);
+
+            UsersManager.updateUserScore(applicant, report.applicantScore);
+            UsersManager.updateUserScore(opponent, report.opponentScore);
 
             // Remove challenge from archive
             CHALLENGES_ARCHIVE.remove(applicant + ":" + opponent);

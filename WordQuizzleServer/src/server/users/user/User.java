@@ -93,6 +93,11 @@ public class User
         return this.friends.add(userName);
     }
 
+    public String[] getFriendsList()
+    {
+        return this.friends.toArray(new String[0]);
+    }
+
     public int getScore()
     {
         return this.score;
@@ -270,6 +275,16 @@ public class User
         friendsList.addAll(this.friends);
 
         return friendsList.toJSONString();
+    }
+
+    public JSONObject JSONserializeUsernameAndScore()
+    {
+        JSONObject serialized = new JSONObject();
+
+        serialized.put("Username", this.username);
+        serialized.put("Score", this.score);
+
+        return serialized;
     }
 
     public JSONObject JSONserialize()

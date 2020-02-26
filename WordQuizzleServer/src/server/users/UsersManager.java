@@ -134,12 +134,16 @@ public class UsersManager extends RemoteServer implements Registrable
         {
             ChallengeReport report = null;
             Message message;
+            String applicant;
+            String opponent;
 
             report = ChallengesManager.abortChallenge(username, eventualOpponent);
             if (report != null)
             {// Disconnecting user is applicant
                 message = new Message(MessageType.APPLICANT_WENT_OFFLINE_DURING_CHALLENGE, username, eventualOpponent,
                 report.winner, String.valueOf(report.opponentProgress), String.valueOf(report.opponentScore));
+                applicant = username;
+                opponent = eventualOpponent;
             }
             else
             {
@@ -149,11 +153,17 @@ public class UsersManager extends RemoteServer implements Registrable
 
                 message = new Message(MessageType.OPPONENT_WENT_OFFLINE_DURING_CHALLENGE, username, eventualOpponent,
                         report.winner, String.valueOf(report.applicantProgress), String.valueOf(report.applicantScore));
+                applicant = eventualOpponent;
+                opponent = username;
             }
 
             User otherPlayer = USERS_ARCHIVE.get(eventualOpponent);
             otherPlayer.removeOpponent();
             otherPlayer.storeMessage(message);
+
+            UsersManager.updateUserScore(applicant, report.applicantScore);
+            UsersManager.updateUserScore(opponent, report.opponentScore);
+
             otherPlayer.wakeUpDeputy();
         }
 
@@ -355,6 +365,28 @@ public class UsersManager extends RemoteServer implements Registrable
         return user.JSONserializeFriendsList();
     }
 
+    public static String retrieveSerializedFriendListAndScores(String username)
+    {
+        User user = USERS_ARCHIVE.get(username);
+        JSONArray friendsAndScoresArray = new JSONArray();
+
+        if (user == null)
+            throw new Error("UNKNOWN USER \"" + username + "\"");
+
+        String[] friendsList = user.getFriendsList();
+        for (String friend : friendsList)
+        {
+            User friendUser = USERS_ARCHIVE.get(friend);
+
+            if (friendUser == null)
+                throw new Error("UNKNOWN USER \"" + username + "\"");
+
+            friendsAndScoresArray.add(friendUser.JSONserializeUsernameAndScore());
+        }
+
+        return friendsAndScoresArray.toJSONString();
+    }
+
     public static boolean sendMessage(String username, Message message) throws UnknownUserException
     {
         User user  = USERS_ARCHIVE.get(username);
@@ -423,6 +455,19 @@ public class UsersManager extends RemoteServer implements Registrable
             throw new Error("UNKNOWN USER \"" + username + "\"");
 
         user.updateScore(gain);
+
+        String[] friendsList = user.getFriendsList();
+        for (String friend : friendsList)
+        {
+            Message updateMessage = new Message(MessageType.SCORE_UPDATE, username, String.valueOf(user.getScore()));
+            User friendUser = USERS_ARCHIVE.get(friend);
+
+            if (friendUser == null)
+                throw new Error("UNKNOWN USER \"" + username + "\"");
+
+            if (friendUser.getAddress() != null)
+                friendUser.storeMessage(updateMessage);
+        }
     }
 
     public static void backUp()
