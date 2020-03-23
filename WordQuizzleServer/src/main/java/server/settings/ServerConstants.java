@@ -4,7 +4,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.Properties;
 
 public class ServerConstants
@@ -34,7 +33,7 @@ public class ServerConstants
     public static int USERS_ARCHIVE_INITIAL_SIZE;
 
     // Session archive properties
-    public static int SESSION_ARCHIVE_INITIAL_SIZE;
+    public static int SESSIONS_ARCHIVE_INITIAL_SIZE;
 
     // Log files properties
     public static String LOG_FILES_PATH;
@@ -93,7 +92,7 @@ public class ServerConstants
         DEPUTIES_POOL_SIZE = Integer.parseInt(PROPERTIES.getProperty("DEPUTIES_POOL_SIZE"));
         USERS_ARCHIVE_BACKUP_PATH = resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("USERS_ARCHIVE_BACKUP_PATH");
         USERS_ARCHIVE_INITIAL_SIZE = Integer.parseInt(PROPERTIES.getProperty("USERS_ARCHIVE_INITIAL_SIZE"));
-        SESSION_ARCHIVE_INITIAL_SIZE = Integer.parseInt(PROPERTIES.getProperty("SESSION_ARCHIVE_INITIAL_SIZE"));
+        SESSIONS_ARCHIVE_INITIAL_SIZE = Integer.parseInt(PROPERTIES.getProperty("SESSIONS_ARCHIVE_INITIAL_SIZE"));
         LOG_FILES_PATH = resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("LOG_FILES_PATH");
         LOG_FILES = Boolean.parseBoolean(PROPERTIES.getProperty("LOG_FILES"));
         COLORED_LOG_FILES = Boolean.parseBoolean(PROPERTIES.getProperty("COLORED_LOG_FILES"));
