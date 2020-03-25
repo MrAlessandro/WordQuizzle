@@ -1,4 +1,4 @@
-package server;
+package server.requests.challenge;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;

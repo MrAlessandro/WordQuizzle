@@ -232,17 +232,21 @@ public class Challenge implements Runnable
                 // Get translations alternatives for actual word related to given player status
                 alternativeTranslations = this.translations[++this.fromTranslationsProgress].get();
 
-                // Compare the translations alternatives with the given translation
-                while (!checked && index < alternativeTranslations.length)
+                // If the given translation is void then skip -> sore gain is 0
+                if (!translation.equals(""))
                 {
-                    if (translation.equals(alternativeTranslations[index++]))
-                        checked = true;
-                }
+                    // Compare the translations alternatives with the given translation
+                    while (!checked && index < alternativeTranslations.length)
+                    {
+                        if (translation.equals(alternativeTranslations[index++]))
+                            checked = true;
+                    }
 
-                if (checked)
-                    this.fromScore += ServerConstants.CHALLENGE_RIGHT_TRANSLATION_SCORE;
-                else
-                    this.fromScore += ServerConstants.CHALLENGE_WRONG_TRANSLATION_SCORE;
+                    if (checked)
+                        this.fromScore += ServerConstants.CHALLENGE_RIGHT_TRANSLATION_SCORE;
+                    else
+                        this.fromScore += ServerConstants.CHALLENGE_WRONG_TRANSLATION_SCORE;
+                }
             }
             else
             {
@@ -253,17 +257,21 @@ public class Challenge implements Runnable
                 // Get translations alternatives for actual word related to given player status
                 alternativeTranslations = this.translations[++this.toTranslationsProgress].get();
 
-                // Compare the translations alternatives with the given translation
-                while (!checked && index < alternativeTranslations.length)
+                // If the given translation is void then skip -> sore gain is 0
+                if (!translation.equals(""))
                 {
-                    if (translation.equals(alternativeTranslations[index++]))
-                        checked = true;
-                }
+                    // Compare the translations alternatives with the given translation
+                    while (!checked && index < alternativeTranslations.length)
+                    {
+                        if (translation.equals(alternativeTranslations[index++]))
+                            checked = true;
+                    }
 
-                if (checked)
-                    this.toScore += ServerConstants.CHALLENGE_RIGHT_TRANSLATION_SCORE;
-                else
-                    this.toScore += ServerConstants.CHALLENGE_WRONG_TRANSLATION_SCORE;
+                    if (checked)
+                        this.toScore += ServerConstants.CHALLENGE_RIGHT_TRANSLATION_SCORE;
+                    else
+                        this.toScore += ServerConstants.CHALLENGE_WRONG_TRANSLATION_SCORE;
+                }
             }
         }
         catch (CancellationException e)

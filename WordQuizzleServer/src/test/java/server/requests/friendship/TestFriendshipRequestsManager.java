@@ -1,4 +1,4 @@
-package server;
+package server.requests.friendship;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -130,7 +130,7 @@ public class TestFriendshipRequestsManager
                 });
             }
 
-            pool.shutdownNow();
+            pool.shutdown();
             assertDoesNotThrow(() -> pool.awaitTermination(tasksNum, TimeUnit.SECONDS));
             assertEquals(tasksNum, friendshipRequestsArchive.size());
         }

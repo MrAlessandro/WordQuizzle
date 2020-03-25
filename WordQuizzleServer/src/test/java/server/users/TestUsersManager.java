@@ -1,4 +1,4 @@
-package server;
+package server.users;
 
 import commons.remote.exceptions.UsernameAlreadyUsedException;
 import commons.remote.exceptions.VoidPasswordException;

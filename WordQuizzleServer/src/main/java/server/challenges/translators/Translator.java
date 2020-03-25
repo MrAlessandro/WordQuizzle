@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 public class Translator implements Callable<String[]>
@@ -72,6 +73,8 @@ public class Translator implements Callable<String[]>
                 translation = translation.toLowerCase();
                 translated[j++] = translation;
             }
+
+            ChallengesManager.translatorsLogger.println("Retrieved translations for \"" + this.word +"\" ⟶ " + Arrays.toString(translated));
 
             // Close reader
             reader.close();

@@ -57,16 +57,14 @@ public class Logger
     public void print(Object o)
     {
         Date actual = new Date();
-        output.print(ANSI_BLUE + "[" + formatDate(actual.getTime()) + "] " + ANSI_RESET);
-        output.print(o.toString());
+        output.print(ANSI_BLUE + "[" + formatDate(actual.getTime()) + "] " + ANSI_RESET + o.toString());
         output.flush();
     }
 
     public void println(Object o)
     {
         Date actual = new Date();
-        output.print(ANSI_BLUE + "[" + formatDate(actual.getTime()) + "] " + ANSI_RESET);
-        output.println(o.toString());
+        output.println(ANSI_BLUE + "[" + formatDate(actual.getTime()) + "] " + ANSI_RESET + o.toString());
         output.flush();
     }
 
