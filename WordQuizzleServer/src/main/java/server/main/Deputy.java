@@ -11,7 +11,6 @@ import server.loggers.Logger;
 import server.sessions.SessionsManager;
 import server.sessions.session.Session;
 import server.users.UsersManager;
-import server.users.exceptions.UnknownUserException;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -73,7 +72,7 @@ public class Deputy extends Thread
         {
             this.logger.printlnRed("FAILED");
             this.logger.printlnRed(e.getStackTrace());
-            System.exit(1);
+            throw new Error("ERROR INITIALIZING DEPUTY \"" + Thread.currentThread().getName() + "\"");
         }
     }
 
@@ -97,7 +96,7 @@ public class Deputy extends Thread
                     // Register to be selected
                     incoming.register(selector, SelectionKey.OP_READ, null);
 
-                    this.logger.printlnGreen("REGISTERED");
+                    this.logger.printlnGreen("REGISTERED ⟶ " +  incoming.getRemoteAddress());
                 }
                 catch (ClosedChannelException e)
                 {
@@ -108,7 +107,7 @@ public class Deputy extends Thread
                 {
                     this.logger.printlnRed("FAILED");
                     this.logger.printlnRed(e.getStackTrace());
-                    System.exit(1);
+                    throw new Error("ERROR REGISTERING CHANNEL IN DEPUTY \"" + Thread.currentThread().getName() + "\"");
                 }
             }
 
@@ -125,7 +124,7 @@ public class Deputy extends Thread
             {
                 this.logger.printlnRed("FAILED");
                 this.logger.printlnRed(e.getStackTrace());
-                System.exit(1);
+                throw new Error("ERROR SELECTING CHANNELS IN DEPUTY \"" + Thread.currentThread().getName() + "\"");
             }
 
 
@@ -192,10 +191,9 @@ public class Deputy extends Thread
             {
                 this.logger.printlnRed("ERROR CLOSING CHANNEL");
                 this.logger.printlnRed(e.getStackTrace());
-                System.exit(1);
+                throw new Error("ERROR SHUTTING DOWN DEPUTY \"" + Thread.currentThread().getName() + "\"");
             }
         }
-
 
         try
         {
@@ -213,7 +211,7 @@ public class Deputy extends Thread
         {
             this.logger.printlnRed("FAILED");
             this.logger.printlnRed(e.getStackTrace());
-            System.exit(1);
+            throw new Error("ERROR SHUTTING DOWN DEPUTY \"" + Thread.currentThread().getName() + "\"");
         }
 
         // Deputy closed
@@ -601,7 +599,7 @@ public class Deputy extends Thread
 
                 Message response;
                 String translation;
-                boolean correct = false;
+                boolean correct;
 
                 translation = String.valueOf(message.getFieldDataAt(0));
 

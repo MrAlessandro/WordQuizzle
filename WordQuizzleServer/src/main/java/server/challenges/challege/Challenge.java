@@ -3,7 +3,8 @@ package server.challenges.challege;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import server.challenges.ChallengesManager;
+import server.challenges.reports.ChallengeReport;
+import server.challenges.reports.ChallengeReportDelegation;
 import server.challenges.exceptions.NoFurtherWordsToGetException;
 import server.challenges.exceptions.TranslationProvisionOutOfSequenceException;
 import server.challenges.exceptions.WordRetrievalOutOfSequenceException;
@@ -17,15 +18,22 @@ import java.util.Random;
 import java.util.TimerTask;
 import java.util.concurrent.*;
 
-public class Challenge extends TimerTask
+public class Challenge implements Runnable
 {
     // Translator threads pool
-    private static final ExecutorService TRANSLATORS = Executors.newCachedThreadPool();
+    private static ExecutorService translators = Executors.newCachedThreadPool();
+
     // Randomizer
     private static final Random RANDOMIZER = new Random();
 
     // Dictionary
     private static String[] dictionary;
+
+    // Timeout operation
+    private ChallengeReportDelegation timeoutOperation;
+
+    // completion operation
+    private ChallengeReportDelegation completionOperation;
 
     // Players username
     public String from;
@@ -47,8 +55,9 @@ public class Challenge extends TimerTask
     private int fromScore;
     private int toScore;
 
-    public static void setUp() throws IOException, ParseException
+    public static void setUp(Thread.UncaughtExceptionHandler exceptionHandler) throws IOException, ParseException
     {
+        // Read dictionary
         String JSONdictionary = new String(Files.readAllBytes(Paths.get(ServerConstants.DICTIONARY_PATH)));
         JSONParser parser = new JSONParser();
         JSONArray words = (JSONArray) parser.parse(JSONdictionary);
@@ -60,15 +69,29 @@ public class Challenge extends TimerTask
         {
             dictionary[i++] = word;
         }
+
+        // Setup translators pool
+        translators = Executors.newCachedThreadPool(r -> {
+            Thread thread = new Thread(r);
+            thread.setUncaughtExceptionHandler(exceptionHandler);
+            return thread;
+        });
     }
 
     public static void shutdown()
     {
-        TRANSLATORS.shutdownNow();
+        translators.shutdownNow();
     }
 
-    public Challenge(String from, String to)
+    public Challenge(String from, String to, ChallengeReportDelegation completionOperation, ChallengeReportDelegation timeoutOperation)
     {
+        // Set timeout operation
+        this.timeoutOperation = timeoutOperation;
+
+        // Set completion operation
+        this.completionOperation = completionOperation;
+
+        // Set players
         this.from = from;
         this.to = to;
 
@@ -86,7 +109,7 @@ public class Challenge extends TimerTask
         this.words = new String[ServerConstants.CHALLENGE_WORDS_QUANTITY];
         for (int i = 0; i < this.words.length; i++)
         {
-            int randomIndex = RANDOMIZER.nextInt() % dictionary.length;
+            int randomIndex = Math.abs(RANDOMIZER.nextInt() % dictionary.length);
             this.words[i] = dictionary[randomIndex];
         }
 
@@ -98,7 +121,7 @@ public class Challenge extends TimerTask
     {
         for (int i = 0; i < ServerConstants.CHALLENGE_WORDS_QUANTITY; i++)
         {
-            this.translations[i] = TRANSLATORS.submit(new Translator(this.words[i]));
+            this.translations[i] = translators.submit(new Translator(this.words[i]));
         }
     }
 
@@ -114,10 +137,57 @@ public class Challenge extends TimerTask
     public void run()
     {
         stopTranslations();
-        ChallengesManager.expireChallenge(this.from, this.to);
+
+        int fromStatus;
+        int toStatus;
+        if (this.fromScore > this.toScore)
+        {
+            fromStatus = 1;
+            toStatus = -1;
+        }
+        else if (this.fromScore < this.toScore)
+        {
+            fromStatus = -1;
+            toStatus = 1;
+        }
+        else
+        {
+            fromStatus = 0;
+            toStatus = 0;
+        }
+
+        this.timeoutOperation.setFromChallengeReport(new ChallengeReport(this.from, fromStatus,this.fromTranslationsProgress, this.fromScore));
+        this.timeoutOperation.setToChallengeReport(new ChallengeReport(this.to, toStatus, this.toTranslationsProgress, this.toScore));
+        this.timeoutOperation.run();
     }
 
-    /* TODO: Termination */
+    public void complete()
+    {
+        stopTranslations();
+
+        int fromStatus;
+        int toStatus;
+        if (this.fromScore > this.toScore)
+        {
+            fromStatus = 1;
+            toStatus = -1;
+        }
+        else if (this.fromScore < this.toScore)
+        {
+            fromStatus = -1;
+            toStatus = 1;
+        }
+        else
+        {
+            fromStatus = 0;
+            toStatus = 0;
+        }
+
+        this.completionOperation.setFromChallengeReport(new ChallengeReport(this.from, fromStatus,this.fromTranslationsProgress, this.fromScore));
+        this.completionOperation.setToChallengeReport(new ChallengeReport(this.to, toStatus, this.toTranslationsProgress, this.toScore));
+        this.completionOperation.run();
+    }
+
     public String getWord(String player) throws NoFurtherWordsToGetException, WordRetrievalOutOfSequenceException
     {
         if (player.equals(this.from))
@@ -144,7 +214,6 @@ public class Challenge extends TimerTask
         }
     }
 
-    /* TODO: Termination */
     public Boolean checkTranslation(String player, String translation) throws TranslationProvisionOutOfSequenceException
     {
         String[] alternativeTranslations;
@@ -210,15 +279,12 @@ public class Challenge extends TimerTask
             throw new Error("TRANSLATION RETRIEVAL ERROR");
         }
 
+        // Check if challenge is completed
+        if (this.fromTranslationsProgress == ServerConstants.CHALLENGE_WORDS_QUANTITY - 1 && this.toTranslationsProgress == ServerConstants.CHALLENGE_WORDS_QUANTITY - 1)
+            this.complete();
+
         return checked;
     }
-
-    public boolean isCompleted()
-    {
-        return this.fromWordsProgress == ServerConstants.CHALLENGE_WORDS_QUANTITY - 1 && this.toWordsProgress == ServerConstants.CHALLENGE_WORDS_QUANTITY - 1;
-    }
-
-
 
     @Override
     public boolean equals(Object o)
@@ -230,6 +296,6 @@ public class Challenge extends TimerTask
             return false;
 
         Challenge challenge = (Challenge) o;
-        return from.equals(challenge.from) && to.equals(challenge.to);
+        return this.from.equals(challenge.from) && this.to.equals(challenge.to);
     }
 }

@@ -120,7 +120,7 @@ class WordQuizzleServer
         logger.print("Initializing challenges manager... ");
         try
         {
-            ChallengesManager.setUp();
+            ChallengesManager.setUp(errorsHandler);
         }
 
         catch (FileNotFoundException e)

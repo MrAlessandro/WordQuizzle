@@ -7,17 +7,20 @@ public class ChallengeRequest extends TimerTask
     public String from;
     public String to;
 
-    public ChallengeRequest(String from, String to)
+    private Runnable timeoutOperation;
+
+    public ChallengeRequest(String from, String to, Runnable timeoutOperation)
     {
         super();
 
         this.from = from;
         this.to = to;
+        this.timeoutOperation = timeoutOperation;
     }
 
     @Override
     public void run()
     {
-        ChallengeRequestsManager.expireChallengeRequest(from, to);
+        timeoutOperation.run();
     }
 }

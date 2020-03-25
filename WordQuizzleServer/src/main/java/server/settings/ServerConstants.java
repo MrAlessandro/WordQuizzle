@@ -1,9 +1,12 @@
 package server.settings;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public class ServerConstants
@@ -107,6 +110,10 @@ public class ServerConstants
         CHALLENGE_RIGHT_TRANSLATION_SCORE = Integer.parseInt(PROPERTIES.getProperty("CHALLENGE_RIGHT_TRANSLATION_SCORE"));
         CHALLENGE_WRONG_TRANSLATION_SCORE = Integer.parseInt(PROPERTIES.getProperty("CHALLENGE_WRONG_TRANSLATION_SCORE"));
         CHALLENGE_WINNER_EXTRA_SCORE = Integer.parseInt(PROPERTIES.getProperty("CHALLENGE_WINNER_EXTRA_SCORE"));
+
+        // Create necessary directories
+        if (LOG_FILES && !(Files.exists(Paths.get(LOG_FILES_PATH))))
+            Files.createDirectory(Paths.get(LOG_FILES_PATH));
     }
 
     /*public static URL urlFactory(String word)

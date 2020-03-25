@@ -4,6 +4,8 @@ import commons.exceptions.CommunicableException;
 import commons.messages.Message;
 import commons.messages.MessageType;
 import commons.messages.exceptions.UnexpectedMessageException;
+import server.challenges.reports.ChallengeReport;
+import server.challenges.reports.ChallengeReportDelegation;
 import server.challenges.ChallengesManager;
 import server.challenges.exceptions.*;
 import server.settings.ServerConstants;
@@ -72,14 +74,14 @@ public class SessionsManager
         synchronized (ENGAGEMENTS_MONITOR)
         {
             // Discard eventual active challenge
-            String eventualOpponent = ChallengesManager.discardChallengeIfPresent(session.getUsername());
+            String eventualOpponent = ChallengesManager.cancelChallenge(session.getUsername());
             if (eventualOpponent != null)
             {
                 /*TODO*/
             }
 
             // Discard eventual challenge request
-            String eventualRequestPeer = ChallengeRequestsManager.discardChallengeRequestIfPresent(session.getUsername());
+            String eventualRequestPeer = ChallengeRequestsManager.cancelChallengeRequest(session.getUsername());
             if (eventualRequestPeer != null)
             {
                 /*TODO*/
@@ -187,7 +189,11 @@ public class SessionsManager
                     // Check if both server.users are already engaged in others challenge
                     ChallengesManager.checkEngagement(from, to);
                     // Record the challenge request
-                    ChallengeRequestsManager.recordChallengeRequest(from, to);
+                    ChallengeRequestsManager.recordChallengeRequest(from, to, () -> {
+                        // Send expiration challenge request message to both applicant and receiver
+                        sendMessage(from, new Message(MessageType.CHALLENGE_REQUEST_EXPIRED));
+                        sendMessage(to, new Message(MessageType.CHALLENGE_REQUEST_EXPIRED));
+                    });
                 }
             }
             catch (CommunicableException e)
@@ -225,7 +231,30 @@ public class SessionsManager
                         throw new UnexpectedMessageException("DO NOT EXIST ANY CHALLENGE REQUEST BETWEEN \"" + whoSentRequest + "\" and \"" + whoConfirmedRequest + "\"");
 
                     // Record challenge
-                    ChallengesManager.recordChallenge(whoSentRequest, whoConfirmedRequest);
+                    ChallengesManager.recordChallenge(whoSentRequest, whoConfirmedRequest,
+                            new ChallengeReportDelegation()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    ChallengeReport fromReport = this.getFromChallengeReport();
+                                    ChallengeReport toReport = this.getToChallengeReport();
+                                    sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_REPORT, String.valueOf(fromReport.winStatus), String.valueOf(fromReport.challengeProgress), String.valueOf(fromReport.scoreGain)));
+                                    sendMessage(whoConfirmedRequest, new Message(MessageType.CHALLENGE_REPORT, String.valueOf(toReport.winStatus), String.valueOf(toReport.challengeProgress), String.valueOf(toReport.scoreGain)));
+                                }
+                            },
+                            new ChallengeReportDelegation()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    // Send expiration challenge request message containing challenge reports to both applicant and receiver
+                                    ChallengeReport fromReport = this.getFromChallengeReport();
+                                    ChallengeReport toReport = this.getToChallengeReport();
+                                    sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_EXPIRED, String.valueOf(fromReport.winStatus), String.valueOf(fromReport.challengeProgress), String.valueOf(fromReport.scoreGain)));
+                                    sendMessage(whoConfirmedRequest, new Message(MessageType.CHALLENGE_EXPIRED, String.valueOf(toReport.winStatus), String.valueOf(toReport.challengeProgress), String.valueOf(toReport.scoreGain)));
+                                }
+                            });
                 }
             }
             catch (UnexpectedMessageException e)
@@ -240,7 +269,7 @@ public class SessionsManager
             return session;
         });
         if (whoSentRequestSession == null)
-            throw new Error("SESSIONS SYSTEM INCONSISTENCY");
+            throw new UnexpectedMessageException("DO NOT EXIST ANY CHALLENGE REQUEST BETWEEN \"" + whoSentRequest + "\" and \"" + whoConfirmedRequest + "\"");
 
         // Check if exceptions has been thrown during the operation
         if (exception.get() != null)
@@ -259,6 +288,8 @@ public class SessionsManager
         // Send declining message to applicant user
         sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_REQUEST_DECLINED, whoDeclinedRequest));
     }
+
+    /* TODO: voluntary cancellation of challenge -> ChallengesManager.discardChallenge() */
 
     public static String retrieveNextWord(String username) throws UnexpectedMessageException
     {
