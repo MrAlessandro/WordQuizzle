@@ -3,17 +3,18 @@ package server.requests.challenge;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import server.challenges.exceptions.ReceiverEngagedInOtherChallengeException;
 import server.requests.challenge.ChallengeRequest;
 import server.requests.challenge.ChallengeRequestsManager;
+import server.requests.challenge.exceptions.PreviousChallengeRequestReceivedException;
+import server.requests.challenge.exceptions.PreviousChallengeRequestSentException;
+import server.requests.challenge.exceptions.ReceiverEngagedInOtherChallengeRequestException;
 import server.settings.ServerConstants;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -21,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestChallengeRequestsManager
 {
     private ConcurrentHashMap<String, ChallengeRequest> challengeRequestsArchive;
+    private ScheduledThreadPoolExecutor timer;
 
     @BeforeAll
     public static void setUpProperties()
@@ -38,13 +40,15 @@ public class TestChallengeRequestsManager
     @BeforeEach
     public void setUpChallengeRequestsManager()
     {
-        ChallengeRequestsManager.setUp();
-
         try
         {
-            Field field = ChallengeRequestsManager.class.getDeclaredField("challengeRequestsArchive");
-            field.setAccessible(true);
-            challengeRequestsArchive = (ConcurrentHashMap<String, ChallengeRequest>) field.get(null);
+            ChallengeRequestsManager.setUp();
+            Field timerField = ChallengeRequestsManager.class.getDeclaredField("timer");
+            Field archiveField = ChallengeRequestsManager.class.getDeclaredField("challengeRequestsArchive");
+            timerField.setAccessible(true);
+            archiveField.setAccessible(true);
+            challengeRequestsArchive = (ConcurrentHashMap<String, ChallengeRequest>) archiveField.get(null);
+            timer = (ScheduledThreadPoolExecutor) timerField.get(null);
         }
         catch (NoSuchFieldException | IllegalAccessException e)
         {
@@ -59,6 +63,46 @@ public class TestChallengeRequestsManager
         String username2 = UUID.randomUUID().toString();
 
         assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertEquals(2, challengeRequestsArchive.size());
+    }
+
+    @Test
+    public void testChallengeRequestPreviousChallengeRequestReceived()
+    {
+        String username1 = UUID.randomUUID().toString();
+        String username2 = UUID.randomUUID().toString();
+
+        assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertEquals(2, challengeRequestsArchive.size());
+
+        assertThrows(PreviousChallengeRequestReceivedException.class, () -> ChallengeRequestsManager.recordChallengeRequest(username2, username1, () -> {}));
+        assertEquals(2, challengeRequestsArchive.size());
+    }
+
+    @Test
+    public void testChallengeRequestPreviousChallengeRequestSent()
+    {
+        String username1 = UUID.randomUUID().toString();
+        String username2 = UUID.randomUUID().toString();
+
+        assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertEquals(2, challengeRequestsArchive.size());
+
+        assertThrows(PreviousChallengeRequestSentException.class, () -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertEquals(2, challengeRequestsArchive.size());
+    }
+
+    @Test
+    public void testChallengeRequestReceiverAlreadyEngagedInOtherChallengeRequest()
+    {
+        String username1 = UUID.randomUUID().toString();
+        String username2 = UUID.randomUUID().toString();
+        String username3 = UUID.randomUUID().toString();
+
+        assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertEquals(2, challengeRequestsArchive.size());
+
+        assertThrows(ReceiverEngagedInOtherChallengeRequestException.class, () -> ChallengeRequestsManager.recordChallengeRequest(username3, username1, () -> {}));
         assertEquals(2, challengeRequestsArchive.size());
     }
 
@@ -96,9 +140,11 @@ public class TestChallengeRequestsManager
         AtomicBoolean timeoutFlag = new AtomicBoolean(false);
 
         assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> timeoutFlag.set(true)));
-        assertDoesNotThrow(() -> Thread.sleep(ServerConstants.CHALLENGE_REQUEST_TIMEOUT * 2));
-        assertEquals(0, challengeRequestsArchive.size());
+        assertEquals(2, challengeRequestsArchive.size());
+        timer.shutdown();
+        assertDoesNotThrow(() -> timer.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS));
         assertTrue(timeoutFlag.get());
+        assertEquals(0, challengeRequestsArchive.size());
     }
 
     @Nested
@@ -136,19 +182,32 @@ public class TestChallengeRequestsManager
         @ValueSource(ints = {10})
         public void testConcurrentChallengeRequestExpiration(int tasksNum)
         {
+            AtomicBoolean[] expirationFlags = new AtomicBoolean[tasksNum];
+
             for (int i = 0; i < tasksNum; i++)
             {
+                expirationFlags[i] = new AtomicBoolean(false);
+
+                int finalI = i;
                 pool.submit(() ->
                 {
                     String username1 = UUID.randomUUID().toString();
                     String username2 = UUID.randomUUID().toString();
 
-                    assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+                    assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> expirationFlags[finalI].set(true)));
                 });
             }
 
-            pool.shutdownNow();
-            assertDoesNotThrow(() -> Thread.sleep(ServerConstants.CHALLENGE_REQUEST_TIMEOUT * 2));
+            pool.shutdown();
+            assertDoesNotThrow(() -> pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS));
+
+            timer.shutdown();
+            assertDoesNotThrow(() -> timer.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS));
+            for (int i = 0; i < tasksNum; i++)
+            {
+                assertTrue(expirationFlags[i].get());
+            }
+
             assertEquals(0, challengeRequestsArchive.size());
         }
     }

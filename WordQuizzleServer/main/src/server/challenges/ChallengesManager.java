@@ -24,7 +24,7 @@ public class ChallengesManager
         // Initialize challenges archive
         challengesArchive = new ConcurrentHashMap<>(ServerConstants.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
         // Initialize timeouts archive
-        timeOutsArchive = new ConcurrentHashMap<>(256);
+        timeOutsArchive = new ConcurrentHashMap<>(128);
         // Initialize timer
         timer = new ScheduledThreadPoolExecutor(5);
         timer.setRemoveOnCancelPolicy(true);
@@ -106,6 +106,7 @@ public class ChallengesManager
             // Schedule challenge timeout
             ScheduledFuture<?> scheduledFuture = timer.schedule(challenge, ServerConstants.CHALLENGE_DURATION_SECONDS, TimeUnit.SECONDS);
             timeOutsArchive.put(challenge, scheduledFuture);
+            timerLogger.println("Challenge between \"" + from + "\" and \"" + to + "\" has been scheduled.");
         }
     }
 

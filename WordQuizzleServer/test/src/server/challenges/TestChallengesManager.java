@@ -131,6 +131,7 @@ public class TestChallengesManager
         assertEquals(2, challengesArchive.size());
         timer.shutdown();
         assertDoesNotThrow(() -> timer.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS));
+        assertTrue(expirationFlag.get());
         assertEquals(0, challengesArchive.size());
     }
 

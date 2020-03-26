@@ -2,7 +2,7 @@ package server.requests.challenge;
 
 import java.util.TimerTask;
 
-public class ChallengeRequest extends TimerTask
+public class ChallengeRequest implements Runnable
 {
     public String from;
     public String to;

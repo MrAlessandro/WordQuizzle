@@ -8,18 +8,23 @@ import server.requests.challenge.exceptions.PreviousChallengeRequestSentExceptio
 
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class ChallengeRequestsManager
 {
-    public static final Timer TIMER = new Timer();
-
     private static ConcurrentHashMap<String, ChallengeRequest> challengeRequestsArchive;
+    private static ConcurrentHashMap<ChallengeRequest, ScheduledFuture<?>> timeOutsArchive;
     private static Logger timerLogger;
+    public static ScheduledThreadPoolExecutor timer;
 
     public static void setUp()
     {
         challengeRequestsArchive = new ConcurrentHashMap<>(ServerConstants.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
         timerLogger = new Logger("ChallengeRequestsTimer");
+        timeOutsArchive = new ConcurrentHashMap<>(128);
+        timer = new ScheduledThreadPoolExecutor(5);
     }
 
     public static void recordChallengeRequest(String from, String to, Runnable timeoutOperation) throws PreviousChallengeRequestSentException, PreviousChallengeRequestReceivedException, ReceiverEngagedInOtherChallengeRequestException
@@ -46,11 +51,12 @@ public class ChallengeRequestsManager
                 challengeRequestsArchive.remove(from, request);
                 throw new ReceiverEngagedInOtherChallengeRequestException("USER \"" + to + "\" IS ENGAGED IN ANOTHER CHALLENGE REQUEST");
             }
-        }
 
-        // Schedule the request timeout
-        TIMER.schedule(request, ServerConstants.CHALLENGE_REQUEST_TIMEOUT);
-        timerLogger.println("Challenge request between \"" + from + "\" and \"" + to + "\" has been scheduled.");
+            // Schedule the request timeout
+            ScheduledFuture<?> scheduledFuture = timer.schedule(request, ServerConstants.CHALLENGE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            timeOutsArchive.put(request, scheduledFuture);
+            timerLogger.println("Challenge request between \"" + from + "\" and \"" + to + "\" has been scheduled.");
+        }
     }
 
     private static void expireChallengeRequest(String from, String to)
@@ -98,11 +104,12 @@ public class ChallengeRequestsManager
             // Requests removed must be the same
             if (requestFrom != requestTo)
                 throw new Error("CHALLENGE REQUEST MANAGER INCONSISTENCY");
-        }
 
-        // Cancel the timeout related to the request
-        requestFrom.cancel();
-        timerLogger.println("Challenge request between \"" + from + "\" and \"" + to + "\" has been discarded.");
+            // Cancel the timeout related to the request
+            ScheduledFuture<?> scheduledFuture = timeOutsArchive.remove(requestFrom);
+            scheduledFuture.cancel(true);
+            timerLogger.println("Challenge request between \"" + from + "\" and \"" + to + "\" has been discarded.");
+        }
 
         return true;
     }
@@ -132,11 +139,12 @@ public class ChallengeRequestsManager
                 throw new Error("CHALLENGE REQUEST MANAGER INCONSISTENCY");
             if (request != consequentialRequest)
                 throw new Error("CHALLENGE REQUEST MANAGER INCONSISTENCY");
-        }
 
-        // Cancel the timeout related to the request
-        request.cancel();
-        timerLogger.println("Challenge request between \"" + request.from + "\" and \"" + request.to + "\" has been canceled.");
+            // Cancel the timeout related to the request
+            ScheduledFuture<?> scheduledFuture = timeOutsArchive.remove(request);
+            scheduledFuture.cancel(true);
+            timerLogger.println("Challenge request between \"" + request.from + "\" and \"" + request.to + "\" has been canceled.");
+        }
 
         // Return the username of the other user engaged in the request
         return username.equals(request.from) ? request.to : request.from;
