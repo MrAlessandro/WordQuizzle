@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class SessionsManager
 {
-    private static final Object FRIENDSHIP_REQUESTS_MONITOR = new Object();
-    private static final Object ENGAGEMENTS_MONITOR = new Object();
+    private static final Object FRIENDSHIPS_MONITOR = new Object();
+    private static final Object CHALLENGES_MONITOR = new Object();
 
     private static ConcurrentHashMap<String, Session> sessionsArchive;
 
@@ -71,7 +71,7 @@ public class SessionsManager
         // Close session
         session.close();
 
-        synchronized (ENGAGEMENTS_MONITOR)
+        synchronized (CHALLENGES_MONITOR)
         {
             // Discard eventual active challenge
             String eventualOpponent = ChallengesManager.cancelChallenge(session.getUsername());
@@ -103,7 +103,7 @@ public class SessionsManager
         User userFrom;
         User userTo;
 
-        synchronized (FRIENDSHIP_REQUESTS_MONITOR)
+        synchronized (FRIENDSHIPS_MONITOR)
         {
             // Get server.users
             userFrom = UsersManager.getUser(from);
@@ -136,7 +136,7 @@ public class SessionsManager
         User whoSentRequestUser;
         User whoConfirmedRequestUser;
 
-        synchronized (FRIENDSHIP_REQUESTS_MONITOR)
+        synchronized (FRIENDSHIPS_MONITOR)
         {
             // Get server.users
             whoConfirmedRequestUser = UsersManager.getUser(whoConfirmedRequest);
@@ -184,7 +184,7 @@ public class SessionsManager
         receiverSession = sessionsArchive.computeIfPresent(to, (key, session) -> {
             try
             {
-                synchronized (ENGAGEMENTS_MONITOR)
+                synchronized (CHALLENGES_MONITOR)
                 {
                     // Check if both server.users are already engaged in others challenge
                     ChallengesManager.checkEngagement(from, to);
@@ -224,7 +224,7 @@ public class SessionsManager
         whoSentRequestSession = sessionsArchive.computeIfPresent(whoSentRequest, (key, session) -> {
             try
             {
-                synchronized (ENGAGEMENTS_MONITOR)
+                synchronized (CHALLENGES_MONITOR)
                 {
                     // Discard challenge request
                     if (!ChallengeRequestsManager.discardChallengeRequest(whoSentRequest, whoConfirmedRequest))
