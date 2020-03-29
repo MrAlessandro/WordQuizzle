@@ -37,7 +37,10 @@ public class Deputy extends Thread
 
     public Logger logger;
 
-    public Deputy(String name, int UDPport)
+    // Managers
+    UsersManager usersManager;
+
+    public Deputy(String name, int UDPport, UsersManager usersManager)
     {
         super(name);
 
@@ -49,6 +52,9 @@ public class Deputy extends Thread
 
         // Assign UDP port
         this.UDPport = UDPport;
+
+        // Set managers
+        this.usersManager = usersManager;
 
         try
         {
@@ -448,7 +454,7 @@ public class Deputy extends Thread
 
                 // Get serialized friends list
                 this.logger.print("Getting serialized friends list of \"" + session.getUsername() + "\"... ");
-                friends = UsersManager.getSerializedFriendsList(session.getUsername());
+                friends = usersManager.getSerializedFriendsList(session.getUsername());
                 this.logger.printlnGreen("GOT");
 
                 // Store the response message

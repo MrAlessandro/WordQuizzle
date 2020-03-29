@@ -35,9 +35,15 @@ public class SessionsManager
 
     private static ConcurrentHashMap<String, Session> sessionsArchive;
 
-    public static void setUp()
+    // Managers
+    private UsersManager usersManager;
+
+    public static void setUp(UsersManager usersManager)
     {
         sessionsArchive = new ConcurrentHashMap<>(ServerConstants.SESSIONS_ARCHIVE_INITIAL_SIZE);
+
+        // Set managers
+        this.usersManager = usersManager;
     }
 
     public static Session openSession(String username, char[] password, Selector selector, SocketAddress address) throws UnknownUserException, WrongPasswordException, UserAlreadyLoggedException

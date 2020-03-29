@@ -33,6 +33,9 @@ class WordQuizzleServer
 
     public static void main(String[] args)
     {
+        // Managers
+        UsersManager usersManager;
+
         InetSocketAddress serverAddress;
         Registry registry = null;
         Deputy[] deputies;
@@ -98,7 +101,7 @@ class WordQuizzleServer
 
         // Setup server.users manager
         logger.print("Initializing server.users manager... ");
-        UsersManager.setUp();
+        usersManager = new UsersManager();
         logger.printlnGreen("INITIALIZED");
 
         // Setup sessions manager
@@ -147,7 +150,7 @@ class WordQuizzleServer
         {
             // Enabling RMI support for registration operation
             logger.print("Setting up RMI support... ");
-            stub = (Registrable) UnicastRemoteObject.exportObject(UsersManager.getUsersManager(), 0);
+            stub = (Registrable) UnicastRemoteObject.exportObject(usersManager, 0);
             LocateRegistry.createRegistry(ServerConstants.USERS_MANAGER_REGISTRY_PORT);
             registry = LocateRegistry.getRegistry(ServerConstants.USERS_MANAGER_REGISTRY_PORT);
             registry.bind(ServerConstants.USERS_MANAGER_REMOTE_NAME, stub);
