@@ -8,60 +8,59 @@ import server.settings.ServerConstants;
 import server.loggers.Logger;
 
 import java.io.IOException;
-import java.util.Timer;
 import java.util.concurrent.*;
 
 public class ChallengesManager
 {
-    private static ConcurrentHashMap<String, Challenge> challengesArchive;
-    private static ConcurrentHashMap<Challenge, ScheduledFuture<?>> timeOutsArchive;
-    private static ScheduledThreadPoolExecutor timer;
-    public static Logger translatorsLogger;
-    public static Logger timerLogger;
+    private ConcurrentHashMap<String, Challenge> challengesArchive;
+    private ConcurrentHashMap<Challenge, ScheduledFuture<?>> timeOutsArchive;
+    private ScheduledThreadPoolExecutor timer;
+    public Logger translatorsLogger;
+    public Logger timerLogger;
 
-    public static void setUp(Thread.UncaughtExceptionHandler errorsHandler) throws IOException, ParseException
+    public ChallengesManager(Thread.UncaughtExceptionHandler errorsHandler) throws IOException, ParseException
     {
         // Initialize challenges archive
-        challengesArchive = new ConcurrentHashMap<>(ServerConstants.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
+        this.challengesArchive = new ConcurrentHashMap<>(ServerConstants.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
         // Initialize timeouts archive
-        timeOutsArchive = new ConcurrentHashMap<>(128);
+        this.timeOutsArchive = new ConcurrentHashMap<>(128);
         // Initialize timer
-        timer = new ScheduledThreadPoolExecutor(5);
-        timer.setRemoveOnCancelPolicy(true);
+        this.timer = new ScheduledThreadPoolExecutor(5);
+        this.timer.setRemoveOnCancelPolicy(true);
         // Initialize translators logger
-        translatorsLogger = new Logger("Translators");
+        this.translatorsLogger = new Logger("Translators");
         // Initialize timer logger
-        timerLogger = new Logger("ChallengeTimers");
+        this.timerLogger = new Logger("ChallengeTimers");
         // Setup challenges words from dictionary
         Challenge.setUp(errorsHandler);
     }
 
-    public static void shutdown()
+    public void shutdown()
     {
         // Cancel all timeout
-        timer.shutdownNow();
-        timer.purge();
+        this.timer.shutdownNow();
+        this.timer.purge();
         // Cancel every translator
         Challenge.shutdown();
     }
 
-    public static void checkEngagement(String from, String to) throws ApplicantEngagedInOtherChallengeException, ReceiverEngagedInOtherChallengeException
+    public void checkEngagement(String from, String to) throws ApplicantEngagedInOtherChallengeException, ReceiverEngagedInOtherChallengeException
     {
         synchronized (ChallengesManager.class)
         {
             // Check if applicant is engaged in other challenge
-            Challenge eventualPreviousChallengeFrom = challengesArchive.get(from);
+            Challenge eventualPreviousChallengeFrom = this.challengesArchive.get(from);
             if (eventualPreviousChallengeFrom != null)
                 throw new ApplicantEngagedInOtherChallengeException("USER \"" + from + "\" IS ENGAGED IN ANOTHER CHALLENGE");
 
             // Check if opponent is engaged in other challenge
-            Challenge eventualPreviousChallengeTo = challengesArchive.get(to);
+            Challenge eventualPreviousChallengeTo = this.challengesArchive.get(to);
             if (eventualPreviousChallengeTo != null)
                 throw new ReceiverEngagedInOtherChallengeException("USER \"" + to + "\" IS ENGAGED IN ANOTHER CHALLENGE");
         }
     }
 
-    public static void recordChallenge(String from, String to, ChallengeReportDelegation completionOperation, ChallengeReportDelegation timeoutOperation) throws ApplicantEngagedInOtherChallengeException, ReceiverEngagedInOtherChallengeException
+    public void recordChallenge(String from, String to, ChallengeReportDelegation completionOperation, ChallengeReportDelegation timeoutOperation) throws ApplicantEngagedInOtherChallengeException, ReceiverEngagedInOtherChallengeException
     {
         Challenge challenge = new Challenge(from, to,
                 new ChallengeReportDelegation() // Completion operation
@@ -86,17 +85,17 @@ public class ChallengesManager
         synchronized (ChallengesManager.class)
         {
             // Store challenge with player 1
-            Challenge previousChallengeFrom = challengesArchive.putIfAbsent(from, challenge);
+            Challenge previousChallengeFrom = this.challengesArchive.putIfAbsent(from, challenge);
             if (previousChallengeFrom != null)
             {
                 throw new ApplicantEngagedInOtherChallengeException("USER \"" + from + "\" IS ENGAGED IN ANOTHER CHALLENGE");
             }
 
             // Store challenge with player 2
-            Challenge previousChallengeTo = challengesArchive.putIfAbsent(to, challenge);
+            Challenge previousChallengeTo = this.challengesArchive.putIfAbsent(to, challenge);
             if (previousChallengeTo != null)
             {
-                challengesArchive.remove(from, challenge);
+                this.challengesArchive.remove(from, challenge);
                 throw new ReceiverEngagedInOtherChallengeException("USER \"" + to + "\" IS ENGAGED IN ANOTHER CHALLENGE");
             }
 
@@ -104,13 +103,13 @@ public class ChallengesManager
             challenge.startTranslations();
 
             // Schedule challenge timeout
-            ScheduledFuture<?> scheduledFuture = timer.schedule(challenge, ServerConstants.CHALLENGE_DURATION_SECONDS, TimeUnit.SECONDS);
-            timeOutsArchive.put(challenge, scheduledFuture);
-            timerLogger.println("Challenge between \"" + from + "\" and \"" + to + "\" has been scheduled.");
+            ScheduledFuture<?> scheduledFuture = this.timer.schedule(challenge, ServerConstants.CHALLENGE_DURATION_SECONDS, TimeUnit.SECONDS);
+            this.timeOutsArchive.put(challenge, scheduledFuture);
+            this.timerLogger.println("Challenge between \"" + from + "\" and \"" + to + "\" has been scheduled.");
         }
     }
 
-    private static Challenge unregisterChallenge(String from, String to)
+    private Challenge unregisterChallenge(String from, String to)
     {
         Challenge challengeFrom;
         Challenge challengeTo;
@@ -118,12 +117,12 @@ public class ChallengesManager
         synchronized (ChallengesManager.class)
         {
             // Remove entry for applicant user
-            challengeFrom = challengesArchive.remove(from);
+            challengeFrom = this.challengesArchive.remove(from);
             if (challengeFrom == null)
                 throw new Error("CHALLENGE SYSTEM INCONSISTENCY");
 
             // Remove entry for receiver user
-            challengeTo = challengesArchive.remove(to);
+            challengeTo = this.challengesArchive.remove(to);
             if (challengeTo == null)
                 throw new Error("CHALLENGE SYSTEM INCONSISTENCY");
 
@@ -135,26 +134,26 @@ public class ChallengesManager
             challengeFrom.stopTranslations();
 
             // Cancel the timeout related to the challenge
-            ScheduledFuture<?> scheduledFuture = timeOutsArchive.remove(challengeFrom);
+            ScheduledFuture<?> scheduledFuture = this.timeOutsArchive.remove(challengeFrom);
             scheduledFuture.cancel(true);
         }
 
         return challengeFrom;
     }
 
-    public static void expireChallenge(String from, String to)
+    public void expireChallenge(String from, String to)
     {
         unregisterChallenge(from, to);
-        timerLogger.println("Challenge between \"" + from + "\" and \"" + to + "\" has been expired.");
+        this.timerLogger.println("Challenge between \"" + from + "\" and \"" + to + "\" has been expired.");
     }
 
-    public static void closeChallenge(String from, String to)
+    public void closeChallenge(String from, String to)
     {
         unregisterChallenge(from, to);
-        timerLogger.println("Challenge between \"" + from + "\" and \"" + to + "\" has been completed.");
+        this.timerLogger.println("Challenge between \"" + from + "\" and \"" + to + "\" has been completed.");
     }
 
-    public static String cancelChallenge(String username)
+    public String cancelChallenge(String username)
     {
         Challenge consequentialChallenge;
         Challenge challenge;
@@ -162,15 +161,15 @@ public class ChallengesManager
         synchronized (ChallengesManager.class)
         {
             // Remove eventual challenge related to given user from the archive
-            challenge = challengesArchive.remove(username);
+            challenge = this.challengesArchive.remove(username);
             if (challenge == null)
                 return null;
 
             // Remove challenge request related to other user engaged from the archive
             if (username.equals(challenge.from))
-                consequentialChallenge = challengesArchive.remove(challenge.to);
+                consequentialChallenge = this.challengesArchive.remove(challenge.to);
             else if (username.equals(challenge.to))
-                consequentialChallenge = challengesArchive.remove(challenge.from);
+                consequentialChallenge = this.challengesArchive.remove(challenge.from);
             else
                 throw new Error("CHALLENGES MANAGER INCONSISTENCY");
 
@@ -184,23 +183,23 @@ public class ChallengesManager
             challenge.stopTranslations();
 
             // Cancel the timeout related to the challenge
-            ScheduledFuture<?> scheduledFuture = timeOutsArchive.remove(challenge);
+            ScheduledFuture<?> scheduledFuture = this.timeOutsArchive.remove(challenge);
             scheduledFuture.cancel(true);
-            timerLogger.println("Challenge between \"" + challenge.from + "\" and \"" + challenge.to + "\" has been canceled.");
+            this.timerLogger.println("Challenge between \"" + challenge.from + "\" and \"" + challenge.to + "\" has been canceled.");
         }
 
         // Return the username of the other user engaged in the challenge
         return username.equals(challenge.from) ? challenge.to : challenge.from;
     }
 
-    public static String retrieveNextWord(String player) throws NoChallengeRelatedException, NoFurtherWordsToGetException, WordRetrievalOutOfSequenceException
+    public String retrieveNextWord(String player) throws NoChallengeRelatedException, NoFurtherWordsToGetException, WordRetrievalOutOfSequenceException
     {
         Challenge challenge;
         String word;
 
         synchronized (ChallengesManager.class)
         {
-            challenge = challengesArchive.get(player);
+            challenge = this.challengesArchive.get(player);
             if (challenge == null)
                 throw new NoChallengeRelatedException("USER \"" + player + "\" IS NOT ENGAGED IN ANY CHALLENGE");
 
@@ -210,14 +209,14 @@ public class ChallengesManager
         return word;
     }
 
-    public static boolean provideTranslation(String player, String translation) throws NoChallengeRelatedException, TranslationProvisionOutOfSequenceException
+    public boolean provideTranslation(String player, String translation) throws NoChallengeRelatedException, TranslationProvisionOutOfSequenceException
     {
         Challenge challenge;
         Boolean correct;
 
         synchronized (ChallengesManager.class)
         {
-            challenge = challengesArchive.get(player);
+            challenge = this.challengesArchive.get(player);
             if (challenge == null)
                 throw new NoChallengeRelatedException("USER \"" + player + "\" IS NOT ENGAGED IN ANY CHALLENGE");
 

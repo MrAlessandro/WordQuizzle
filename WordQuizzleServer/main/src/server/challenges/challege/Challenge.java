@@ -32,7 +32,7 @@ public class Challenge implements Runnable
     // Timeout operation
     private ChallengeReportDelegation timeoutOperation;
 
-    // completion operation
+    // Completion operation
     private ChallengeReportDelegation completionOperation;
 
     // Players username
