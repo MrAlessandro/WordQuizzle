@@ -1,12 +1,12 @@
 package server.main;
 
 import commons.remote.Registrable;
-import org.json.simple.parser.ParseException;
 import server.challenges.ChallengesManager;
 import server.loggers.Logger;
 import server.requests.challenge.ChallengeRequestsManager;
 import server.requests.friendship.FriendshipRequestsManager;
 import server.sessions.SessionsManager;
+import server.sessions.session.Session;
 import server.settings.ServerConstants;
 import server.users.UsersManager;
 
@@ -38,9 +38,10 @@ class WordQuizzleServer
         FriendshipRequestsManager friendshipRequestsManager;
         ChallengeRequestsManager challengeRequestsManager;
         ChallengesManager challengesManager;
+        SessionsManager sessionsManager;
 
         InetSocketAddress serverAddress;
-        Registry registry = null;
+        Registry registry;
         Deputy[] deputies;
         Registrable stub;
         Logger logger;
@@ -82,10 +83,13 @@ class WordQuizzleServer
 
         // Setting uncaught exception handler
         errorsHandler = (thread, throwable) -> {
-            logger.printlnRed("FATAL ERROR FROM THREAD " + thread.getName());
+            logger.printlnRed("FATAL ERROR FROM THREAD: " + thread.getName() + " ⟶ " + throwable.getMessage());
             logger.printlnRed(Arrays.toString(throwable.getStackTrace()));
             System.exit(1);
         };
+
+        // Set error handler for this main thread (current)
+        Thread.currentThread().setUncaughtExceptionHandler(errorsHandler);
 
         // Restoring eventual previous server.users' manager state
         //UsersManager.restore();
@@ -115,7 +119,7 @@ class WordQuizzleServer
 
         // Setup sessions manager
         logger.print("Initializing sessions manager... ");
-        SessionsManager.setUp();
+        sessionsManager = new SessionsManager(usersManager, friendshipRequestsManager, challengeRequestsManager, challengesManager);
         logger.printlnGreen("INITIALIZED");
 
         // Initialize and starts deputies
@@ -141,9 +145,7 @@ class WordQuizzleServer
         }
         catch (AlreadyBoundException | RemoteException e)
         {
-            logger.printlnRed("FAILED");
-            logger.printlnRed(e.getStackTrace());
-            System.exit(1);
+            throw new Error(e.getMessage().toUpperCase());
         }
 
         try
@@ -211,15 +213,11 @@ class WordQuizzleServer
         }
         catch (IOException | NotBoundException e)
         {
-            logger.printlnRed("FAILED");
-            logger.printlnRed(e.getStackTrace());
-            System.exit(1);
+            throw new Error(e.getMessage().toUpperCase());
         }
         catch (InterruptedException e)
         {
-            logger.printlnRed("UNEXPECTED INTERRUPTION");
-            logger.printlnRed(e.getStackTrace());
-            System.exit(1);
+            throw new Error("UNEXPECTED INTERRUPTION");
         }
     }
 

@@ -30,28 +30,36 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class SessionsManager
 {
-    private static final Object FRIENDSHIPS_MONITOR = new Object();
-    private static final Object CHALLENGES_MONITOR = new Object();
+    // Monitor for requests
+    private final Object friendshipsMonitor = new Object();
+    private final Object challengesMonitor = new Object();
 
-    private static ConcurrentHashMap<String, Session> sessionsArchive;
+    // Sessions archive
+    private ConcurrentHashMap<String, Session> sessionsArchive;
 
     // Managers
     private UsersManager usersManager;
+    private FriendshipRequestsManager friendshipRequestsManager;
+    private ChallengeRequestsManager challengeRequestsManager;
+    private ChallengesManager challengesManager;
 
-    public static void setUp(UsersManager usersManager)
+    public SessionsManager(UsersManager usersManager, FriendshipRequestsManager friendshipRequestsManager, ChallengeRequestsManager challengeRequestsManager, ChallengesManager challengesManager)
     {
-        sessionsArchive = new ConcurrentHashMap<>(ServerConstants.SESSIONS_ARCHIVE_INITIAL_SIZE);
+        this.sessionsArchive = new ConcurrentHashMap<>(ServerConstants.SESSIONS_ARCHIVE_INITIAL_SIZE);
 
         // Set managers
+        this.friendshipRequestsManager = friendshipRequestsManager;
+        this.challengeRequestsManager = challengeRequestsManager;
+        this.challengesManager = challengesManager;
         this.usersManager = usersManager;
     }
 
-    public static Session openSession(String username, char[] password, Selector selector, SocketAddress address) throws UnknownUserException, WrongPasswordException, UserAlreadyLoggedException
+    public Session openSession(String username, char[] password, Selector selector, SocketAddress address) throws UnknownUserException, WrongPasswordException, UserAlreadyLoggedException
     {
         Session session;
 
         // Get the user
-        User user = UsersManager.getUser(username);
+        User user = this.usersManager.getUser(username);
         if (user == null)
             throw new UnknownUserException(username, "UNKNOWN USER \"" + username + "\"");
 
@@ -62,32 +70,32 @@ public class SessionsManager
         session = new Session(username, selector, address, user.getBacklog());
 
         // Put the session in the sessions archive if it is not already present
-        if (sessionsArchive.putIfAbsent(username, session) != null)
+        if (this.sessionsArchive.putIfAbsent(username, session) != null)
             throw new UserAlreadyLoggedException("USER \"" + username + "\" ALREADY LOGGED");
 
         return session;
     }
 
     /*TODO*/
-    public static void closeSession(Session session)
+    public void closeSession(Session session)
     {
         // Remove session from the archive
-        sessionsArchive.remove(session.getUsername(), session);
+        this.sessionsArchive.remove(session.getUsername(), session);
 
         // Close session
         session.close();
 
-        synchronized (CHALLENGES_MONITOR)
+        synchronized (challengesMonitor)
         {
             // Discard eventual active challenge
-            String eventualOpponent = ChallengesManager.cancelChallenge(session.getUsername());
+            String eventualOpponent = this.challengesManager.cancelChallenge(session.getUsername());
             if (eventualOpponent != null)
             {
                 /*TODO*/
             }
 
             // Discard eventual challenge request
-            String eventualRequestPeer = ChallengeRequestsManager.cancelChallengeRequest(session.getUsername());
+            String eventualRequestPeer = this.challengeRequestsManager.cancelChallengeRequest(session.getUsername());
             if (eventualRequestPeer != null)
             {
                 /*TODO*/
@@ -95,37 +103,37 @@ public class SessionsManager
         }
     }
 
-    public static void terminateSession(Session session)
+    public void terminateSession(Session session)
     {
         // Remove session from the archive
-        sessionsArchive.remove(session.getUsername(), session);
+        this.sessionsArchive.remove(session.getUsername(), session);
 
         // Close session
         session.close();
     }
 
-    public static void sendFriendshipRequest(String from, String to) throws UnknownReceiverException, AlreadyFriendsException, FriendshipRequestAlreadySent, FriendshipRequestAlreadyReceived
+    public void sendFriendshipRequest(String from, String to) throws UnknownReceiverException, AlreadyFriendsException, FriendshipRequestAlreadySent, FriendshipRequestAlreadyReceived
     {
         User userFrom;
         User userTo;
 
-        synchronized (FRIENDSHIPS_MONITOR)
+        synchronized (friendshipsMonitor)
         {
             // Get server.users
-            userFrom = UsersManager.getUser(from);
+            userFrom = this.usersManager.getUser(from);
             if (userFrom == null)
                 throw new Error("SESSIONS SYSTEM INCONSISTENCY");
 
-            userTo = UsersManager.getUser(to);
+            userTo = this.usersManager.getUser(to);
             if (userTo == null)
                 throw new UnknownReceiverException("UNKNOWN USER \"" + to + "\"");
 
             // Check if server.users exist and if they are friends
-            if (UsersManager.areFriends(userFrom, userTo))
+            if (this.usersManager.areFriends(userFrom, userTo))
                 throw new AlreadyFriendsException("USER \"" + from + "\" AND USER \"" + to + "\" ARE ALREADY FRIENDS");
 
             // Store the friendship request in the friendship server.requests archive
-            FriendshipRequestsManager.recordFriendshipRequest(from, to);
+            this.friendshipRequestsManager.recordFriendshipRequest(from, to);
         }
 
         // Prepare message
@@ -137,65 +145,65 @@ public class SessionsManager
             userTo.getBacklog().add(message);
     }
 
-    public static void confirmFriendshipRequest(String whoSentRequest, String whoConfirmedRequest) throws UnexpectedMessageException, UnknownUserException
+    public void confirmFriendshipRequest(String whoSentRequest, String whoConfirmedRequest) throws UnexpectedMessageException, UnknownUserException
     {
         User whoSentRequestUser;
         User whoConfirmedRequestUser;
 
-        synchronized (FRIENDSHIPS_MONITOR)
+        synchronized (friendshipsMonitor)
         {
             // Get server.users
-            whoConfirmedRequestUser = UsersManager.getUser(whoConfirmedRequest);
+            whoConfirmedRequestUser = this.usersManager.getUser(whoConfirmedRequest);
             if (whoConfirmedRequestUser == null)
                 throw new Error("SESSIONS SYSTEM INCONSISTENCY");
 
-            whoSentRequestUser = UsersManager.getUser(whoSentRequest);
+            whoSentRequestUser = this.usersManager.getUser(whoSentRequest);
             if (whoSentRequestUser == null)
                 throw new UnknownUserException("UNKNOWN USER \"" + whoSentRequest + "\"");
 
             // Remove friendship request from the friendship server.requests archive
-            if (!FriendshipRequestsManager.discardFriendshipRequest(whoSentRequest, whoConfirmedRequest))
+            if (!this.friendshipRequestsManager.discardFriendshipRequest(whoSentRequest, whoConfirmedRequest))
                 throw new UnexpectedMessageException("DO NOT EXIST ANY FRIENDSHIP REQUEST BETWEEN \"" + whoSentRequest + "\" and \"" + whoConfirmedRequest + "\"");
 
             // Make server.users friends
-            UsersManager.makeFriends(whoSentRequestUser, whoConfirmedRequestUser);
+            this.usersManager.makeFriends(whoSentRequestUser, whoConfirmedRequestUser);
         }
 
         // Send confirmation message to applicant user if is online
         sendMessage(whoSentRequest, new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, whoConfirmedRequest));
     }
 
-    public static void declineFriendshipRequest(String whoSentRequest, String whoDeclinedRequest) throws UnexpectedMessageException
+    public void declineFriendshipRequest(String whoSentRequest, String whoDeclinedRequest) throws UnexpectedMessageException
     {
         // Remove friendship request from the friendship server.requests archive
-        if (!FriendshipRequestsManager.discardFriendshipRequest(whoSentRequest, whoDeclinedRequest))
+        if (!this.friendshipRequestsManager.discardFriendshipRequest(whoSentRequest, whoDeclinedRequest))
             throw new UnexpectedMessageException("DO NOT EXIST ANY FRIENDSHIP REQUEST BETWEEN \"" + whoSentRequest + "\" and \"" + whoDeclinedRequest + "\"");
 
         // Send declining message to applicant user if is online
         sendMessage(whoSentRequest, new Message(MessageType.FRIENDSHIP_REQUEST_DECLINED, whoDeclinedRequest));
     }
 
-    public static void sendChallengeRequest(String from, String to) throws CommunicableException
+    public void sendChallengeRequest(String from, String to) throws CommunicableException
     {
         AtomicReference<CommunicableException> exception = new AtomicReference<>(null);
         Session receiverSession;
         User receiverUser;
 
         // Get the receiver user
-        receiverUser = UsersManager.getUser(to);
+        receiverUser = this.usersManager.getUser(to);
         if (receiverUser == null)
             throw new UnknownReceiverException("UNKNOWN USER \"" + to + "\"");
 
         // Check if receiver is online. If it is check if is engaged in a challenge or in a challenge request and then store challenge request archive.
-        receiverSession = sessionsArchive.computeIfPresent(to, (key, session) -> {
+        receiverSession = this.sessionsArchive.computeIfPresent(to, (key, session) -> {
             try
             {
-                synchronized (CHALLENGES_MONITOR)
+                synchronized (this.challengesMonitor)
                 {
                     // Check if both server.users are already engaged in others challenge
-                    ChallengesManager.checkEngagement(from, to);
+                    this.challengesManager.checkEngagement(from, to);
                     // Record the challenge request
-                    ChallengeRequestsManager.recordChallengeRequest(from, to, () -> {
+                    this.challengeRequestsManager.recordChallengeRequest(from, to, () -> {
                         // Send expiration challenge request message to both applicant and receiver
                         sendMessage(from, new Message(MessageType.CHALLENGE_REQUEST_EXPIRED));
                         sendMessage(to, new Message(MessageType.CHALLENGE_REQUEST_EXPIRED));
@@ -221,23 +229,23 @@ public class SessionsManager
         receiverSession.appendMessage(new Message(MessageType.REQUEST_FOR_CHALLENGE, from));
     }
 
-    public static void confirmChallengeRequest(String whoSentRequest, String whoConfirmedRequest) throws UnexpectedMessageException
+    public void confirmChallengeRequest(String whoSentRequest, String whoConfirmedRequest) throws UnexpectedMessageException
     {
         AtomicReference<UnexpectedMessageException> exception = new AtomicReference<>(null);
         Session whoSentRequestSession;
 
         // Lock the request applicant session
-        whoSentRequestSession = sessionsArchive.computeIfPresent(whoSentRequest, (key, session) -> {
+        whoSentRequestSession = this.sessionsArchive.computeIfPresent(whoSentRequest, (key, session) -> {
             try
             {
-                synchronized (CHALLENGES_MONITOR)
+                synchronized (challengesMonitor)
                 {
                     // Discard challenge request
-                    if (!ChallengeRequestsManager.discardChallengeRequest(whoSentRequest, whoConfirmedRequest))
+                    if (!this.challengeRequestsManager.discardChallengeRequest(whoSentRequest, whoConfirmedRequest))
                         throw new UnexpectedMessageException("DO NOT EXIST ANY CHALLENGE REQUEST BETWEEN \"" + whoSentRequest + "\" and \"" + whoConfirmedRequest + "\"");
 
                     // Record challenge
-                    ChallengesManager.recordChallenge(whoSentRequest, whoConfirmedRequest,
+                    this.challengesManager.recordChallenge(whoSentRequest, whoConfirmedRequest,
                             new ChallengeReportDelegation()
                             {
                                 @Override
@@ -285,25 +293,25 @@ public class SessionsManager
         sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, whoConfirmedRequest));
     }
 
-    public static void declineChallengeRequest(String whoSentRequest, String whoDeclinedRequest) throws UnexpectedMessageException
+    public void declineChallengeRequest(String whoSentRequest, String whoDeclinedRequest) throws UnexpectedMessageException
     {
         // Discard challenge request
-        if (!ChallengeRequestsManager.discardChallengeRequest(whoSentRequest, whoDeclinedRequest))
+        if (!this.challengeRequestsManager.discardChallengeRequest(whoSentRequest, whoDeclinedRequest))
             throw new UnexpectedMessageException("DO NOT EXIST ANY CHALLENGE REQUEST BETWEEN \"" + whoSentRequest + "\" and \"" + whoDeclinedRequest + "\"");
 
         // Send declining message to applicant user
         sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_REQUEST_DECLINED, whoDeclinedRequest));
     }
 
-    /* TODO: voluntary cancellation of challenge -> ChallengesManager.discardChallenge() */
+    /* TODO: voluntary cancellation of challenge -> this.challengesManager.discardChallenge() */
 
-    public static String retrieveNextWord(String username) throws UnexpectedMessageException
+    public String retrieveNextWord(String username) throws UnexpectedMessageException
     {
         String word;
 
         try
         {
-            word = ChallengesManager.retrieveNextWord(username);
+            word = this.challengesManager.retrieveNextWord(username);
         }
         catch (NoChallengeRelatedException | NoFurtherWordsToGetException | WordRetrievalOutOfSequenceException e)
         {
@@ -313,13 +321,13 @@ public class SessionsManager
         return word;
     }
 
-    public static boolean provideTranslation(String username, String translation) throws UnexpectedMessageException
+    public boolean provideTranslation(String username, String translation) throws UnexpectedMessageException
     {
         boolean correct;
 
         try
         {
-            correct = ChallengesManager.provideTranslation(username, translation);
+            correct = this.challengesManager.provideTranslation(username, translation);
         }
         catch (NoChallengeRelatedException | TranslationProvisionOutOfSequenceException e)
         {
@@ -329,10 +337,10 @@ public class SessionsManager
         return correct;
     }
 
-    public static boolean sendMessage(String username, Message message)
+    public boolean sendMessage(String username, Message message)
     {
         // Get the session by username
-        Session session = sessionsArchive.get(username);
+        Session session = this.sessionsArchive.get(username);
         if (session == null)
             // User is not online
             return false;

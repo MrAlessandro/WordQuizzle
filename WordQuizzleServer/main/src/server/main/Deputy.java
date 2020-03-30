@@ -38,9 +38,10 @@ public class Deputy extends Thread
     public Logger logger;
 
     // Managers
-    UsersManager usersManager;
+    private UsersManager usersManager;
+    private SessionsManager sessionsManager;
 
-    public Deputy(String name, int UDPport, UsersManager usersManager)
+    public Deputy(String name, int UDPport, UsersManager usersManager, SessionsManager sessionsManager)
     {
         super(name);
 
@@ -55,6 +56,7 @@ public class Deputy extends Thread
 
         // Set managers
         this.usersManager = usersManager;
+        this.sessionsManager = sessionsManager;
 
         try
         {
@@ -181,7 +183,7 @@ public class Deputy extends Thread
                         if (key.attachment() instanceof Session)
                         {
                             this.logger.print("\tClosing session with \"" + ((Session) key.attachment()).getUsername() + "\"... ");
-                            SessionsManager.terminateSession(((Session) key.attachment()));
+                            this.sessionsManager.terminateSession(((Session) key.attachment()));
                             this.logger.printlnGreen("CLOSED");
                         }
 
@@ -265,7 +267,7 @@ public class Deputy extends Thread
             {// Exception has been thrown reading from a connection with a logged client
                 // Close session
                 this.logger.print("Closing session with user \"" + ((Session) selected.attachment()).getUsername() + "\"... ");
-                SessionsManager.closeSession((Session) selected.attachment());
+                this.sessionsManager.closeSession((Session) selected.attachment());
                 this.logger.printlnRed("CLOSED");
             }
 
@@ -314,7 +316,7 @@ public class Deputy extends Thread
 
                     // Opening session
                     this.logger.print("Opening the session for user \"" + username + "\"... ");
-                    Session openedSession = SessionsManager.openSession(username, password, selector, UDPclientAddress);
+                    Session openedSession = this.sessionsManager.openSession(username, password, selector, UDPclientAddress);
                     this.logger.printlnGreen("OPENED");
 
                     // Send OK response
@@ -364,7 +366,7 @@ public class Deputy extends Thread
                 {
                     this.logger.print("Sending friendship request from \"" + session.getUsername() + "\" to \"" + to + "\"... ");
                     // Send the friendship request to receiver
-                    SessionsManager.sendFriendshipRequest(session.getUsername(), to);
+                    this.sessionsManager.sendFriendshipRequest(session.getUsername(), to);
                     this.logger.printlnGreen("SENT");
 
                     // Prepare response message for applicant
@@ -396,7 +398,7 @@ public class Deputy extends Thread
                 try
                 {
                     this.logger.print("Confirming friendship request between \"" + from + "\" and \"" + session.getUsername() + "\"... ");
-                    SessionsManager.confirmFriendshipRequest(from, session.getUsername());
+                    this.sessionsManager.confirmFriendshipRequest(from, session.getUsername());
                     this.logger.printlnGreen("CONFIRMED");
 
                     // Prepare response message for applicant
@@ -428,7 +430,7 @@ public class Deputy extends Thread
 
                     // Decline the friendship request
                     this.logger.print("Declining friendship request between \"" + from + "\" and \"" + session.getUsername() + "\"... ");
-                    SessionsManager.declineFriendshipRequest(from, session.getUsername());
+                    this.sessionsManager.declineFriendshipRequest(from, session.getUsername());
                     this.logger.printlnGreen("DECLINED");
 
                     // Prepare response message
@@ -488,7 +490,7 @@ public class Deputy extends Thread
                 {
                     this.logger.print("Sending challenge request from \"" + session.getUsername() + "\" to \"" + to + "\"... ");
                     // Send the challenge request to receiver
-                    SessionsManager.sendChallengeRequest(session.getUsername(), to);
+                    this.sessionsManager.sendChallengeRequest(session.getUsername(), to);
                     this.logger.printlnGreen("SENT");
 
                     // Prepare response message
@@ -520,7 +522,7 @@ public class Deputy extends Thread
                 try
                 {
                     this.logger.print("Confirming challenge request between \"" + from + "\" and \"" + session.getUsername() + "\"... ");
-                    SessionsManager.confirmChallengeRequest(from, session.getUsername());
+                    this.sessionsManager.confirmChallengeRequest(from, session.getUsername());
                     this.logger.printlnGreen("CONFIRMED");
 
                     // Prepare response message
@@ -552,7 +554,7 @@ public class Deputy extends Thread
 
                     // Decline the challenge request
                     this.logger.print("Declining challenge request between \"" + from + "\" and \"" + session.getUsername() + "\"... ");
-                    SessionsManager.declineChallengeRequest(from, session.getUsername());
+                    this.sessionsManager.declineChallengeRequest(from, session.getUsername());
                     this.logger.printlnGreen("DECLINED");
 
                     // Prepare response message
@@ -581,7 +583,7 @@ public class Deputy extends Thread
                 {
                     // Retrieve next word to translate for this challenging user
                     this.logger.print("Retrieving next word for challenging user \"" + session.getUsername() + "\"... ");
-                    word = SessionsManager.retrieveNextWord(session.getUsername());
+                    word = this.sessionsManager.retrieveNextWord(session.getUsername());
                     this.logger.printGreen("RETRIEVED ⟶ \"" + word + "\"");
 
                     // Prepare response
@@ -613,7 +615,7 @@ public class Deputy extends Thread
                 {
                     // Check given translation for this challenging user
                     this.logger.print("Checking given translation for challenging user \"" + session.getUsername() + "\" ⟶ " + translation + " ... ");
-                    correct = SessionsManager.provideTranslation(session.getUsername(), translation);
+                    correct = this.sessionsManager.provideTranslation(session.getUsername(), translation);
                     if (correct)
                     {// Given translation is correct
                         this.logger.printGreen("TRANSLATION CORRECT");
@@ -703,7 +705,7 @@ public class Deputy extends Thread
 
                 // Close session
                 this.logger.print("Closing session with user \"" + session.getUsername() + "\"... ");
-                SessionsManager.closeSession((Session) selected.attachment());
+                this.sessionsManager.closeSession((Session) selected.attachment());
                 this.logger.printlnRed("CLOSED");
 
                 // Close connection
