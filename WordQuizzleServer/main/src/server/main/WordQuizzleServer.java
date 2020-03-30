@@ -128,7 +128,7 @@ class WordQuizzleServer
         for (int i = 0; i < deputies.length; i++)
         {
             logger.print("\t\tStarting deputy \"Deputy_" + (i+1) + "\"... ");
-            deputies[i] = new Deputy("Deputy_" + (i+1), ServerConstants.UDP_BASE_PORT+i, usersManager);
+            deputies[i] = new Deputy("Deputy_" + (i+1), ServerConstants.UDP_BASE_PORT+i, usersManager, sessionsManager);
             deputies[i].start();
             logger.printlnGreen("STARTED");
         }

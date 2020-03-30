@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestUsersManager
 {
+    private UsersManager usersManager;
     private ConcurrentHashMap<String, User> usersArchive;
 
     @BeforeAll
@@ -46,13 +47,12 @@ public class TestUsersManager
     @BeforeEach
     public void setUpUsersManager()
     {
-        UsersManager.setUp();
-
         try
         {
+            this.usersManager = new UsersManager();
             Field field = UsersManager.class.getDeclaredField("usersArchive");
             field.setAccessible(true);
-            usersArchive = (ConcurrentHashMap<String, User>) field.get(null);
+            usersArchive = (ConcurrentHashMap<String, User>) field.get(this.usersManager);
         }
         catch (IllegalAccessException | NoSuchFieldException e)
         {
@@ -66,8 +66,8 @@ public class TestUsersManager
         String username = UUID.randomUUID().toString();
         char[] password = UUID.randomUUID().toString().toCharArray();
 
-        assertDoesNotThrow(() -> UsersManager.getUsersManager().registerUser(username, password));
-        assertNotNull(UsersManager.getUser(username));
+        assertDoesNotThrow(() -> this.usersManager.registerUser(username, password));
+        assertNotNull(this.usersManager.getUser(username));
         assertEquals(1, usersArchive.size());
     }
 
@@ -78,8 +78,8 @@ public class TestUsersManager
         char[] password1 = UUID.randomUUID().toString().toCharArray();
         char[] password2 = UUID.randomUUID().toString().toCharArray();
 
-        assertDoesNotThrow(() -> UsersManager.getUsersManager().registerUser(commonUsername, password1));
-        assertThrows(UsernameAlreadyUsedException.class, () -> UsersManager.getUsersManager().registerUser(commonUsername, password2));
+        assertDoesNotThrow(() -> this.usersManager.registerUser(commonUsername, password1));
+        assertThrows(UsernameAlreadyUsedException.class, () -> this.usersManager.registerUser(commonUsername, password2));
         assertEquals(1, usersArchive.size());
     }
 
@@ -87,7 +87,7 @@ public class TestUsersManager
     public void testRegistrationVoidUsername()
     {
         char[] password = UUID.randomUUID().toString().toCharArray();
-        assertThrows(VoidUsernameException.class, () -> UsersManager.getUsersManager().registerUser("", password));
+        assertThrows(VoidUsernameException.class, () -> this.usersManager.registerUser("", password));
         assertEquals(0, usersArchive.size());
     }
 
@@ -95,7 +95,7 @@ public class TestUsersManager
     public void testRegistrationVoidPassword()
     {
         char[] password = {};
-        assertThrows(VoidPasswordException.class, () -> UsersManager.getUsersManager().registerUser(UUID.randomUUID().toString(), password));
+        assertThrows(VoidPasswordException.class, () -> this.usersManager.registerUser(UUID.randomUUID().toString(), password));
         assertEquals(0, usersArchive.size());
     }
 
@@ -106,10 +106,10 @@ public class TestUsersManager
         char[] password = UUID.randomUUID().toString().toCharArray();
         char[] passwordCopy = Arrays.copyOf(password, password.length);
 
-        assertDoesNotThrow(() -> UsersManager.getUsersManager().registerUser(username, password));
-        assertNotNull(UsersManager.getUser(username));
+        assertDoesNotThrow(() -> this.usersManager.registerUser(username, password));
+        assertNotNull(this.usersManager.getUser(username));
         assertEquals(1, usersArchive.size());
-        assertDoesNotThrow(() -> UsersManager.getUser(username).checkPassword(passwordCopy));
+        assertDoesNotThrow(() -> this.usersManager.getUser(username).checkPassword(passwordCopy));
     }
 
     @Test
@@ -120,10 +120,10 @@ public class TestUsersManager
         char[] passwordCopy = Arrays.copyOf(password, password.length);
         passwordCopy[0] = (char) (password[0] + 1);
 
-        assertDoesNotThrow(() -> UsersManager.getUsersManager().registerUser(username, password));
-        assertNotNull(UsersManager.getUser(username));
+        assertDoesNotThrow(() -> this.usersManager.registerUser(username, password));
+        assertNotNull(this.usersManager.getUser(username));
         assertEquals(1, usersArchive.size());
-        assertThrows(WrongPasswordException.class, () -> UsersManager.getUser(username).checkPassword(passwordCopy));
+        assertThrows(WrongPasswordException.class, () -> this.usersManager.getUser(username).checkPassword(passwordCopy));
     }
 
     @Test
@@ -131,23 +131,23 @@ public class TestUsersManager
     {
         String username1 = UUID.randomUUID().toString();
         char[] password1 = UUID.randomUUID().toString().toCharArray();
-        assertDoesNotThrow(() -> UsersManager.getUsersManager().registerUser(username1, password1));
+        assertDoesNotThrow(() -> this.usersManager.registerUser(username1, password1));
 
         String username2 = UUID.randomUUID().toString();
         char[] password2 = UUID.randomUUID().toString().toCharArray();
-        assertDoesNotThrow(() -> UsersManager.getUsersManager().registerUser(username2, password2));
+        assertDoesNotThrow(() -> this.usersManager.registerUser(username2, password2));
 
-        User user1 = UsersManager.getUser(username1);
-        User user2 = UsersManager.getUser(username2);
+        User user1 = this.usersManager.getUser(username1);
+        User user2 = this.usersManager.getUser(username2);
 
         assertNotNull(user1);
         assertNotNull(user2);
 
         assertEquals(2, usersArchive.size());
 
-        UsersManager.makeFriends(user1, user2);
+        this.usersManager.makeFriends(user1, user2);
 
-        assertTrue(UsersManager.areFriends(user1, user2));
+        assertTrue(this.usersManager.areFriends(user1, user2));
     }
 
     @Nested
@@ -172,8 +172,8 @@ public class TestUsersManager
                     String username = UUID.randomUUID().toString();
                     char[] password = UUID.randomUUID().toString().toCharArray();
 
-                    assertDoesNotThrow(() -> UsersManager.getUsersManager().registerUser(username, password));
-                    assertNotNull(UsersManager.getUser(username));
+                    assertDoesNotThrow(() -> usersManager.registerUser(username, password));
+                    assertNotNull(usersManager.getUser(username));
                 });
             }
 
@@ -194,9 +194,9 @@ public class TestUsersManager
                     char[] password = UUID.randomUUID().toString().toCharArray();
                     char[] passwordCopy = Arrays.copyOf(password, password.length);
 
-                    assertDoesNotThrow(() -> UsersManager.getUsersManager().registerUser(username, password));
-                    assertNotNull(UsersManager.getUser(username));
-                    assertDoesNotThrow(() -> UsersManager.getUser(username).checkPassword(passwordCopy));
+                    assertDoesNotThrow(() -> usersManager.registerUser(username, password));
+                    assertNotNull(usersManager.getUser(username));
+                    assertDoesNotThrow(() -> usersManager.getUser(username).checkPassword(passwordCopy));
                 });
             }
 
@@ -218,9 +218,9 @@ public class TestUsersManager
                     char[] passwordCopy = Arrays.copyOf(password, password.length);
                     passwordCopy[0] = (char) (password[0] + 1);
 
-                    assertDoesNotThrow(() -> UsersManager.getUsersManager().registerUser(username, password));
-                    assertNotNull(UsersManager.getUser(username));
-                    assertThrows(WrongPasswordException.class, () -> UsersManager.getUser(username).checkPassword(passwordCopy));
+                    assertDoesNotThrow(() -> usersManager.registerUser(username, password));
+                    assertNotNull(usersManager.getUser(username));
+                    assertThrows(WrongPasswordException.class, () -> usersManager.getUser(username).checkPassword(passwordCopy));
                 });
             }
 

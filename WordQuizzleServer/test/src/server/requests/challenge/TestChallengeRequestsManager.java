@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestChallengeRequestsManager
 {
+    private ChallengeRequestsManager challengeRequestsManager;
     private ConcurrentHashMap<String, ChallengeRequest> challengeRequestsArchive;
     private ScheduledThreadPoolExecutor timer;
 
@@ -42,12 +43,12 @@ public class TestChallengeRequestsManager
     {
         try
         {
-            ChallengeRequestsManager.setUp();
+            challengeRequestsManager = new ChallengeRequestsManager();
             Field timerField = ChallengeRequestsManager.class.getDeclaredField("timer");
             Field archiveField = ChallengeRequestsManager.class.getDeclaredField("challengeRequestsArchive");
             timerField.setAccessible(true);
             archiveField.setAccessible(true);
-            challengeRequestsArchive = (ConcurrentHashMap<String, ChallengeRequest>) archiveField.get(null);
+            challengeRequestsArchive = (ConcurrentHashMap<String, ChallengeRequest>) archiveField.get(this.challengeRequestsManager);
             timer = (ScheduledThreadPoolExecutor) timerField.get(null);
         }
         catch (NoSuchFieldException | IllegalAccessException e)
@@ -62,7 +63,7 @@ public class TestChallengeRequestsManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertDoesNotThrow(() -> this.challengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
         assertEquals(2, challengeRequestsArchive.size());
     }
 
@@ -72,10 +73,10 @@ public class TestChallengeRequestsManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertDoesNotThrow(() -> this.challengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
         assertEquals(2, challengeRequestsArchive.size());
 
-        assertThrows(PreviousChallengeRequestReceivedException.class, () -> ChallengeRequestsManager.recordChallengeRequest(username2, username1, () -> {}));
+        assertThrows(PreviousChallengeRequestReceivedException.class, () -> this.challengeRequestsManager.recordChallengeRequest(username2, username1, () -> {}));
         assertEquals(2, challengeRequestsArchive.size());
     }
 
@@ -85,10 +86,10 @@ public class TestChallengeRequestsManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertDoesNotThrow(() -> this.challengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
         assertEquals(2, challengeRequestsArchive.size());
 
-        assertThrows(PreviousChallengeRequestSentException.class, () -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertThrows(PreviousChallengeRequestSentException.class, () -> this.challengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
         assertEquals(2, challengeRequestsArchive.size());
     }
 
@@ -99,10 +100,10 @@ public class TestChallengeRequestsManager
         String username2 = UUID.randomUUID().toString();
         String username3 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertDoesNotThrow(() -> this.challengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
         assertEquals(2, challengeRequestsArchive.size());
 
-        assertThrows(ReceiverEngagedInOtherChallengeRequestException.class, () -> ChallengeRequestsManager.recordChallengeRequest(username3, username1, () -> {}));
+        assertThrows(ReceiverEngagedInOtherChallengeRequestException.class, () -> this.challengeRequestsManager.recordChallengeRequest(username3, username1, () -> {}));
         assertEquals(2, challengeRequestsArchive.size());
     }
 
@@ -112,9 +113,9 @@ public class TestChallengeRequestsManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertDoesNotThrow(() -> this.challengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
         assertEquals(2, challengeRequestsArchive.size());
-        assertDoesNotThrow(() -> ChallengeRequestsManager.discardChallengeRequest(username1, username2));
+        assertDoesNotThrow(() -> this.challengeRequestsManager.discardChallengeRequest(username1, username2));
         assertEquals(0, challengeRequestsArchive.size());
     }
 
@@ -125,9 +126,9 @@ public class TestChallengeRequestsManager
         String username2 = UUID.randomUUID().toString();
         final String[] usernameTaken = new String[1];
 
-        assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+        assertDoesNotThrow(() -> this.challengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
         assertEquals(2, challengeRequestsArchive.size());
-        assertDoesNotThrow(() -> {usernameTaken[0] = ChallengeRequestsManager.cancelChallengeRequest(username1);});
+        assertDoesNotThrow(() -> {usernameTaken[0] = this.challengeRequestsManager.cancelChallengeRequest(username1);});
         assertEquals(0, challengeRequestsArchive.size());
         assertEquals(username2, usernameTaken[0]);
     }
@@ -139,7 +140,7 @@ public class TestChallengeRequestsManager
         String username2 = UUID.randomUUID().toString();
         AtomicBoolean timeoutFlag = new AtomicBoolean(false);
 
-        assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> timeoutFlag.set(true)));
+        assertDoesNotThrow(() -> this.challengeRequestsManager.recordChallengeRequest(username1, username2, () -> timeoutFlag.set(true)));
         assertEquals(2, challengeRequestsArchive.size());
         timer.shutdown();
         assertDoesNotThrow(() -> timer.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS));
@@ -169,7 +170,7 @@ public class TestChallengeRequestsManager
                     String username1 = UUID.randomUUID().toString();
                     String username2 = UUID.randomUUID().toString();
 
-                    assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
+                    assertDoesNotThrow(() -> challengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
                 });
             }
 
@@ -194,7 +195,7 @@ public class TestChallengeRequestsManager
                     String username1 = UUID.randomUUID().toString();
                     String username2 = UUID.randomUUID().toString();
 
-                    assertDoesNotThrow(() -> ChallengeRequestsManager.recordChallengeRequest(username1, username2, () -> expirationFlags[finalI].set(true)));
+                    assertDoesNotThrow(() -> challengeRequestsManager.recordChallengeRequest(username1, username2, () -> expirationFlags[finalI].set(true)));
                 });
             }
 

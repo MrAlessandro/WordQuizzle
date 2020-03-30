@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestFriendshipRequestsManager
 {
+    private FriendshipRequestsManager friendshipRequestsManager;
     private ConcurrentHashMap<String, Set<String>> friendshipRequestsArchive;
 
     @BeforeAll
@@ -42,13 +43,12 @@ public class TestFriendshipRequestsManager
     @BeforeEach
     public void setUpFriendshipRequestsManager()
     {
-        FriendshipRequestsManager.setUp();
-
         try
         {
+            this.friendshipRequestsManager = new FriendshipRequestsManager();
             Field field = FriendshipRequestsManager.class.getDeclaredField("friendshipRequestsArchive");
             field.setAccessible(true);
-            friendshipRequestsArchive = (ConcurrentHashMap<String, Set<String>>) field.get(null);
+            friendshipRequestsArchive = (ConcurrentHashMap<String, Set<String>>) field.get(this.friendshipRequestsManager);
         }
         catch (IllegalAccessException | NoSuchFieldException e)
         {
@@ -62,7 +62,7 @@ public class TestFriendshipRequestsManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> FriendshipRequestsManager.recordFriendshipRequest(username1, username2));
+        assertDoesNotThrow(() -> this.friendshipRequestsManager.recordFriendshipRequest(username1, username2));
         assertEquals(1, friendshipRequestsArchive.size());
     }
 
@@ -72,8 +72,8 @@ public class TestFriendshipRequestsManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> FriendshipRequestsManager.recordFriendshipRequest(username1, username2));
-        assertThrows(FriendshipRequestAlreadySent.class, () -> FriendshipRequestsManager.recordFriendshipRequest(username1, username2));
+        assertDoesNotThrow(() -> this.friendshipRequestsManager.recordFriendshipRequest(username1, username2));
+        assertThrows(FriendshipRequestAlreadySent.class, () -> this.friendshipRequestsManager.recordFriendshipRequest(username1, username2));
         assertEquals(1, friendshipRequestsArchive.size());
     }
 
@@ -83,8 +83,8 @@ public class TestFriendshipRequestsManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> FriendshipRequestsManager.recordFriendshipRequest(username1, username2));
-        assertThrows(FriendshipRequestAlreadyReceived.class, () -> FriendshipRequestsManager.recordFriendshipRequest(username2, username1));
+        assertDoesNotThrow(() -> this.friendshipRequestsManager.recordFriendshipRequest(username1, username2));
+        assertThrows(FriendshipRequestAlreadyReceived.class, () -> this.friendshipRequestsManager.recordFriendshipRequest(username2, username1));
         assertEquals(1, friendshipRequestsArchive.size());
     }
 
@@ -94,13 +94,13 @@ public class TestFriendshipRequestsManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> FriendshipRequestsManager.recordFriendshipRequest(username1, username2));
-        assertTrue(FriendshipRequestsManager.discardFriendshipRequest(username1, username2));
+        assertDoesNotThrow(() -> this.friendshipRequestsManager.recordFriendshipRequest(username1, username2));
+        assertTrue(this.friendshipRequestsManager.discardFriendshipRequest(username1, username2));
         assertEquals(0, friendshipRequestsArchive.size());
 
         // Try again in reverse order
-        assertDoesNotThrow(() -> FriendshipRequestsManager.recordFriendshipRequest(username2, username1));
-        assertTrue(FriendshipRequestsManager.discardFriendshipRequest(username2, username1));
+        assertDoesNotThrow(() -> this.friendshipRequestsManager.recordFriendshipRequest(username2, username1));
+        assertTrue(this.friendshipRequestsManager.discardFriendshipRequest(username2, username1));
         assertEquals(0, friendshipRequestsArchive.size());
     }
 
@@ -126,7 +126,7 @@ public class TestFriendshipRequestsManager
                     String username1 = UUID.randomUUID().toString();
                     String username2 = UUID.randomUUID().toString();
 
-                    assertDoesNotThrow(() -> FriendshipRequestsManager.recordFriendshipRequest(username1, username2));
+                    assertDoesNotThrow(() -> friendshipRequestsManager.recordFriendshipRequest(username1, username2));
                 });
             }
 
@@ -147,7 +147,7 @@ public class TestFriendshipRequestsManager
                 {
                     String other = UUID.randomUUID().toString();
 
-                    assertDoesNotThrow(() -> FriendshipRequestsManager.recordFriendshipRequest(one, other));
+                    assertDoesNotThrow(() -> friendshipRequestsManager.recordFriendshipRequest(one, other));
                 });
             }
 
@@ -168,7 +168,7 @@ public class TestFriendshipRequestsManager
                 {
                     String other = UUID.randomUUID().toString();
 
-                    assertDoesNotThrow(() -> FriendshipRequestsManager.recordFriendshipRequest(other, one));
+                    assertDoesNotThrow(() -> friendshipRequestsManager.recordFriendshipRequest(other, one));
                 });
             }
 

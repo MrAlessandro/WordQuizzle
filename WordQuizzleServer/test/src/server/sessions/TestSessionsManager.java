@@ -32,7 +32,7 @@ public class TestSessionsManager
     private static Selector fakeSelector;
 
 
-    @BeforeAll
+/*    @BeforeAll
     public static void setUpProperties()
     {
         try
@@ -116,5 +116,5 @@ public class TestSessionsManager
 
         assertThrows(UserAlreadyLoggedException.class, () -> session.set(SessionsManager.openSession(username, passwordCopy2, fakeSelector, fakeAddress)));
         assertEquals(1, sessionsArchive.size());
-    }
+    }*/
 }

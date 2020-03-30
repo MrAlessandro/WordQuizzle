@@ -1,18 +1,15 @@
 package server.challenges;
 
-import org.json.simple.parser.ParseException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import server.challenges.ChallengesManager;
 import server.challenges.challege.Challenge;
 import server.challenges.exceptions.*;
 import server.challenges.reports.ChallengeReportDelegation;
 import server.settings.ServerConstants;
-import sun.jvm.hotspot.utilities.Assert;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -24,11 +21,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class TestChallengesManager
 {
+    private ChallengesManager challengesManager;
     private ConcurrentHashMap<String, Challenge> challengesArchive;
     private ScheduledThreadPoolExecutor timer;
 
-    private ChallengeReportDelegation voidDelegation = new ChallengeReportDelegation()
-    {
+    private ChallengeReportDelegation voidDelegation = new ChallengeReportDelegation() {
         @Override
         public void run()
         {
@@ -55,25 +52,17 @@ public class TestChallengesManager
 
         try
         {
-            ChallengesManager.setUp((t, e) -> e.printStackTrace());
+            this.challengesManager = new ChallengesManager((t, e) -> e.printStackTrace());
             Field timerField = ChallengesManager.class.getDeclaredField("timer");
             Field archiveField = ChallengesManager.class.getDeclaredField("challengesArchive");
             timerField.setAccessible(true);
             archiveField.setAccessible(true);
-            challengesArchive = (ConcurrentHashMap<String, Challenge>) archiveField.get(null);
-            timer = (ScheduledThreadPoolExecutor) timerField.get(null);
+            challengesArchive = (ConcurrentHashMap<String, Challenge>) archiveField.get(this.challengesManager);
+            timer = (ScheduledThreadPoolExecutor) timerField.get(this.challengesManager);
         }
         catch (NoSuchFieldException | IllegalAccessException e)
         {
             fail("ERROR GETTING PRIVATE FIELD");
-        }
-        catch (ParseException e)
-        {
-            fail("ERROR PARSING DICTIONARY");
-        }
-        catch (IOException e)
-        {
-            fail("ERROR READING DICTIONARY");
         }
     }
 
@@ -83,7 +72,7 @@ public class TestChallengesManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
         assertEquals(2, challengesArchive.size());
     }
 
@@ -94,9 +83,9 @@ public class TestChallengesManager
         String username2 = UUID.randomUUID().toString();
         String username3 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
         assertEquals(2, challengesArchive.size());
-        assertThrows(ApplicantEngagedInOtherChallengeException.class, () -> ChallengesManager.recordChallenge(username1, username3, voidDelegation, voidDelegation));
+        assertThrows(ApplicantEngagedInOtherChallengeException.class, () -> this.challengesManager.recordChallenge(username1, username3, voidDelegation, voidDelegation));
         assertEquals(2, challengesArchive.size());
     }
 
@@ -107,9 +96,9 @@ public class TestChallengesManager
         String username2 = UUID.randomUUID().toString();
         String username3 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
         assertEquals(2, challengesArchive.size());
-        assertThrows(ReceiverEngagedInOtherChallengeException.class, () -> ChallengesManager.recordChallenge(username3, username2, voidDelegation, voidDelegation));
+        assertThrows(ReceiverEngagedInOtherChallengeException.class, () -> this.challengesManager.recordChallenge(username3, username2, voidDelegation, voidDelegation));
         assertEquals(2, challengesArchive.size());
     }
 
@@ -120,7 +109,7 @@ public class TestChallengesManager
         String username2 = UUID.randomUUID().toString();
         AtomicBoolean expirationFlag = new AtomicBoolean(false);
 
-        assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2, voidDelegation, new ChallengeReportDelegation()
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidDelegation, new ChallengeReportDelegation()
         {
             @Override
             public void run()
@@ -141,11 +130,11 @@ public class TestChallengesManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
         assertEquals(2, challengesArchive.size());
         timer.shutdownNow();
 
-        assertDoesNotThrow(() -> ChallengesManager.cancelChallenge(username1));
+        assertDoesNotThrow(() -> this.challengesManager.cancelChallenge(username1));
         assertEquals(0, challengesArchive.size());
     }
 
@@ -156,7 +145,7 @@ public class TestChallengesManager
         String username2 = UUID.randomUUID().toString();
         AtomicBoolean completionFlag = new AtomicBoolean(false);
 
-        assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2,
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2,
                 new ChallengeReportDelegation()
                 {
                     @Override
@@ -171,10 +160,10 @@ public class TestChallengesManager
 
         for (int i = 0; i < ServerConstants.CHALLENGE_WORDS_QUANTITY; i++)
         {
-            assertDoesNotThrow(() -> ChallengesManager.retrieveNextWord(username1));
-            assertDoesNotThrow(() -> ChallengesManager.retrieveNextWord(username2));
-            assertDoesNotThrow(() -> ChallengesManager.provideTranslation(username1, UUID.randomUUID().toString()));
-            assertDoesNotThrow(() -> ChallengesManager.provideTranslation(username2, UUID.randomUUID().toString()));
+            assertDoesNotThrow(() -> this.challengesManager.retrieveNextWord(username1));
+            assertDoesNotThrow(() -> this.challengesManager.retrieveNextWord(username2));
+            assertDoesNotThrow(() -> this.challengesManager.provideTranslation(username1, UUID.randomUUID().toString()));
+            assertDoesNotThrow(() -> this.challengesManager.provideTranslation(username2, UUID.randomUUID().toString()));
         }
         assertTrue(completionFlag.get());
     }
@@ -184,7 +173,7 @@ public class TestChallengesManager
     {
         String username1 = UUID.randomUUID().toString();
 
-        assertThrows(NoChallengeRelatedException.class, () -> ChallengesManager.retrieveNextWord(username1));
+        assertThrows(NoChallengeRelatedException.class, () -> this.challengesManager.retrieveNextWord(username1));
     }
 
     @Test
@@ -193,14 +182,14 @@ public class TestChallengesManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2,
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2,
                 voidDelegation,
                 voidDelegation));
         assertEquals(2, challengesArchive.size());
         timer.shutdownNow();
 
-        assertDoesNotThrow(() -> ChallengesManager.retrieveNextWord(username1));
-        assertThrows(WordRetrievalOutOfSequenceException.class, () -> ChallengesManager.retrieveNextWord(username1));
+        assertDoesNotThrow(() -> this.challengesManager.retrieveNextWord(username1));
+        assertThrows(WordRetrievalOutOfSequenceException.class, () -> this.challengesManager.retrieveNextWord(username1));
     }
 
     @Test
@@ -209,15 +198,15 @@ public class TestChallengesManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2,
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2,
                 voidDelegation,
                 voidDelegation));
         assertEquals(2, challengesArchive.size());
         timer.shutdownNow();
 
-        assertDoesNotThrow(() -> ChallengesManager.retrieveNextWord(username1));
-        assertDoesNotThrow(() -> ChallengesManager.provideTranslation(username1, ""));
-        assertThrows(TranslationProvisionOutOfSequenceException.class, () -> ChallengesManager.provideTranslation(username1, ""));
+        assertDoesNotThrow(() -> this.challengesManager.retrieveNextWord(username1));
+        assertDoesNotThrow(() -> this.challengesManager.provideTranslation(username1, ""));
+        assertThrows(TranslationProvisionOutOfSequenceException.class, () -> this.challengesManager.provideTranslation(username1, ""));
     }
 
     @Test
@@ -227,7 +216,7 @@ public class TestChallengesManager
         String username2 = UUID.randomUUID().toString();
         AtomicBoolean completionFlag = new AtomicBoolean(false);
 
-        assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2,
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2,
                 new ChallengeReportDelegation()
                 {
                     @Override
@@ -242,12 +231,12 @@ public class TestChallengesManager
 
         for (int i = 0; i < ServerConstants.CHALLENGE_WORDS_QUANTITY; i++)
         {
-            assertDoesNotThrow(() -> ChallengesManager.retrieveNextWord(username1));
-            assertDoesNotThrow(() -> ChallengesManager.provideTranslation(username1, ""));
+            assertDoesNotThrow(() -> this.challengesManager.retrieveNextWord(username1));
+            assertDoesNotThrow(() -> this.challengesManager.provideTranslation(username1, ""));
         }
 
         assertFalse(completionFlag.get());
-        assertThrows(NoFurtherWordsToGetException.class, () -> ChallengesManager.retrieveNextWord(username1));
+        assertThrows(NoFurtherWordsToGetException.class, () -> this.challengesManager.retrieveNextWord(username1));
     }
 
     @Nested
@@ -272,7 +261,7 @@ public class TestChallengesManager
                     String username1 = UUID.randomUUID().toString();
                     String username2 = UUID.randomUUID().toString();
 
-                    assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
+                    assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
                 });
             }
 
@@ -295,7 +284,7 @@ public class TestChallengesManager
                 expirationFlags[i] = new AtomicBoolean(false);
 
                 int finalI = i;
-                pool.submit(() -> assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2, voidDelegation, new ChallengeReportDelegation()
+                pool.submit(() -> assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username2, voidDelegation, new ChallengeReportDelegation()
                 {
                     @Override
                     public void run()
@@ -330,7 +319,7 @@ public class TestChallengesManager
                 completionFlags[i] = new AtomicBoolean(false);
 
                 int finalI = i;
-                assertDoesNotThrow(() -> ChallengesManager.recordChallenge(username1, username2,
+                assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username2,
                         new ChallengeReportDelegation()
                         {
                             @Override
@@ -344,10 +333,10 @@ public class TestChallengesManager
                 pool.submit(() -> {
                     for (int i1 = 0; i1 < ServerConstants.CHALLENGE_WORDS_QUANTITY; i1++)
                     {
-                        assertDoesNotThrow(() -> ChallengesManager.retrieveNextWord(username1));
-                        assertDoesNotThrow(() -> ChallengesManager.retrieveNextWord(username2));
-                        assertDoesNotThrow(() -> ChallengesManager.provideTranslation(username1, UUID.randomUUID().toString()));
-                        assertDoesNotThrow(() -> ChallengesManager.provideTranslation(username2, UUID.randomUUID().toString()));
+                        assertDoesNotThrow(() -> challengesManager.retrieveNextWord(username1));
+                        assertDoesNotThrow(() -> challengesManager.retrieveNextWord(username2));
+                        assertDoesNotThrow(() -> challengesManager.provideTranslation(username1, UUID.randomUUID().toString()));
+                        assertDoesNotThrow(() -> challengesManager.provideTranslation(username2, UUID.randomUUID().toString()));
                     }
                 });
             }
