@@ -37,6 +37,7 @@ class WordQuizzleServer
         UsersManager usersManager;
         FriendshipRequestsManager friendshipRequestsManager;
         ChallengeRequestsManager challengeRequestsManager;
+        ChallengesManager challengesManager;
 
         InetSocketAddress serverAddress;
         Registry registry = null;
@@ -109,29 +110,7 @@ class WordQuizzleServer
 
         // Setup challenges manager
         logger.print("Initializing challenges manager... ");
-        try
-        {
-            ChallengesManager.setUp(errorsHandler);
-        }
-
-        catch (FileNotFoundException e)
-        {
-            logger.printlnRed("DICTIONARY FILE NOT FOUND");
-            logger.printlnRed(e.getStackTrace());
-            System.exit(1);
-        }
-        catch (IOException e)
-        {
-            logger.printlnRed("ERROR READING DICTIONARY");
-            logger.printlnRed(e.getStackTrace());
-            System.exit(1);
-        }
-        catch (ParseException e)
-        {
-            logger.printlnRed("ERROR PARSING DICTIONARY");
-            logger.printlnRed(e.getStackTrace());
-            System.exit(1);
-        }
+        challengesManager = new ChallengesManager(errorsHandler);
         logger.printlnGreen("INITIALIZED");
 
         // Setup sessions manager

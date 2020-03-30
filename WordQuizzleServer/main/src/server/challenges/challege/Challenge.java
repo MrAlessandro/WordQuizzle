@@ -20,15 +20,6 @@ import java.util.concurrent.*;
 
 public class Challenge implements Runnable
 {
-    // Translator threads pool
-    private static ExecutorService translators = Executors.newCachedThreadPool();
-
-    // Randomizer
-    private static final Random RANDOMIZER = new Random();
-
-    // Dictionary
-    private static String[] dictionary;
-
     // Timeout operation
     private ChallengeReportDelegation timeoutOperation;
 
@@ -55,35 +46,7 @@ public class Challenge implements Runnable
     private int fromScore;
     private int toScore;
 
-    public static void setUp(Thread.UncaughtExceptionHandler exceptionHandler) throws IOException, ParseException
-    {
-        // Read dictionary
-        String JSONdictionary = new String(Files.readAllBytes(Paths.get(ServerConstants.DICTIONARY_PATH)));
-        JSONParser parser = new JSONParser();
-        JSONArray words = (JSONArray) parser.parse(JSONdictionary);
-
-        dictionary = new String[words.size()];
-
-        int i = 0;
-        for (String word : (Iterable<String>) words)
-        {
-            dictionary[i++] = word;
-        }
-
-        // Setup translators pool
-        translators = Executors.newCachedThreadPool(r -> {
-            Thread thread = new Thread(r);
-            thread.setUncaughtExceptionHandler(exceptionHandler);
-            return thread;
-        });
-    }
-
-    public static void shutdown()
-    {
-        translators.shutdownNow();
-    }
-
-    public Challenge(String from, String to, ChallengeReportDelegation completionOperation, ChallengeReportDelegation timeoutOperation)
+    public Challenge(String from, String to, String[] words, ChallengeReportDelegation completionOperation, ChallengeReportDelegation timeoutOperation)
     {
         // Set timeout operation
         this.timeoutOperation = timeoutOperation;
@@ -105,24 +68,13 @@ public class Challenge implements Runnable
         this.fromScore = 0;
         this.toScore = 0;
 
-        // Initialize words getting them from the deserialized dictionary.json
-        this.words = new String[ServerConstants.CHALLENGE_WORDS_QUANTITY];
-        for (int i = 0; i < this.words.length; i++)
-        {
-            int randomIndex = Math.abs(RANDOMIZER.nextInt() % dictionary.length);
-            this.words[i] = dictionary[randomIndex];
-        }
-
-        // Initialize translations storage for future filling
-        this.translations = new Future[ServerConstants.CHALLENGE_WORDS_QUANTITY];
+        // Initialize words
+        this.words = words;
     }
 
-    public void startTranslations()
+    public void setTranslations(Future<String[]>[] translations)
     {
-        for (int i = 0; i < ServerConstants.CHALLENGE_WORDS_QUANTITY; i++)
-        {
-            this.translations[i] = translators.submit(new Translator(this.words[i]));
-        }
+        this.translations = translations;
     }
 
     public void stopTranslations()
@@ -161,7 +113,7 @@ public class Challenge implements Runnable
         this.timeoutOperation.run();
     }
 
-    public void complete()
+    private void complete()
     {
         stopTranslations();
 

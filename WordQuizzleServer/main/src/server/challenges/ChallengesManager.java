@@ -1,24 +1,47 @@
 package server.challenges;
 
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import server.challenges.challege.Challenge;
 import server.challenges.exceptions.*;
 import server.challenges.reports.ChallengeReportDelegation;
+import server.challenges.translators.Translator;
 import server.settings.ServerConstants;
 import server.loggers.Logger;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Random;
 import java.util.concurrent.*;
 
 public class ChallengesManager
 {
+    // Challenges archive
     private ConcurrentHashMap<String, Challenge> challengesArchive;
+
+    // Archive for timeouts registering
     private ConcurrentHashMap<Challenge, ScheduledFuture<?>> timeOutsArchive;
+
+    // Thread pool for timing purpose
     private ScheduledThreadPoolExecutor timer;
+
+    // Loggers for translators and timeouts
     public Logger translatorsLogger;
     public Logger timerLogger;
 
-    public ChallengesManager(Thread.UncaughtExceptionHandler errorsHandler) throws IOException, ParseException
+    // Dictionary
+    private String[] dictionary;
+
+    // Randomizer
+    private Random randomizer;
+
+    // Translator threads pool
+    private ExecutorService translators;
+
+    public ChallengesManager(Thread.UncaughtExceptionHandler errorsHandler)
     {
         // Initialize challenges archive
         this.challengesArchive = new ConcurrentHashMap<>(ServerConstants.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
@@ -31,8 +54,43 @@ public class ChallengesManager
         this.translatorsLogger = new Logger("Translators");
         // Initialize timer logger
         this.timerLogger = new Logger("ChallengeTimers");
+
         // Setup challenges words from dictionary
-        Challenge.setUp(errorsHandler);
+        try
+        {
+            String JSONdictionary = new String(Files.readAllBytes(Paths.get(ServerConstants.DICTIONARY_PATH)));
+            JSONParser parser = new JSONParser();
+            JSONArray words = (JSONArray) parser.parse(JSONdictionary);
+            this.dictionary = new String[words.size()];
+            int i = 0;
+            for (String word : (Iterable<String>) words)
+            {
+                dictionary[i++] = word;
+            }
+        }
+        catch (FileNotFoundException e)
+        {
+            throw new Error("DICTIONARY FILE NOT FOUND");
+        }
+        catch (ParseException e)
+        {
+            throw new Error("ERROR PARSING DICTIONARY");
+        }
+        catch (IOException e)
+        {
+            throw new Error("ERROR READING DICTIONARY");
+        }
+
+
+        // Setup randomizer
+        this.randomizer = new Random();
+
+        // Setup translators pool with proper error management
+        this.translators = Executors.newCachedThreadPool(r -> {
+            Thread thread = new Thread(r);
+            thread.setUncaughtExceptionHandler(errorsHandler);
+            return thread;
+        });
     }
 
     public void shutdown()
@@ -40,8 +98,6 @@ public class ChallengesManager
         // Cancel all timeout
         this.timer.shutdownNow();
         this.timer.purge();
-        // Cancel every translator
-        Challenge.shutdown();
     }
 
     public void checkEngagement(String from, String to) throws ApplicantEngagedInOtherChallengeException, ReceiverEngagedInOtherChallengeException
@@ -62,7 +118,16 @@ public class ChallengesManager
 
     public void recordChallenge(String from, String to, ChallengeReportDelegation completionOperation, ChallengeReportDelegation timeoutOperation) throws ApplicantEngagedInOtherChallengeException, ReceiverEngagedInOtherChallengeException
     {
-        Challenge challenge = new Challenge(from, to,
+        // Retrieve bulk of word associating to this challenge
+        String[] words = new String[ServerConstants.CHALLENGE_WORDS_QUANTITY];
+        for (int i = 0; i < words.length; i++)
+        {
+            int randomIndex = Math.abs(randomizer.nextInt() % dictionary.length);
+            words[i] = dictionary[randomIndex];
+        }
+
+        // Initialize challenge
+        Challenge challenge = new Challenge(from, to, words,
                 new ChallengeReportDelegation() // Completion operation
                 {
                     @Override
@@ -84,14 +149,14 @@ public class ChallengesManager
 
         synchronized (ChallengesManager.class)
         {
-            // Store challenge with player 1
+            // Store challenge for player 1
             Challenge previousChallengeFrom = this.challengesArchive.putIfAbsent(from, challenge);
             if (previousChallengeFrom != null)
             {
                 throw new ApplicantEngagedInOtherChallengeException("USER \"" + from + "\" IS ENGAGED IN ANOTHER CHALLENGE");
             }
 
-            // Store challenge with player 2
+            // Store challenge for player 2
             Challenge previousChallengeTo = this.challengesArchive.putIfAbsent(to, challenge);
             if (previousChallengeTo != null)
             {
@@ -100,7 +165,12 @@ public class ChallengesManager
             }
 
             // Start words translation for challenge
-            challenge.startTranslations();
+            Future<String[]>[] translations = new Future[ServerConstants.CHALLENGE_WORDS_QUANTITY];
+            for (int i = 0; i < ServerConstants.CHALLENGE_WORDS_QUANTITY; i++)
+            {
+                translations[i] = this.translators.submit(new Translator(this.translatorsLogger, words[i]));
+            }
+            challenge.setTranslations(translations);
 
             // Schedule challenge timeout
             ScheduledFuture<?> scheduledFuture = this.timer.schedule(challenge, ServerConstants.CHALLENGE_DURATION_SECONDS, TimeUnit.SECONDS);
@@ -109,7 +179,7 @@ public class ChallengesManager
         }
     }
 
-    private Challenge unregisterChallenge(String from, String to)
+    private void unregisterChallenge(String from, String to)
     {
         Challenge challengeFrom;
         Challenge challengeTo;
@@ -137,8 +207,6 @@ public class ChallengesManager
             ScheduledFuture<?> scheduledFuture = this.timeOutsArchive.remove(challengeFrom);
             scheduledFuture.cancel(true);
         }
-
-        return challengeFrom;
     }
 
     public void expireChallenge(String from, String to)

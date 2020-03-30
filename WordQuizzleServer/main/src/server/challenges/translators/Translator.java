@@ -4,6 +4,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import server.challenges.ChallengesManager;
+import server.loggers.Logger;
 import server.settings.ServerConstants;
 
 import java.io.BufferedReader;
@@ -17,10 +18,12 @@ import java.util.concurrent.Callable;
 
 public class Translator implements Callable<String[]>
 {
+    private Logger translatorsLogger;
     private String word;
 
-    public Translator(String word)
+    public Translator(Logger translatorsLogger, String word)
     {
+        this.translatorsLogger = translatorsLogger;
         this.word = word;
     }
 
@@ -39,7 +42,7 @@ public class Translator implements Callable<String[]>
         }
         catch (MalformedURLException e)
         {
-            ChallengesManager.translatorsLogger.printlnRed("ERROR GENERATING URL");
+            this.translatorsLogger.printlnRed("ERROR GENERATING URL");
             throw new Error("ERROR GENERATING URL");
         }
 
@@ -74,14 +77,14 @@ public class Translator implements Callable<String[]>
                 translated[j++] = translation;
             }
 
-            ChallengesManager.translatorsLogger.println("Retrieved translations for \"" + this.word +"\" ⟶ " + Arrays.toString(translated));
+            this.translatorsLogger.println("Retrieved translations for \"" + this.word +"\" ⟶ " + Arrays.toString(translated));
 
             // Close reader
             reader.close();
         }
         catch (IOException e)
         {
-            ChallengesManager.translatorsLogger.printlnRed("ERROR GETTING TRANSLATIONS FROM " + url);
+            this.translatorsLogger.printlnRed("ERROR GETTING TRANSLATIONS FROM " + url);
             throw new Error("ERROR GETTING TRANSLATIONS FROM " + url);
         }
 
