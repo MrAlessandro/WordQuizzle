@@ -79,6 +79,13 @@ class WordQuizzleServer
         Runtime.getRuntime().addShutdownHook(new Thread(WordQuizzleServer::shutDown));
         logger.printlnGreen("OK");
 
+        // Setting uncaught exception handler
+        errorsHandler = (thread, throwable) -> {
+            logger.printlnRed("FATAL ERROR FROM THREAD " + thread.getName());
+            logger.printlnRed(Arrays.toString(throwable.getStackTrace()));
+            System.exit(1);
+        };
+
         // Restoring eventual previous server.users' manager state
         //UsersManager.restore();
 
@@ -134,12 +141,6 @@ class WordQuizzleServer
 
         // Initialize and starts deputies
         logger.println("Initializing and starting " + ServerConstants.DEPUTIES_POOL_SIZE + " deputies... ");
-        // Initialize uncaught exception handler
-        errorsHandler = (thread, throwable) -> {
-            logger.printlnRed("FATAL ERROR FROM THREAD " + thread.getName());
-            logger.printlnRed(Arrays.toString(throwable.getStackTrace()));
-            System.exit(1);
-        };
         deputies = new Deputy[ServerConstants.DEPUTIES_POOL_SIZE];
         for (int i = 0; i < deputies.length; i++)
         {
