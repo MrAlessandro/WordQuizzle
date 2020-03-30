@@ -10,20 +10,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FriendshipRequestsManager
 {
-    private static ConcurrentHashMap<String, Set<String>> friendshipRequestsArchive;
+    private ConcurrentHashMap<String, Set<String>> friendshipRequestsArchive;
 
-    public static void setUp()
+    public FriendshipRequestsManager()
     {
-        friendshipRequestsArchive = new ConcurrentHashMap<>(ServerConstants.FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE);
+        this.friendshipRequestsArchive = new ConcurrentHashMap<>(ServerConstants.FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE);
     }
 
-    public static void recordFriendshipRequest(String from, String to) throws FriendshipRequestAlreadyReceived, FriendshipRequestAlreadySent
+    public void recordFriendshipRequest(String from, String to) throws FriendshipRequestAlreadyReceived, FriendshipRequestAlreadySent
     {
         final boolean[] alreadyReceived = {false};
         final boolean[] alreadySent = {false};
 
         // Check if applicant has already received a friendship request from the receiver
-        friendshipRequestsArchive.computeIfPresent(from, (key, value) -> {
+        this.friendshipRequestsArchive.computeIfPresent(from, (key, value) -> {
             if (value.contains(to))
                 alreadyReceived[0] = true;
 
@@ -33,7 +33,7 @@ public class FriendshipRequestsManager
             throw new FriendshipRequestAlreadyReceived();
 
         // Add the request if it is not already present
-        friendshipRequestsArchive.compute(to, (key, value) -> {
+        this.friendshipRequestsArchive.compute(to, (key, value) -> {
             if (value == null)
             {
                 HashSet<String> requests = new HashSet<>(10);
@@ -52,11 +52,11 @@ public class FriendshipRequestsManager
             throw new FriendshipRequestAlreadySent();
     }
 
-    public static boolean discardFriendshipRequest(String from, String to)
+    public boolean discardFriendshipRequest(String from, String to)
     {
         final boolean[] removed = {false};
 
-        friendshipRequestsArchive.computeIfPresent(to, (key, value) -> {
+        this.friendshipRequestsArchive.computeIfPresent(to, (key, value) -> {
             if (value.remove(from))
                 removed[0] = true;
 

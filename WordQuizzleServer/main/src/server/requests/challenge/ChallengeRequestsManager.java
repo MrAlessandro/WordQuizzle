@@ -14,20 +14,20 @@ import java.util.concurrent.TimeUnit;
 
 public class ChallengeRequestsManager
 {
-    private static ConcurrentHashMap<String, ChallengeRequest> challengeRequestsArchive;
-    private static ConcurrentHashMap<ChallengeRequest, ScheduledFuture<?>> timeOutsArchive;
-    private static Logger timerLogger;
-    public static ScheduledThreadPoolExecutor timer;
+    private ConcurrentHashMap<String, ChallengeRequest> challengeRequestsArchive;
+    private ConcurrentHashMap<ChallengeRequest, ScheduledFuture<?>> timeOutsArchive;
+    public ScheduledThreadPoolExecutor timer;
+    private Logger timerLogger;
 
-    public static void setUp()
+    public ChallengeRequestsManager()
     {
-        challengeRequestsArchive = new ConcurrentHashMap<>(ServerConstants.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
-        timerLogger = new Logger("ChallengeRequestsTimer");
-        timeOutsArchive = new ConcurrentHashMap<>(128);
-        timer = new ScheduledThreadPoolExecutor(5);
+        this.challengeRequestsArchive = new ConcurrentHashMap<>(ServerConstants.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
+        this.timerLogger = new Logger("ChallengeRequestsTimer");
+        this.timeOutsArchive = new ConcurrentHashMap<>(128);
+        this.timer = new ScheduledThreadPoolExecutor(5);
     }
 
-    public static void recordChallengeRequest(String from, String to, Runnable timeoutOperation) throws PreviousChallengeRequestSentException, PreviousChallengeRequestReceivedException, ReceiverEngagedInOtherChallengeRequestException
+    public void recordChallengeRequest(String from, String to, Runnable timeoutOperation) throws PreviousChallengeRequestSentException, PreviousChallengeRequestReceivedException, ReceiverEngagedInOtherChallengeRequestException
     {
         ChallengeRequest request = new ChallengeRequest(from, to, () -> {
             expireChallengeRequest(from, to);
@@ -36,7 +36,7 @@ public class ChallengeRequestsManager
 
         synchronized (ChallengeRequestsManager.class)
         {
-            ChallengeRequest previousEngageApplicant = challengeRequestsArchive.putIfAbsent(from, request);
+            ChallengeRequest previousEngageApplicant = this.challengeRequestsArchive.putIfAbsent(from, request);
             if (previousEngageApplicant != null)
             {
                 if (from.equals(previousEngageApplicant.from))
@@ -45,21 +45,21 @@ public class ChallengeRequestsManager
                     throw new PreviousChallengeRequestReceivedException("USER \"" + from + "\" HAVE BEEN RECEIVED PREVIOUS CHALLENGE REQUEST FROM \"" + previousEngageApplicant.from + "\" STILL WAITING FOR REPLY");
             }
 
-            ChallengeRequest previousEngageReceiver = challengeRequestsArchive.putIfAbsent(to, request);
+            ChallengeRequest previousEngageReceiver = this.challengeRequestsArchive.putIfAbsent(to, request);
             if (previousEngageReceiver != null)
             {
-                challengeRequestsArchive.remove(from, request);
+                this.challengeRequestsArchive.remove(from, request);
                 throw new ReceiverEngagedInOtherChallengeRequestException("USER \"" + to + "\" IS ENGAGED IN ANOTHER CHALLENGE REQUEST");
             }
 
             // Schedule the request timeout
-            ScheduledFuture<?> scheduledFuture = timer.schedule(request, ServerConstants.CHALLENGE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-            timeOutsArchive.put(request, scheduledFuture);
-            timerLogger.println("Challenge request between \"" + from + "\" and \"" + to + "\" has been scheduled.");
+            ScheduledFuture<?> scheduledFuture = this.timer.schedule(request, ServerConstants.CHALLENGE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            this.timeOutsArchive.put(request, scheduledFuture);
+            this.timerLogger.println("Challenge request between \"" + from + "\" and \"" + to + "\" has been scheduled.");
         }
     }
 
-    private static void expireChallengeRequest(String from, String to)
+    private void expireChallengeRequest(String from, String to)
     {
         ChallengeRequest requestFrom;
         ChallengeRequest requestTo;
@@ -67,12 +67,12 @@ public class ChallengeRequestsManager
         synchronized (ChallengeRequestsManager.class)
         {
             // Remove challenge request related to applicant user from the archive
-            requestFrom = challengeRequestsArchive.remove(from);
+            requestFrom = this.challengeRequestsArchive.remove(from);
             if (requestFrom == null)
                 throw new Error("CHALLENGE REQUEST MANAGER INCONSISTENCY");
 
             // Remove challenge request related to receiver user from the archive
-            requestTo = challengeRequestsArchive.remove(to);
+            requestTo = this.challengeRequestsArchive.remove(to);
             if (requestTo == null)
                 throw new Error("CHALLENGE REQUEST MANAGER INCONSISTENCY");
 
@@ -81,10 +81,10 @@ public class ChallengeRequestsManager
                 throw new Error("CHALLENGE REQUEST MANAGER INCONSISTENCY");
         }
 
-        timerLogger.println("Challenge request between \"" + from + "\" and \"" + to + "\" has been expired.");
+        this.timerLogger.println("Challenge request between \"" + from + "\" and \"" + to + "\" has been expired.");
     }
 
-    public static boolean discardChallengeRequest(String from, String to)
+    public boolean discardChallengeRequest(String from, String to)
     {
         ChallengeRequest requestFrom;
         ChallengeRequest requestTo;
@@ -92,12 +92,12 @@ public class ChallengeRequestsManager
         synchronized (ChallengeRequestsManager.class)
         {
             // Remove challenge request related to applicant user from the archive
-            requestFrom = challengeRequestsArchive.remove(from);
+            requestFrom = this.challengeRequestsArchive.remove(from);
             if (requestFrom == null)
                 return false;
 
             // Remove challenge request related to receiver user from the archive
-            requestTo = challengeRequestsArchive.remove(to);
+            requestTo = this.challengeRequestsArchive.remove(to);
             if (requestTo == null)
                 throw new Error("CHALLENGE REQUEST MANAGER INCONSISTENCY");
 
@@ -106,15 +106,15 @@ public class ChallengeRequestsManager
                 throw new Error("CHALLENGE REQUEST MANAGER INCONSISTENCY");
 
             // Cancel the timeout related to the request
-            ScheduledFuture<?> scheduledFuture = timeOutsArchive.remove(requestFrom);
+            ScheduledFuture<?> scheduledFuture = this.timeOutsArchive.remove(requestFrom);
             scheduledFuture.cancel(true);
-            timerLogger.println("Challenge request between \"" + from + "\" and \"" + to + "\" has been discarded.");
+            this.timerLogger.println("Challenge request between \"" + from + "\" and \"" + to + "\" has been discarded.");
         }
 
         return true;
     }
 
-    public static String cancelChallengeRequest(String username)
+    public String cancelChallengeRequest(String username)
     {
         ChallengeRequest request;
         ChallengeRequest consequentialRequest;
@@ -122,15 +122,15 @@ public class ChallengeRequestsManager
         synchronized (ChallengeRequestsManager.class)
         {
             // Remove challenge request related to given user from the archive
-            request = challengeRequestsArchive.remove(username);
+            request = this.challengeRequestsArchive.remove(username);
             if (request == null)
                 return null;
 
             // Remove challenge request related to other user engaged from the archive
             if (username.equals(request.from))
-                consequentialRequest = challengeRequestsArchive.remove(request.to);
+                consequentialRequest = this.challengeRequestsArchive.remove(request.to);
             else if (username.equals(request.to))
-                consequentialRequest = challengeRequestsArchive.remove(request.from);
+                consequentialRequest = this.challengeRequestsArchive.remove(request.from);
             else
                 throw new Error("CHALLENGE REQUEST MANAGER INCONSISTENCY");
 
@@ -141,9 +141,9 @@ public class ChallengeRequestsManager
                 throw new Error("CHALLENGE REQUEST MANAGER INCONSISTENCY");
 
             // Cancel the timeout related to the request
-            ScheduledFuture<?> scheduledFuture = timeOutsArchive.remove(request);
+            ScheduledFuture<?> scheduledFuture = this.timeOutsArchive.remove(request);
             scheduledFuture.cancel(true);
-            timerLogger.println("Challenge request between \"" + request.from + "\" and \"" + request.to + "\" has been canceled.");
+            this.timerLogger.println("Challenge request between \"" + request.from + "\" and \"" + request.to + "\" has been canceled.");
         }
 
         // Return the username of the other user engaged in the request

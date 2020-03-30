@@ -35,6 +35,8 @@ class WordQuizzleServer
     {
         // Managers
         UsersManager usersManager;
+        FriendshipRequestsManager friendshipRequestsManager;
+        ChallengeRequestsManager challengeRequestsManager;
 
         InetSocketAddress serverAddress;
         Registry registry = null;
@@ -82,41 +84,20 @@ class WordQuizzleServer
 
         // Setup server.loggers for deputies
         Logger.setUp();
-        // Initialize and starts deputies
-        logger.println("Initializing and starting " + ServerConstants.DEPUTIES_POOL_SIZE + " deputies... ");
-        // Initialize uncaught exception handler
-        errorsHandler = (thread, throwable) -> {
-            logger.printlnRed("FATAL ERROR FROM THREAD " + thread.getName());
-            logger.printlnRed(Arrays.toString(throwable.getStackTrace()));
-            System.exit(1);
-        };
-        deputies = new Deputy[ServerConstants.DEPUTIES_POOL_SIZE];
-        for (int i = 0; i < deputies.length; i++)
-        {
-            logger.print("\t\tStarting deputy \"Deputy_" + (i+1) + "\"... ");
-            deputies[i] = new Deputy("Deputy_" + (i+1), ServerConstants.UDP_BASE_PORT+i);
-            deputies[i].start();
-            logger.printlnGreen("STARTED");
-        }
 
         // Setup server.users manager
         logger.print("Initializing server.users manager... ");
         usersManager = new UsersManager();
         logger.printlnGreen("INITIALIZED");
 
-        // Setup sessions manager
-        logger.print("Initializing sessions manager... ");
-        SessionsManager.setUp();
-        logger.printlnGreen("INITIALIZED");
-
         // Set up friendship server.requests manager
         logger.print("Initializing friendship server.requests manager... ");
-        FriendshipRequestsManager.setUp();
+        friendshipRequestsManager = new FriendshipRequestsManager();
         logger.printlnGreen("INITIALIZED");
 
         // Set up challenge server.requests manager
         logger.print("Initializing challenge server.requests manager... ");
-        ChallengeRequestsManager.setUp();
+        challengeRequestsManager = new ChallengeRequestsManager();
         logger.printlnGreen("INITIALIZED");
 
         // Setup challenges manager
@@ -145,6 +126,28 @@ class WordQuizzleServer
             System.exit(1);
         }
         logger.printlnGreen("INITIALIZED");
+
+        // Setup sessions manager
+        logger.print("Initializing sessions manager... ");
+        SessionsManager.setUp();
+        logger.printlnGreen("INITIALIZED");
+
+        // Initialize and starts deputies
+        logger.println("Initializing and starting " + ServerConstants.DEPUTIES_POOL_SIZE + " deputies... ");
+        // Initialize uncaught exception handler
+        errorsHandler = (thread, throwable) -> {
+            logger.printlnRed("FATAL ERROR FROM THREAD " + thread.getName());
+            logger.printlnRed(Arrays.toString(throwable.getStackTrace()));
+            System.exit(1);
+        };
+        deputies = new Deputy[ServerConstants.DEPUTIES_POOL_SIZE];
+        for (int i = 0; i < deputies.length; i++)
+        {
+            logger.print("\t\tStarting deputy \"Deputy_" + (i+1) + "\"... ");
+            deputies[i] = new Deputy("Deputy_" + (i+1), ServerConstants.UDP_BASE_PORT+i, usersManager);
+            deputies[i].start();
+            logger.printlnGreen("STARTED");
+        }
 
         try
         {

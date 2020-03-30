@@ -17,7 +17,7 @@ public class UsersManager implements commons.remote.Registrable
 
     public UsersManager()
     {
-        usersArchive = new ConcurrentHashMap<>(ServerConstants.USERS_ARCHIVE_INITIAL_SIZE);
+        this.usersArchive = new ConcurrentHashMap<>(ServerConstants.USERS_ARCHIVE_INITIAL_SIZE);
     }
 
     @Override
@@ -28,13 +28,13 @@ public class UsersManager implements commons.remote.Registrable
         if (password.length == 0)
             throw new VoidPasswordException("EMPTY PASSWORD");
 
-        if ((usersArchive.putIfAbsent(username, new User(username, password))) != null)
+        if ((this.usersArchive.putIfAbsent(username, new User(username, password))) != null)
             throw new UsernameAlreadyUsedException("USERNAME " + username + " IS ALREADY USED");
     }
 
     public User getUser(String username)
     {
-        return usersArchive.get(username);
+        return this.usersArchive.get(username);
     }
 
     public void makeFriends(User user1, User user2)
