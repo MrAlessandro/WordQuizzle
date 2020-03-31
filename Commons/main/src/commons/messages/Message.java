@@ -10,6 +10,7 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Objects;
 
 import commons.messages.exceptions.InvalidMessageFormatException;
 
@@ -469,5 +470,17 @@ public class Message
         written = receiver.send(buffer, destination);
 
         return written;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (o == null || this.getClass() != o.getClass())
+            return false;
+
+        Message message = (Message) o;
+        return getType() == message.getType() && this.getFields().equals(message.getFields());
     }
 }

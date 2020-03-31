@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
+import java.util.Objects;
 
 import commons.messages.exceptions.InvalidMessageFormatException;
 
@@ -199,5 +201,17 @@ public class Field
     {
         String gotBody = (String) serialized.get("Body");
         return new Field(gotBody.toCharArray());
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (o == null || this.getClass() != o.getClass())
+            return false;
+
+        Field field = (Field) o;
+        return size == field.size && Arrays.equals(getData(), field.getData());
     }
 }

@@ -1,7 +1,7 @@
 <component name="libraryTable">
-  <library name="mockito-core-3.3.3">
+  <library name="byte-buddy-1.10.9">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/lib/mockito-core-3.3.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/byte-buddy-1.10.9.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
