@@ -212,6 +212,6 @@ public class Field
             return false;
 
         Field field = (Field) o;
-        return size == field.size && Arrays.equals(getData(), field.getData());
+        return this.size == field.size && Arrays.equals(this.getData(), field.getData());
     }
 }

@@ -43,7 +43,7 @@ public enum MessageType
     REQUEST_FOR_FRIENDS_SCORES((short) 11, "FriendsScore"),*/
 
     // Notifications,
-    REQUEST_FOR_FRIENDSHIP_CONFIRMATION((short) 100, "RequestForFriend"),
+    REQUEST_FOR_FRIENDSHIP_CONFIRMATION((short) 100, "RequestForFriendshipConfirmation"),
     FRIENDSHIP_REQUEST_CONFIRMED((short) 101, "FriendshipRequestConfirmed"),
     FRIENDSHIP_REQUEST_DECLINED((short)102, "FriendshipRequestDeclined"),
     CHALLENGE_REQUEST_CONFIRMED((short) 104, "ChallengeRequestConfirmed"),

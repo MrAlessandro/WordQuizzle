@@ -481,6 +481,13 @@ public class Message
             return false;
 
         Message message = (Message) o;
-        return getType() == message.getType() && this.getFields().equals(message.getFields());
+        boolean check = this.type == message.type;
+        check = check && this.fields.size() == message.fields.size();
+        for (int i = 0; i < this.fields.size(); i++)
+        {
+            check = check && this.fields.get(i).equals(message.fields.get(i));
+        }
+
+        return check;
     }
 }
