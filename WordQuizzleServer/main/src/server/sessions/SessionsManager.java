@@ -117,17 +117,17 @@ public class SessionsManager
         User userFrom;
         User userTo;
 
+        // Get users
+        userFrom = this.usersManager.getUser(from);
+        if (userFrom == null)
+            throw new Error("SESSIONS SYSTEM INCONSISTENCY");
+
+        userTo = this.usersManager.getUser(to);
+        if (userTo == null)
+            throw new UnknownReceiverException("UNKNOWN USER \"" + to + "\"");
+
         synchronized (friendshipsMonitor)
         {
-            // Get server.users
-            userFrom = this.usersManager.getUser(from);
-            if (userFrom == null)
-                throw new Error("SESSIONS SYSTEM INCONSISTENCY");
-
-            userTo = this.usersManager.getUser(to);
-            if (userTo == null)
-                throw new UnknownReceiverException("UNKNOWN USER \"" + to + "\"");
-
             // Check if server.users exist and if they are friends
             if (this.usersManager.areFriends(userFrom, userTo))
                 throw new AlreadyFriendsException("USER \"" + from + "\" AND USER \"" + to + "\" ARE ALREADY FRIENDS");
@@ -188,6 +188,12 @@ public class SessionsManager
         AtomicReference<CommunicableException> exception = new AtomicReference<>(null);
         Session receiverSession;
         User receiverUser;
+        User senderUser;
+
+        // Get the sender user
+        senderUser = this.usersManager.getUser(from);
+        if (senderUser == null)
+            throw new Error("SESSIONS SYSTEM INCONSISTENCY");
 
         // Get the receiver user
         receiverUser = this.usersManager.getUser(to);
@@ -226,7 +232,7 @@ public class SessionsManager
             throw exception.get();
 
         // Send challenge request message to receiver
-        receiverSession.appendMessage(new Message(MessageType.REQUEST_FOR_CHALLENGE, from));
+        receiverSession.appendMessage(new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, from));
     }
 
     public void confirmChallengeRequest(String whoSentRequest, String whoConfirmedRequest) throws UnexpectedMessageException

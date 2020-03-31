@@ -49,7 +49,7 @@ public class TestChallengeRequestsManager
             timerField.setAccessible(true);
             archiveField.setAccessible(true);
             challengeRequestsArchive = (ConcurrentHashMap<String, ChallengeRequest>) archiveField.get(this.challengeRequestsManager);
-            timer = (ScheduledThreadPoolExecutor) timerField.get(null);
+            timer = (ScheduledThreadPoolExecutor) timerField.get(this.challengeRequestsManager);
         }
         catch (NoSuchFieldException | IllegalAccessException e)
         {

@@ -45,7 +45,7 @@ public class Session
 
     public Message getMessage()
     {
-        return this.backlog.remove();
+        return this.backlog.pollFirst();
     }
 
     public boolean hasPendingMessages()

@@ -46,6 +46,7 @@ public enum MessageType
     REQUEST_FOR_FRIENDSHIP_CONFIRMATION((short) 100, "RequestForFriendshipConfirmation"),
     FRIENDSHIP_REQUEST_CONFIRMED((short) 101, "FriendshipRequestConfirmed"),
     FRIENDSHIP_REQUEST_DECLINED((short)102, "FriendshipRequestDeclined"),
+    REQUEST_FOR_CHALLENGE_CONFIRMATION((short) 112, "RequestForChallengeConfirmation"),
     CHALLENGE_REQUEST_CONFIRMED((short) 104, "ChallengeRequestConfirmed"),
     CHALLENGE_REQUEST_DECLINED((short) 105, "ChallengeRequestDeclined"),
     CHALLENGE_REQUEST_EXPIRED((short) 106, "ChallengeRequestExpired"),
