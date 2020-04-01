@@ -1054,7 +1054,20 @@ public class TestSessionsManager
             }
             assertEquals(0, fromWordsProgress);
 
-
+            /* TODO: thrown -> Unexpected exception thrown: java.lang.Error: UNEXPECTED TRANSLATOR CANCELING*/
+            assertDoesNotThrow(() -> sessionsManager.provideTranslation(username1, "a"));
+            int fromTranslationsProgress = Integer.MIN_VALUE;
+            try
+            {
+                Field fromTranslationsProgressField = Challenge.class.getDeclaredField("fromTranslationsProgress");
+                fromTranslationsProgressField.setAccessible(true);
+                fromTranslationsProgress = (int) fromTranslationsProgressField.get(challengesArchive.get(username1));
+            }
+            catch (NoSuchFieldException | IllegalAccessException e)
+            {
+                fail("ERROR GETTING PRIVATE FIELD");
+            }
+            assertEquals(0, fromTranslationsProgress);
         }
     }
 }
