@@ -76,7 +76,6 @@ public class SessionsManager
         return session;
     }
 
-    /*TODO*/
     public void closeSession(Session session)
     {
         // Remove session from the archive
@@ -88,18 +87,17 @@ public class SessionsManager
         synchronized (challengesMonitor)
         {
             // Discard eventual active challenge
-            String eventualOpponent = this.challengesManager.cancelChallenge(session.getUsername());
-            if (eventualOpponent != null)
-            {
-                /*TODO*/
-            }
+            ChallengeReport eventualOpponentReport = this.challengesManager.cancelChallenge(session.getUsername());
+            if (eventualOpponentReport != null)
+                sendMessage(eventualOpponentReport.player, new Message(MessageType.CHALLENGE_OPPONENT_LOGGED_OUT,
+                        String.valueOf(eventualOpponentReport.winStatus),
+                        String.valueOf(eventualOpponentReport.challengeProgress),
+                        String.valueOf(eventualOpponentReport.scoreGain)));
 
             // Discard eventual challenge request
             String eventualRequestPeer = this.challengeRequestsManager.cancelChallengeRequest(session.getUsername());
             if (eventualRequestPeer != null)
-            {
-                /*TODO*/
-            }
+                sendMessage(eventualRequestPeer, new Message(MessageType.CHALLENGE_REQUEST_OPPONENT_LOGGED_OUT, session.getUsername()));
         }
     }
 
@@ -159,7 +157,7 @@ public class SessionsManager
 
             whoSentRequestUser = this.usersManager.getUser(whoSentRequest);
             if (whoSentRequestUser == null)
-                throw new UnknownUserException("UNKNOWN USER \"" + whoSentRequest + "\"");
+                throw new UnexpectedMessageException("UNKNOWN USER \"" + whoSentRequest + "\"");
 
             // Remove friendship request from the friendship server.requests archive
             if (!this.friendshipRequestsManager.discardFriendshipRequest(whoSentRequest, whoConfirmedRequest))
@@ -288,7 +286,7 @@ public class SessionsManager
 
             return session;
         });
-        if (whoSentRequestSession == null)
+        if (whoSentRequestSession == null) // -> It should be error but can happen som concurrency issues
             throw new UnexpectedMessageException("DO NOT EXIST ANY CHALLENGE REQUEST BETWEEN \"" + whoSentRequest + "\" and \"" + whoConfirmedRequest + "\"");
 
         // Check if exceptions has been thrown during the operation

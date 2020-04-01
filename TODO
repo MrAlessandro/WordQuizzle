@@ -4,5 +4,11 @@ Manage termination of various components
 # Verifying error managing
 Check if every component manage fatal errors correctly
 
-# Destaticfy challenges
-(Not challenges manager, Challenge.java)
+# DONE - Destaticfy classes
+
+
+# Voluntary challenge discarding
+Provide the possibility for player to discard challenge voluntary, non only through logout
+
+# User score update
+Manage the score update un UsersManager

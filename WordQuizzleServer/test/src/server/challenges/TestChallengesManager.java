@@ -8,6 +8,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import server.challenges.challege.Challenge;
 import server.challenges.exceptions.*;
+import server.challenges.reports.ChallengeReport;
 import server.challenges.reports.ChallengeReportDelegation;
 import server.settings.ServerConstants;
 
@@ -16,6 +17,7 @@ import java.lang.reflect.Field;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -134,7 +136,9 @@ public class TestChallengesManager
         assertEquals(2, challengesArchive.size());
         timer.shutdownNow();
 
-        assertDoesNotThrow(() -> this.challengesManager.cancelChallenge(username1));
+        AtomicReference<ChallengeReport> opponent = new AtomicReference<>(null);
+        assertDoesNotThrow(() -> {opponent.set(this.challengesManager.cancelChallenge(username1));});
+        assertEquals(username2, opponent.get().player);
         assertEquals(0, challengesArchive.size());
     }
 

@@ -5,6 +5,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import server.challenges.challege.Challenge;
 import server.challenges.exceptions.*;
+import server.challenges.reports.ChallengeReport;
 import server.challenges.reports.ChallengeReportDelegation;
 import server.challenges.translators.Translator;
 import server.settings.ServerConstants;
@@ -179,6 +180,7 @@ public class ChallengesManager
         }
     }
 
+    // Utility method for remove challenge from system
     private void unregisterChallenge(String from, String to)
     {
         Challenge challengeFrom;
@@ -209,22 +211,26 @@ public class ChallengesManager
         }
     }
 
+    // Called when challenge expire
     public void expireChallenge(String from, String to)
     {
         unregisterChallenge(from, to);
         this.timerLogger.println("Challenge between \"" + from + "\" and \"" + to + "\" has been expired.");
     }
 
+    // Called when challenge is completed
     public void closeChallenge(String from, String to)
     {
         unregisterChallenge(from, to);
         this.timerLogger.println("Challenge between \"" + from + "\" and \"" + to + "\" has been completed.");
     }
 
-    public String cancelChallenge(String username)
+    // Called when a player logout
+    public ChallengeReport cancelChallenge(String username)
     {
         Challenge consequentialChallenge;
         Challenge challenge;
+        ChallengeReport report;
 
         synchronized (ChallengesManager.class)
         {
@@ -256,8 +262,8 @@ public class ChallengesManager
             this.timerLogger.println("Challenge between \"" + challenge.from + "\" and \"" + challenge.to + "\" has been canceled.");
         }
 
-        // Return the username of the other user engaged in the challenge
-        return username.equals(challenge.from) ? challenge.to : challenge.from;
+        // Return the opponent's challenge report
+        return challenge.getOpponentReport(username);
     }
 
     public String retrieveNextWord(String player) throws NoChallengeRelatedException, NoFurtherWordsToGetException, WordRetrievalOutOfSequenceException

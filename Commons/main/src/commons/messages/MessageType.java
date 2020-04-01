@@ -50,8 +50,10 @@ public enum MessageType
     CHALLENGE_REQUEST_CONFIRMED((short) 104, "ChallengeRequestConfirmed"),
     CHALLENGE_REQUEST_DECLINED((short) 105, "ChallengeRequestDeclined"),
     CHALLENGE_REQUEST_EXPIRED((short) 106, "ChallengeRequestExpired"),
+    CHALLENGE_REQUEST_OPPONENT_LOGGED_OUT((short)114, "ChallengeRequestOpponentLoggedOut"),
     CHALLENGE_EXPIRED((short)110, "ChallengeExpired"),
     CHALLENGE_REPORT((short)111,"ChallengeReport"),
+    CHALLENGE_OPPONENT_LOGGED_OUT((short)113, "ChallengeOpponentLoggedOut"),
     /*
     REQUEST_FOR_CHALLENGE_CONFIRMATION((short) 103, "NotifyChallenge"),
     CHALLENGE_CONFIRMED((short) 104, "ChallengeConfirmed"),

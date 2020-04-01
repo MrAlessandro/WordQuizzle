@@ -140,6 +140,35 @@ public class Challenge implements Runnable
         this.completionOperation.run();
     }
 
+    public ChallengeReport getOpponentReport(String canceler)
+    {
+        ChallengeReport report;
+
+        String player;
+        int status;
+        int progress;
+        int score;
+
+        if (canceler.equals(this.from))
+        {
+            player = this.to;
+            status = Integer.compare(this.toScore, this.fromScore);
+            progress = this.toTranslationsProgress;
+            score = this.toScore;
+        }
+        else
+        {
+            player = this.from;
+            status = Integer.compare(this.fromScore, this.toScore);
+            progress = this.fromTranslationsProgress;
+            score = this.fromScore;
+        }
+
+        report = new ChallengeReport(player, status, progress, score);
+
+        return report;
+    }
+
     public String getWord(String player) throws NoFurtherWordsToGetException, WordRetrievalOutOfSequenceException
     {
         if (player.equals(this.from))
