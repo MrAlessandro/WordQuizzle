@@ -1,12 +1,10 @@
 package server.challenges.reports;
 
-public abstract class ChallengeReportDelegation implements Runnable
+
+public class ChallengeReportDelegation
 {
     private ChallengeReport fromChallengeReport = null;
     private ChallengeReport toChallengeReport = null;
-
-    @Override
-    public abstract void run();
 
     public ChallengeReport getFromChallengeReport()
     {

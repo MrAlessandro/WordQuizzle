@@ -1,5 +1,6 @@
 package server.challenges;
 
+import commons.messages.exceptions.UnexpectedMessageException;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -17,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Random;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 public class ChallengesManager
 {
@@ -117,7 +119,7 @@ public class ChallengesManager
         }
     }
 
-    public void recordChallenge(String from, String to, ChallengeReportDelegation completionOperation, ChallengeReportDelegation timeoutOperation) throws ApplicantEngagedInOtherChallengeException, ReceiverEngagedInOtherChallengeException
+    public void recordChallenge(String from, String to, Consumer<ChallengeReportDelegation> completionOperation, Consumer<ChallengeReportDelegation> timeoutOperation) throws ApplicantEngagedInOtherChallengeException, ReceiverEngagedInOtherChallengeException
     {
         // Retrieve bulk of word associating to this challenge
         String[] words = new String[ServerConstants.CHALLENGE_WORDS_QUANTITY];
@@ -129,22 +131,18 @@ public class ChallengesManager
 
         // Initialize challenge
         Challenge challenge = new Challenge(from, to, words,
-                new ChallengeReportDelegation() // Completion operation
-                {
+                new Consumer<ChallengeReportDelegation>() { // Completion operation
                     @Override
-                    public void run()
-                    {
+                    public void accept(ChallengeReportDelegation challengeReportDelegation) {
                         closeChallenge(from, to);
-                        completionOperation.run();
+                        completionOperation.accept(challengeReportDelegation);
                     }
                 },
-                new ChallengeReportDelegation() // Timeout operation
-                {
+                new Consumer<ChallengeReportDelegation>() { // Timeout operation
                     @Override
-                    public void run()
-                    {
+                    public void accept(ChallengeReportDelegation challengeReportDelegation) {
                         expireChallenge(from, to);
-                        timeoutOperation.run();
+                        timeoutOperation.accept(challengeReportDelegation);
                     }
                 });
 
@@ -283,7 +281,7 @@ public class ChallengesManager
         return word;
     }
 
-    public boolean provideTranslation(String player, String translation) throws NoChallengeRelatedException, TranslationProvisionOutOfSequenceException
+    public boolean provideTranslation(String player, String translation) throws NoChallengeRelatedException, TranslationProvisionOutOfSequenceException, UnexpectedMessageException
     {
         Challenge challenge;
         Boolean correct;

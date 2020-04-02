@@ -27,6 +27,7 @@ import java.net.SocketAddress;
 import java.nio.channels.Selector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class SessionsManager
 {
@@ -250,25 +251,25 @@ public class SessionsManager
 
                     // Record challenge
                     this.challengesManager.recordChallenge(whoSentRequest, whoConfirmedRequest,
-                            new ChallengeReportDelegation()
+                            new Consumer<ChallengeReportDelegation>()
                             {
                                 @Override
-                                public void run()
+                                public void accept(ChallengeReportDelegation challengeReportDelegation)
                                 {
-                                    ChallengeReport fromReport = this.getFromChallengeReport();
-                                    ChallengeReport toReport = this.getToChallengeReport();
+                                    ChallengeReport fromReport = challengeReportDelegation.getFromChallengeReport();
+                                    ChallengeReport toReport = challengeReportDelegation.getToChallengeReport();
                                     sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_REPORT, String.valueOf(fromReport.winStatus), String.valueOf(fromReport.challengeProgress), String.valueOf(fromReport.scoreGain)));
                                     sendMessage(whoConfirmedRequest, new Message(MessageType.CHALLENGE_REPORT, String.valueOf(toReport.winStatus), String.valueOf(toReport.challengeProgress), String.valueOf(toReport.scoreGain)));
                                 }
                             },
-                            new ChallengeReportDelegation()
+                            new Consumer<ChallengeReportDelegation>()
                             {
                                 @Override
-                                public void run()
+                                public void accept(ChallengeReportDelegation challengeReportDelegation)
                                 {
                                     // Send expiration challenge request message containing challenge reports to both applicant and receiver
-                                    ChallengeReport fromReport = this.getFromChallengeReport();
-                                    ChallengeReport toReport = this.getToChallengeReport();
+                                    ChallengeReport fromReport = challengeReportDelegation.getFromChallengeReport();
+                                    ChallengeReport toReport = challengeReportDelegation.getToChallengeReport();
                                     sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_EXPIRED, String.valueOf(fromReport.winStatus), String.valueOf(fromReport.challengeProgress), String.valueOf(fromReport.scoreGain)));
                                     sendMessage(whoConfirmedRequest, new Message(MessageType.CHALLENGE_EXPIRED, String.valueOf(toReport.winStatus), String.valueOf(toReport.challengeProgress), String.valueOf(toReport.scoreGain)));
                                 }

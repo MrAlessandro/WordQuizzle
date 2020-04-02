@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -954,6 +955,8 @@ public class TestSessionsManager
                 Field timerField = ChallengesManager.class.getDeclaredField("timer");
                 timerField.setAccessible(true);
                 timer = (ScheduledThreadPoolExecutor) timerField.get(challengesManager);
+
+                ServerConstants.CHALLENGE_DURATION_SECONDS = Integer.MAX_VALUE;
             }
             catch (NoSuchFieldException | IllegalAccessException e)
             {
@@ -1054,7 +1057,6 @@ public class TestSessionsManager
             }
             assertEquals(0, fromWordsProgress);
 
-            /* TODO: thrown -> Unexpected exception thrown: java.lang.Error: UNEXPECTED TRANSLATOR CANCELING*/
             assertDoesNotThrow(() -> sessionsManager.provideTranslation(username1, "a"));
             int fromTranslationsProgress = Integer.MIN_VALUE;
             try
@@ -1068,6 +1070,102 @@ public class TestSessionsManager
                 fail("ERROR GETTING PRIVATE FIELD");
             }
             assertEquals(0, fromTranslationsProgress);
+        }
+
+        @Test
+        public void testChallengeProgress_ChallengeCompletion()
+        {
+            AtomicBoolean completionFlag = new AtomicBoolean(false);
+            ChallengeReportDelegation completionTask = new ChallengeReportDelegation() {
+                @Override
+                public void run() {
+                    completionFlag.set(true);
+                }
+            };
+            String username1 = UUID.randomUUID().toString();
+            char[] password1 = UUID.randomUUID().toString().toCharArray();
+            char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
+            AtomicReference<Session> session1 = new AtomicReference<>();
+
+            String username2 = UUID.randomUUID().toString();
+            char[] password2 = UUID.randomUUID().toString().toCharArray();
+            char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
+            AtomicReference<Session> session2 = new AtomicReference<>();
+
+            assertDoesNotThrow(() -> usersManager.registerUser(username1, password1));
+            assertDoesNotThrow(() -> session1.set(sessionsManager.openSession(username1, passwordCopy1, selector, socketAddress)));
+            assertEquals(username1, session1.get().getUsername());
+            assertEquals(1, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> usersManager.registerUser(username2, password2));
+            assertDoesNotThrow(() -> session2.set(sessionsManager.openSession(username2, passwordCopy2, selector, socketAddress)));
+            assertEquals(username2, session2.get().getUsername());
+            assertEquals(2, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2));
+            assertEquals(2, challengesArchive.size());
+
+            Challenge challenge = challengesArchive.get(username1);
+            int user1WordsProgress = Integer.MIN_VALUE;
+            int user2WordsProgress = Integer.MIN_VALUE;
+            int user1TranslationsProgress = Integer.MIN_VALUE;
+            int user2TranslationsProgress = Integer.MIN_VALUE;
+
+            for (int i = 0; i < ServerConstants.CHALLENGE_WORDS_QUANTITY; i++)
+            {
+                AtomicReference<String> user1Word = new AtomicReference<>(null);
+                AtomicReference<String> user2Word = new AtomicReference<>(null);
+
+                assertDoesNotThrow(() -> user1Word.set(sessionsManager.retrieveNextWord(username1)));
+
+                assertDoesNotThrow(() -> user2Word.set(sessionsManager.retrieveNextWord(username2)));
+
+                assertEquals(user1Word.get(), user2Word.get());
+
+                assertDoesNotThrow(() -> sessionsManager.provideTranslation(username1, "a"));
+
+                assertDoesNotThrow(() -> sessionsManager.provideTranslation(username2, "a"));
+
+
+                try
+                {
+                    Field user1WordsProgressField = Challenge.class.getDeclaredField("fromWordsProgress");
+                    Field user2WordsProgressField = Challenge.class.getDeclaredField("toWordsProgress");
+                    Field user1TranslationsProgressField = Challenge.class.getDeclaredField("fromTranslationsProgress");
+                    Field user2TranslationsProgressField = Challenge.class.getDeclaredField("toTranslationsProgress");
+                    user1WordsProgressField.setAccessible(true);
+                    user2WordsProgressField.setAccessible(true);
+                    user1TranslationsProgressField.setAccessible(true);
+                    user2TranslationsProgressField.setAccessible(true);
+                    user1WordsProgress = (int) user1WordsProgressField.get(challenge);
+                    user2WordsProgress = (int) user2WordsProgressField.get(challenge);
+                    user1TranslationsProgress = (int) user1TranslationsProgressField.get(challenge);
+                    user2TranslationsProgress = (int) user2TranslationsProgressField.get(challenge);
+                }
+                catch (NoSuchFieldException | IllegalAccessException e)
+                {
+                    fail("ERROR GETTING PRIVATE FIELD");
+                }
+
+                assertEquals(i, user1WordsProgress);
+                assertEquals(i, user2WordsProgress);
+                assertEquals(i, user1TranslationsProgress);
+                assertEquals(i, user2TranslationsProgress);
+            }
+        }
+
+        @Nested
+        class TestSessionedChallenges_TIMERED
+        {
+            @BeforeEach
+            public void setUp()
+            {
+                ServerConstants.CHALLENGE_DURATION_SECONDS = Integer.MAX_VALUE;
+            }
         }
     }
 }

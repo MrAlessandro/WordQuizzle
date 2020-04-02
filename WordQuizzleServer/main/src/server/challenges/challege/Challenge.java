@@ -1,5 +1,6 @@
 package server.challenges.challege;
 
+import commons.messages.exceptions.UnexpectedMessageException;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -17,14 +18,15 @@ import java.nio.file.Paths;
 import java.util.Random;
 import java.util.TimerTask;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 public class Challenge implements Runnable
 {
     // Timeout operation
-    private ChallengeReportDelegation timeoutOperation;
+    private Consumer<ChallengeReportDelegation> timeoutOperation;
 
     // Completion operation
-    private ChallengeReportDelegation completionOperation;
+    private Consumer<ChallengeReportDelegation> completionOperation;
 
     // Players username
     public String from;
@@ -46,7 +48,7 @@ public class Challenge implements Runnable
     private int fromScore;
     private int toScore;
 
-    public Challenge(String from, String to, String[] words, ChallengeReportDelegation completionOperation, ChallengeReportDelegation timeoutOperation)
+    public Challenge(String from, String to, String[] words, Consumer<ChallengeReportDelegation> completionOperation, Consumer<ChallengeReportDelegation> timeoutOperation)
     {
         // Set timeout operation
         this.timeoutOperation = timeoutOperation;
@@ -108,9 +110,10 @@ public class Challenge implements Runnable
             toStatus = 0;
         }
 
-        this.timeoutOperation.setFromChallengeReport(new ChallengeReport(this.from, fromStatus,this.fromTranslationsProgress, this.fromScore));
-        this.timeoutOperation.setToChallengeReport(new ChallengeReport(this.to, toStatus, this.toTranslationsProgress, this.toScore));
-        this.timeoutOperation.run();
+        ChallengeReportDelegation challengeReportDelegation = new ChallengeReportDelegation();
+        challengeReportDelegation.setFromChallengeReport(new ChallengeReport(this.from, fromStatus,this.fromTranslationsProgress, this.fromScore));
+        challengeReportDelegation.setToChallengeReport(new ChallengeReport(this.to, toStatus, this.toTranslationsProgress, this.toScore));
+        this.timeoutOperation.accept(challengeReportDelegation);
     }
 
     private void complete()
@@ -135,9 +138,10 @@ public class Challenge implements Runnable
             toStatus = 0;
         }
 
-        this.completionOperation.setFromChallengeReport(new ChallengeReport(this.from, fromStatus,this.fromTranslationsProgress, this.fromScore));
-        this.completionOperation.setToChallengeReport(new ChallengeReport(this.to, toStatus, this.toTranslationsProgress, this.toScore));
-        this.completionOperation.run();
+        ChallengeReportDelegation challengeReportDelegation = new ChallengeReportDelegation();
+        challengeReportDelegation.setFromChallengeReport(new ChallengeReport(this.from, fromStatus,this.fromTranslationsProgress, this.fromScore));
+        challengeReportDelegation.setToChallengeReport(new ChallengeReport(this.to, toStatus, this.toTranslationsProgress, this.toScore));
+        this.completionOperation.accept(challengeReportDelegation);
     }
 
     public ChallengeReport getOpponentReport(String canceler)
@@ -195,8 +199,7 @@ public class Challenge implements Runnable
         }
     }
 
-    public Boolean checkTranslation(String player, String translation) throws TranslationProvisionOutOfSequenceException
-    {
+    public Boolean checkTranslation(String player, String translation) throws TranslationProvisionOutOfSequenceException, UnexpectedMessageException {
         String[] alternativeTranslations;
         boolean checked = false;
         int index = 0;
@@ -257,7 +260,7 @@ public class Challenge implements Runnable
         }
         catch (CancellationException e)
         {// Translator thread has been canceled
-            throw new Error("UNEXPECTED TRANSLATOR CANCELING");
+            throw new UnexpectedMessageException("CHALLENGE HAS BEEN CANCELED");
         }
         catch (InterruptedException e)
         {// Current thread has been interrupted getting the translation
