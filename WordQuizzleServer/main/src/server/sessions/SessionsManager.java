@@ -282,7 +282,7 @@ public class SessionsManager
             }
             catch (ApplicantEngagedInOtherChallengeException | ReceiverEngagedInOtherChallengeException e)
             {
-                throw new Error("CHALLENGES SYSTEM INCONSISTENCY");
+                throw new Error("CHALLENGES SYSTEM INCONSISTENCY", e);
             }
 
             return session;

@@ -3,8 +3,7 @@ package server.challenges.translators;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-import server.challenges.ChallengesManager;
-import server.loggers.Logger;
+import commons.loggers.Logger;
 import server.settings.ServerConstants;
 
 import java.io.BufferedReader;
@@ -43,7 +42,7 @@ public class Translator implements Callable<String[]>
         catch (MalformedURLException e)
         {
             this.translatorsLogger.printlnRed("ERROR GENERATING URL");
-            throw new Error("ERROR GENERATING URL");
+            throw new Error("ERROR GENERATING URL", e);
         }
 
         try
@@ -85,7 +84,7 @@ public class Translator implements Callable<String[]>
         catch (IOException e)
         {
             this.translatorsLogger.printlnRed("ERROR GETTING TRANSLATIONS FROM " + url);
-            throw new Error("ERROR GETTING TRANSLATIONS FROM " + url);
+            throw new Error("ERROR GETTING TRANSLATIONS FROM " + url, e);
         }
 
         // Return translations for given word

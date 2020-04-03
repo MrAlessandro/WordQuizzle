@@ -264,11 +264,11 @@ public class Challenge implements Runnable
         }
         catch (InterruptedException e)
         {// Current thread has been interrupted getting the translation
-            throw new Error("UNEXPECTED INTERRUPTION");
+            throw new Error("UNEXPECTED INTERRUPTION", e);
         }
         catch (ExecutionException e)
         {// Translation retrieving thrown an exception
-            throw new Error("TRANSLATION RETRIEVAL ERROR");
+            throw new Error("TRANSLATION RETRIEVAL ERROR", e);
         }
 
         // Check if challenge is completed

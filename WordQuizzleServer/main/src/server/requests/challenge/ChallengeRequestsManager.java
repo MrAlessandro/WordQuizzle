@@ -1,12 +1,12 @@
 package server.requests.challenge;
 
 import server.settings.ServerConstants;
-import server.loggers.Logger;
+import commons.loggers.Logger;
 import server.requests.challenge.exceptions.ReceiverEngagedInOtherChallengeRequestException;
 import server.requests.challenge.exceptions.PreviousChallengeRequestReceivedException;
 import server.requests.challenge.exceptions.PreviousChallengeRequestSentException;
 
-import java.util.Timer;
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -22,9 +22,22 @@ public class ChallengeRequestsManager
     public ChallengeRequestsManager()
     {
         this.challengeRequestsArchive = new ConcurrentHashMap<>(ServerConstants.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
-        this.timerLogger = new Logger("ChallengeRequestsTimer");
         this.timeOutsArchive = new ConcurrentHashMap<>(128);
         this.timer = new ScheduledThreadPoolExecutor(5);
+
+        try
+        {
+            if (ServerConstants.LOG_FILES)
+                // Create timer logger with related log file
+                this.timerLogger = new Logger(ServerConstants.COLORED_LOGS, "ChallengeRequestsTimer", ServerConstants.LOG_FILES_PATH);
+            else
+                // Create timer logger
+                this.timerLogger = new Logger(ServerConstants.COLORED_LOGS);
+        }
+        catch (IOException e)
+        {
+            throw new Error("ERROR CREATING LOGGER", e);
+        }
     }
 
     public void recordChallengeRequest(String from, String to, Runnable timeoutOperation) throws PreviousChallengeRequestSentException, PreviousChallengeRequestReceivedException, ReceiverEngagedInOtherChallengeRequestException

@@ -7,7 +7,7 @@ import commons.messages.exceptions.InvalidMessageFormatException;
 import commons.messages.exceptions.UnexpectedMessageException;
 import org.json.simple.JSONArray;
 import server.settings.ServerConstants;
-import server.loggers.Logger;
+import commons.loggers.Logger;
 import server.sessions.SessionsManager;
 import server.sessions.session.Session;
 import server.users.UsersManager;
@@ -46,10 +46,21 @@ public class Deputy extends Thread
         super(name);
 
         // Set the handler for uncaught exception
-        this.setUncaughtExceptionHandler(WordQuizzleServer.errorsHandler);
+        this.setUncaughtExceptionHandler(WordQuizzleServer.ERRORS_HANDLER);
 
-        // Create thread specific logger
-        this.logger = new Logger(name);
+        try
+        {
+            if (ServerConstants.LOG_FILES)
+                // Create thread specific logger with related log file
+                this.logger = new Logger(ServerConstants.COLORED_LOGS, name, ServerConstants.LOG_FILES_PATH);
+            else
+                // Create thread specific logger
+                this.logger = new Logger(ServerConstants.COLORED_LOGS);
+        }
+        catch (IOException e)
+        {
+            throw new Error("ERROR CREATING LOGGER", e);
+        }
 
         // Assign UDP port
         this.UDPport = UDPport;
@@ -80,7 +91,7 @@ public class Deputy extends Thread
         {
             this.logger.printlnRed("FAILED");
             this.logger.printlnRed(e.getStackTrace());
-            throw new Error("ERROR INITIALIZING DEPUTY \"" + Thread.currentThread().getName() + "\"");
+            throw new Error("ERROR INITIALIZING DEPUTY \"" + Thread.currentThread().getName() + "\"", e);
         }
     }
 
@@ -115,7 +126,7 @@ public class Deputy extends Thread
                 {
                     this.logger.printlnRed("FAILED");
                     this.logger.printlnRed(e.getStackTrace());
-                    throw new Error("ERROR REGISTERING CHANNEL IN DEPUTY \"" + Thread.currentThread().getName() + "\"");
+                    throw new Error("ERROR REGISTERING CHANNEL IN DEPUTY \"" + Thread.currentThread().getName() + "\"", e);
                 }
             }
 
@@ -132,7 +143,7 @@ public class Deputy extends Thread
             {
                 this.logger.printlnRed("FAILED");
                 this.logger.printlnRed(e.getStackTrace());
-                throw new Error("ERROR SELECTING CHANNELS IN DEPUTY \"" + Thread.currentThread().getName() + "\"");
+                throw new Error("ERROR SELECTING CHANNELS IN DEPUTY \"" + Thread.currentThread().getName() + "\"", e);
             }
 
 
@@ -199,7 +210,7 @@ public class Deputy extends Thread
             {
                 this.logger.printlnRed("ERROR CLOSING CHANNEL");
                 this.logger.printlnRed(e.getStackTrace());
-                throw new Error("ERROR SHUTTING DOWN DEPUTY \"" + Thread.currentThread().getName() + "\"");
+                throw new Error("ERROR SHUTTING DOWN DEPUTY \"" + Thread.currentThread().getName() + "\"", e);
             }
         }
 
@@ -219,7 +230,7 @@ public class Deputy extends Thread
         {
             this.logger.printlnRed("FAILED");
             this.logger.printlnRed(e.getStackTrace());
-            throw new Error("ERROR SHUTTING DOWN DEPUTY \"" + Thread.currentThread().getName() + "\"");
+            throw new Error("ERROR SHUTTING DOWN DEPUTY \"" + Thread.currentThread().getName() + "\"", e);
         }
 
         // Deputy closed
@@ -584,7 +595,7 @@ public class Deputy extends Thread
                     // Retrieve next word to translate for this challenging user
                     this.logger.print("Retrieving next word for challenging user \"" + session.getUsername() + "\"... ");
                     word = this.sessionsManager.retrieveNextWord(session.getUsername());
-                    this.logger.printGreen("RETRIEVED ⟶ \"" + word + "\"");
+                    this.logger.printlnGreen("RETRIEVED ⟶ \"" + word + "\"");
 
                     // Prepare response
                     response = new Message(MessageType.OK, word);
@@ -618,13 +629,13 @@ public class Deputy extends Thread
                     correct = this.sessionsManager.provideTranslation(session.getUsername(), translation);
                     if (correct)
                     {// Given translation is correct
-                        this.logger.printGreen("TRANSLATION CORRECT");
+                        this.logger.printlnGreen("TRANSLATION CORRECT");
                         // Prepare response
                         response = new Message(MessageType.TRANSLATION_CORRECT);
                     }
                     else
                     {// Given translation is wrong
-                        this.logger.printGreen("TRANSLATION WRONG");
+                        this.logger.printlnGreen("TRANSLATION WRONG");
                         // Prepare response
                         response = new Message(MessageType.TRANSLATION_WRONG);
                     }

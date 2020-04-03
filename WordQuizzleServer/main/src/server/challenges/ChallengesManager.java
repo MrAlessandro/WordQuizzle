@@ -10,7 +10,7 @@ import server.challenges.reports.ChallengeReport;
 import server.challenges.reports.ChallengeReportDelegation;
 import server.challenges.translators.Translator;
 import server.settings.ServerConstants;
-import server.loggers.Logger;
+import commons.loggers.Logger;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -53,10 +53,28 @@ public class ChallengesManager
         // Initialize timer
         this.timer = new ScheduledThreadPoolExecutor(5);
         this.timer.setRemoveOnCancelPolicy(true);
-        // Initialize translators logger
-        this.translatorsLogger = new Logger("Translators");
-        // Initialize timer logger
-        this.timerLogger = new Logger("ChallengeTimers");
+
+        try
+        {
+            if (ServerConstants.LOG_FILES)
+            {
+                // Initialize translators logger with related log file
+                this.translatorsLogger = new Logger(ServerConstants.COLORED_LOGS, "Translators", ServerConstants.LOG_FILES_PATH);
+                // Initialize timer logger  with related log file
+                this.timerLogger = new Logger(ServerConstants.COLORED_LOGS, "ChallengeTimers", ServerConstants.LOG_FILES_PATH);
+            }
+            else
+            {
+                // Initialize translators logger
+                this.translatorsLogger = new Logger(ServerConstants.COLORED_LOGS);
+                // Initialize timer logger
+                this.timerLogger = new Logger(ServerConstants.COLORED_LOGS);
+            }
+        }
+        catch (IOException e)
+        {
+            throw new Error("ERROR CREATING LOGGERS", e);
+        }
 
         // Setup challenges words from dictionary
         try
@@ -73,15 +91,15 @@ public class ChallengesManager
         }
         catch (FileNotFoundException e)
         {
-            throw new Error("DICTIONARY FILE NOT FOUND");
+            throw new Error("DICTIONARY FILE NOT FOUND", e);
         }
         catch (ParseException e)
         {
-            throw new Error("ERROR PARSING DICTIONARY");
+            throw new Error("ERROR PARSING DICTIONARY", e);
         }
         catch (IOException e)
         {
-            throw new Error("ERROR READING DICTIONARY");
+            throw new Error("ERROR READING DICTIONARY", e);
         }
 
 
@@ -131,16 +149,20 @@ public class ChallengesManager
 
         // Initialize challenge
         Challenge challenge = new Challenge(from, to, words,
-                new Consumer<ChallengeReportDelegation>() { // Completion operation
+                new Consumer<ChallengeReportDelegation>()
+                { // Completion operation
                     @Override
-                    public void accept(ChallengeReportDelegation challengeReportDelegation) {
+                    public void accept(ChallengeReportDelegation challengeReportDelegation)
+                    {
                         closeChallenge(from, to);
                         completionOperation.accept(challengeReportDelegation);
                     }
                 },
-                new Consumer<ChallengeReportDelegation>() { // Timeout operation
+                new Consumer<ChallengeReportDelegation>()
+                { // Timeout operation
                     @Override
-                    public void accept(ChallengeReportDelegation challengeReportDelegation) {
+                    public void accept(ChallengeReportDelegation challengeReportDelegation)
+                    {
                         expireChallenge(from, to);
                         timeoutOperation.accept(challengeReportDelegation);
                     }

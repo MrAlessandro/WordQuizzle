@@ -1,6 +1,5 @@
 package server.settings;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -41,7 +40,7 @@ public class ServerConstants
     // Log files properties
     public static String LOG_FILES_PATH;
     public static boolean LOG_FILES;
-    public static boolean COLORED_LOG_FILES;
+    public static boolean COLORED_LOGS;
 
     // Words dictionary.json
     public static String DICTIONARY_PATH;
@@ -70,8 +69,6 @@ public class ServerConstants
         URL resourcesDirectoryURL;
         URL propertiesFileURL;
 
-        // Get class loader directory
-
         // Get resources directory URL
         resourcesDirectoryURL = ServerConstants.class.getClassLoader().getResource("");
         if (resourcesDirectoryURL == null)
@@ -98,7 +95,7 @@ public class ServerConstants
         SESSIONS_ARCHIVE_INITIAL_SIZE = Integer.parseInt(PROPERTIES.getProperty("SESSIONS_ARCHIVE_INITIAL_SIZE"));
         LOG_FILES_PATH = resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("LOG_FILES_PATH");
         LOG_FILES = Boolean.parseBoolean(PROPERTIES.getProperty("LOG_FILES"));
-        COLORED_LOG_FILES = Boolean.parseBoolean(PROPERTIES.getProperty("COLORED_LOG_FILES"));
+        COLORED_LOGS = Boolean.parseBoolean(PROPERTIES.getProperty("COLORED_LOGS"));
         DICTIONARY_PATH = resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("DICTIONARY_PATH");
         TRANSLATION_SERVICE_URL = PROPERTIES.getProperty("TRANSLATION_SERVICE_URL");
         FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE = Integer.parseInt(PROPERTIES.getProperty("FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE"));
@@ -115,118 +112,4 @@ public class ServerConstants
         if (LOG_FILES && !(Files.exists(Paths.get(LOG_FILES_PATH))))
             Files.createDirectory(Paths.get(LOG_FILES_PATH));
     }
-
-    /*public static URL urlFactory(String word)
-    {
-        URL generated;
-
-        try
-        {
-            generated = new URL(TRANSLATION_SERVICE_URL + "/get?q=" + word + "&langpair=it|en&mt=0");
-        }
-        catch (MalformedURLException e)
-        {
-            e.printStackTrace();
-            throw new Error("Generating URL");
-        }
-
-        return generated;
-    }
-
-    public static String[] getBulkOfWords()
-    {
-        String[] bulk = new String[CHALLENGE_WORDS_QUANTITY];
-
-        try
-        {
-            // Initialize randomizer
-            Random randomizer = new Random();
-
-            // Open dictionary.json
-            RandomAccessFile dictionary.json = new RandomAccessFile(ServerConstants.DICTIONARY_PATH.getPath(), "r");
-
-            // Initialize words to translate relative to this challenge;
-            int index = 0;
-            while (index < bulk.length)
-            {
-                // Generate a random position in the dictionary.json
-                long seek = Math.abs(randomizer.nextLong() % dictionary.json.length());
-                // Set the random position
-                dictionary.json.seek(seek);
-
-                // Read the wasted line
-                dictionary.json.readLine();
-                // Read the good line
-                String word = dictionary.json.readLine();
-
-                // Check if end-of-file has been encountered
-                if (word != null)
-                // Word usable
-                    bulk[index++] = word;
-            }
-
-            // Stop reading dictionary.json
-            dictionary.json.close();
-        }
-        catch (FileNotFoundException e)
-        {
-            e.printStackTrace();
-            throw new Error("Dictionary not found");
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            throw new Error("Reading dictionary.json");
-        }
-
-        return bulk;
-    }
-
-    public static String[][] translateBulkOfWords(String[] toTranslate)
-    {
-        String[][] translated = new String[ServerConstants.CHALLENGE_WORDS_QUANTITY][];
-        HttpURLConnection connection;
-        BufferedReader reader = null;
-        URL url;
-
-        try
-        {
-            for (int i=0; i < toTranslate.length; i++)
-            {
-                // Generate URL and send request
-                url = ServerConstants.urlFactory(toTranslate[i]);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setDoOutput(true);
-
-                // Initialize reader
-                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-
-                // Get response body
-                String inputLine = reader.readLine();
-
-                // Deserialize response and get translations
-                JSONObject body = (JSONObject) JSONValue.parse(inputLine);
-                JSONArray matches = (JSONArray) body.get("matches");
-                translated[i] = new String[matches.size()];
-                int j = 0;
-                for (JSONObject match : (Iterable<JSONObject>) matches)
-                {
-                    String translation = (String) match.get("translation");
-                    translation = translation.replaceAll("[^a-zA-Z ]", "");
-                    translation = translation.toLowerCase();
-                    translated[i][j] = translation;
-                }
-            }
-
-            reader.close();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            throw new Error("Getting translations");
-        }
-
-        return translated;
-    }*/
 }
