@@ -39,8 +39,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -504,13 +506,7 @@ public class TestSessionsManager
     @Nested
     class TestSessionedChallengeRequests
     {
-        private ChallengeReportDelegation voidDelegation = new ChallengeReportDelegation() {
-            @Override
-            public void run()
-            {
-
-            }
-        };
+        private Consumer<ChallengeReportDelegation> voidOperation = challengeReportDelegation -> {};
 
         @BeforeEach
         public void setUp()
@@ -645,7 +641,7 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
-            assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username3, voidDelegation, voidDelegation));
+            assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username3, voidOperation, voidOperation));
 
             assertThrows(ApplicantEngagedInOtherChallengeException.class, () -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(0, challengeRequestsArchive.size());
@@ -676,7 +672,7 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
-            assertDoesNotThrow(() -> challengesManager.recordChallenge(username2, username3, voidDelegation, voidDelegation));
+            assertDoesNotThrow(() -> challengesManager.recordChallenge(username2, username3, voidOperation, voidOperation));
 
             assertThrows(ReceiverEngagedInOtherChallengeException.class, () -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(0, challengeRequestsArchive.size());
@@ -867,7 +863,7 @@ public class TestSessionsManager
             assertEquals(2, sessionsArchive.size());
 
             assertDoesNotThrow(() -> challengeRequestsManager.recordChallengeRequest(username1, username2, () -> {}));
-            assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
+            assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username2, voidOperation, voidOperation));
             assertThrows(Error.class, () -> sessionsManager.confirmChallengeRequest(username1, username2));
         }
 
@@ -933,14 +929,7 @@ public class TestSessionsManager
 
     @Nested
     class TestSessionedChallenges
-    {
-        private ChallengeReportDelegation voidDelegation = new ChallengeReportDelegation() {
-            @Override
-            public void run()
-            {
-
-            }
-        };
+    {;
         private ScheduledThreadPoolExecutor timer;
 
         @BeforeEach
@@ -955,13 +944,46 @@ public class TestSessionsManager
                 Field timerField = ChallengesManager.class.getDeclaredField("timer");
                 timerField.setAccessible(true);
                 timer = (ScheduledThreadPoolExecutor) timerField.get(challengesManager);
-
-                ServerConstants.CHALLENGE_DURATION_SECONDS = Integer.MAX_VALUE;
             }
             catch (NoSuchFieldException | IllegalAccessException e)
             {
                 fail("ERROR GETTING PRIVATE FIELD");
             }
+        }
+
+        @Test
+        public void testChallengeProgress_OpponentLoggedOut()
+        {
+            String username1 = UUID.randomUUID().toString();
+            char[] password1 = UUID.randomUUID().toString().toCharArray();
+            char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
+            AtomicReference<Session> session1 = new AtomicReference<>();
+
+            String username2 = UUID.randomUUID().toString();
+            char[] password2 = UUID.randomUUID().toString().toCharArray();
+            char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
+            AtomicReference<Session> session2 = new AtomicReference<>();
+
+            assertDoesNotThrow(() -> usersManager.registerUser(username1, password1));
+            assertDoesNotThrow(() -> session1.set(sessionsManager.openSession(username1, passwordCopy1, selector, socketAddress)));
+            assertEquals(username1, session1.get().getUsername());
+            assertEquals(1, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> usersManager.registerUser(username2, password2));
+            assertDoesNotThrow(() -> session2.set(sessionsManager.openSession(username2, passwordCopy2, selector, socketAddress)));
+            assertEquals(username2, session2.get().getUsername());
+            assertEquals(2, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2));
+            assertEquals(2, challengesArchive.size());
+
+            assertDoesNotThrow(() -> sessionsManager.closeSession(session1.get()));
+            assertEquals(MessageType.CHALLENGE_OPPONENT_LOGGED_OUT, session2.get().getMessage().getType());
+            assertEquals(0, challengesArchive.size());
         }
 
         @Test
@@ -1076,12 +1098,7 @@ public class TestSessionsManager
         public void testChallengeProgress_ChallengeCompletion()
         {
             AtomicBoolean completionFlag = new AtomicBoolean(false);
-            ChallengeReportDelegation completionTask = new ChallengeReportDelegation() {
-                @Override
-                public void run() {
-                    completionFlag.set(true);
-                }
-            };
+
             String username1 = UUID.randomUUID().toString();
             char[] password1 = UUID.randomUUID().toString().toCharArray();
             char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
@@ -1156,16 +1173,47 @@ public class TestSessionsManager
                 assertEquals(i, user1TranslationsProgress);
                 assertEquals(i, user2TranslationsProgress);
             }
+
+            assertEquals(MessageType.CHALLENGE_REPORT, session1.get().getMessage().getType());
+            assertEquals(MessageType.CHALLENGE_REPORT, session2.get().getMessage().getType());
         }
 
-        @Nested
-        class TestSessionedChallenges_TIMERED
+        @Test
+        public void testChallengeExpiration()
         {
-            @BeforeEach
-            public void setUp()
-            {
-                ServerConstants.CHALLENGE_DURATION_SECONDS = Integer.MAX_VALUE;
-            }
+            String username1 = UUID.randomUUID().toString();
+            char[] password1 = UUID.randomUUID().toString().toCharArray();
+            char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
+            AtomicReference<Session> session1 = new AtomicReference<>();
+
+            String username2 = UUID.randomUUID().toString();
+            char[] password2 = UUID.randomUUID().toString().toCharArray();
+            char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
+            AtomicReference<Session> session2 = new AtomicReference<>();
+
+            assertDoesNotThrow(() -> usersManager.registerUser(username1, password1));
+            assertDoesNotThrow(() -> session1.set(sessionsManager.openSession(username1, passwordCopy1, selector, socketAddress)));
+            assertEquals(username1, session1.get().getUsername());
+            assertEquals(1, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> usersManager.registerUser(username2, password2));
+            assertDoesNotThrow(() -> session2.set(sessionsManager.openSession(username2, passwordCopy2, selector, socketAddress)));
+            assertEquals(username2, session2.get().getUsername());
+            assertEquals(2, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2));
+            assertEquals(2, challengesArchive.size());
+
+            timer.shutdown();
+            assertDoesNotThrow(() -> timer.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS));
+
+            assertEquals(0, challengesArchive.size());
+            assertEquals(MessageType.CHALLENGE_EXPIRED, session1.get().getMessage().getType());
+            assertEquals(MessageType.CHALLENGE_EXPIRED, session2.get().getMessage().getType());
         }
     }
 }

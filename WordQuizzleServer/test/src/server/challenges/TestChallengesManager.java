@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,13 +28,7 @@ public class TestChallengesManager
     private ConcurrentHashMap<String, Challenge> challengesArchive;
     private ScheduledThreadPoolExecutor timer;
 
-    private ChallengeReportDelegation voidDelegation = new ChallengeReportDelegation() {
-        @Override
-        public void run()
-        {
-
-        }
-    };
+    private Consumer<ChallengeReportDelegation> voidOperation = challengeReportDelegation -> {};
 
     @BeforeAll
     public static void setUpProperties()
@@ -74,7 +69,7 @@ public class TestChallengesManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidOperation, voidOperation));
         assertEquals(2, challengesArchive.size());
     }
 
@@ -85,9 +80,9 @@ public class TestChallengesManager
         String username2 = UUID.randomUUID().toString();
         String username3 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidOperation, voidOperation));
         assertEquals(2, challengesArchive.size());
-        assertThrows(ApplicantEngagedInOtherChallengeException.class, () -> this.challengesManager.recordChallenge(username1, username3, voidDelegation, voidDelegation));
+        assertThrows(ApplicantEngagedInOtherChallengeException.class, () -> this.challengesManager.recordChallenge(username1, username3, voidOperation, voidOperation));
         assertEquals(2, challengesArchive.size());
     }
 
@@ -98,9 +93,9 @@ public class TestChallengesManager
         String username2 = UUID.randomUUID().toString();
         String username3 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidOperation, voidOperation));
         assertEquals(2, challengesArchive.size());
-        assertThrows(ReceiverEngagedInOtherChallengeException.class, () -> this.challengesManager.recordChallenge(username3, username2, voidDelegation, voidDelegation));
+        assertThrows(ReceiverEngagedInOtherChallengeException.class, () -> this.challengesManager.recordChallenge(username3, username2, voidOperation, voidOperation));
         assertEquals(2, challengesArchive.size());
     }
 
@@ -111,14 +106,7 @@ public class TestChallengesManager
         String username2 = UUID.randomUUID().toString();
         AtomicBoolean expirationFlag = new AtomicBoolean(false);
 
-        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidDelegation, new ChallengeReportDelegation()
-        {
-            @Override
-            public void run()
-            {
-                expirationFlag.set(true);
-            }
-        }));
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidOperation, challengeReportDelegation -> expirationFlag.set(true)));
         assertEquals(2, challengesArchive.size());
         timer.shutdown();
         assertDoesNotThrow(() -> timer.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS));
@@ -132,7 +120,7 @@ public class TestChallengesManager
         String username1 = UUID.randomUUID().toString();
         String username2 = UUID.randomUUID().toString();
 
-        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidOperation, voidOperation));
         assertEquals(2, challengesArchive.size());
         timer.shutdownNow();
 
@@ -149,16 +137,7 @@ public class TestChallengesManager
         String username2 = UUID.randomUUID().toString();
         AtomicBoolean completionFlag = new AtomicBoolean(false);
 
-        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2,
-                new ChallengeReportDelegation()
-                {
-                    @Override
-                    public void run()
-                    {
-                        completionFlag.set(true);
-                    }
-                },
-                voidDelegation));
+        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, challengeReportDelegation -> completionFlag.set(true), voidOperation));
         assertEquals(2, challengesArchive.size());
         timer.shutdownNow();
 
@@ -187,8 +166,8 @@ public class TestChallengesManager
         String username2 = UUID.randomUUID().toString();
 
         assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2,
-                voidDelegation,
-                voidDelegation));
+                voidOperation,
+                voidOperation));
         assertEquals(2, challengesArchive.size());
         timer.shutdownNow();
 
@@ -203,8 +182,8 @@ public class TestChallengesManager
         String username2 = UUID.randomUUID().toString();
 
         assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2,
-                voidDelegation,
-                voidDelegation));
+                voidOperation,
+                voidOperation));
         assertEquals(2, challengesArchive.size());
         timer.shutdownNow();
 
@@ -221,15 +200,8 @@ public class TestChallengesManager
         AtomicBoolean completionFlag = new AtomicBoolean(false);
 
         assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2,
-                new ChallengeReportDelegation()
-                {
-                    @Override
-                    public void run()
-                    {
-                        completionFlag.set(true);
-                    }
-                },
-                voidDelegation));
+                challengeReportDelegation -> completionFlag.set(true),
+                voidOperation));
         assertEquals(2, challengesArchive.size());
         timer.shutdownNow();
 
@@ -265,7 +237,7 @@ public class TestChallengesManager
                     String username1 = UUID.randomUUID().toString();
                     String username2 = UUID.randomUUID().toString();
 
-                    assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username2, voidDelegation, voidDelegation));
+                    assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username2, voidOperation, voidOperation));
                 });
             }
 
@@ -288,14 +260,7 @@ public class TestChallengesManager
                 expirationFlags[i] = new AtomicBoolean(false);
 
                 int finalI = i;
-                pool.submit(() -> assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username2, voidDelegation, new ChallengeReportDelegation()
-                {
-                    @Override
-                    public void run()
-                    {
-                        expirationFlags[finalI].set(true);
-                    }
-                })));
+                pool.submit(() -> assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username2, voidOperation, challengeReportDelegation -> expirationFlags[finalI].set(true))));
             }
 
             pool.shutdown();
@@ -323,16 +288,8 @@ public class TestChallengesManager
                 completionFlags[i] = new AtomicBoolean(false);
 
                 int finalI = i;
-                assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username2,
-                        new ChallengeReportDelegation()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                completionFlags[finalI].set(true);
-                            }
-                        },
-                        voidDelegation));
+                assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username2, challengeReportDelegation -> completionFlags[finalI].set(true),
+                        voidOperation));
 
                 pool.submit(() -> {
                     for (int i1 = 0; i1 < ServerConstants.CHALLENGE_WORDS_QUANTITY; i1++)
