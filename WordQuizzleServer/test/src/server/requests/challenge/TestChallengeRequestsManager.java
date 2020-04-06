@@ -3,13 +3,10 @@ package server.requests.challenge;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import server.challenges.exceptions.ReceiverEngagedInOtherChallengeException;
-import server.requests.challenge.ChallengeRequest;
-import server.requests.challenge.ChallengeRequestsManager;
 import server.requests.challenge.exceptions.PreviousChallengeRequestReceivedException;
 import server.requests.challenge.exceptions.PreviousChallengeRequestSentException;
 import server.requests.challenge.exceptions.ReceiverEngagedInOtherChallengeRequestException;
-import server.settings.ServerConstants;
+import server.settings.Settings;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -30,7 +27,7 @@ public class TestChallengeRequestsManager
     {
         try
         {
-            ServerConstants.loadProperties();
+            Settings.loadProperties();
         }
         catch (IOException e)
         {
@@ -156,7 +153,7 @@ public class TestChallengeRequestsManager
         @BeforeEach
         public void setUp()
         {
-            this.pool = Executors.newFixedThreadPool(ServerConstants.DEPUTIES_POOL_SIZE);
+            this.pool = Executors.newFixedThreadPool(Settings.DEPUTIES_POOL_SIZE);
         }
 
         @ParameterizedTest

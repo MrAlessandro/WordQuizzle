@@ -8,7 +8,7 @@ import server.challenges.reports.ChallengeReport;
 import server.challenges.reports.ChallengeReportDelegation;
 import server.challenges.ChallengesManager;
 import server.challenges.exceptions.*;
-import server.settings.ServerConstants;
+import server.settings.Settings;
 import server.requests.challenge.ChallengeRequestsManager;
 import server.requests.friendship.FriendshipRequestsManager;
 import server.sessions.exceptions.AlreadyFriendsException;
@@ -46,7 +46,7 @@ public class SessionsManager
 
     public SessionsManager(UsersManager usersManager, FriendshipRequestsManager friendshipRequestsManager, ChallengeRequestsManager challengeRequestsManager, ChallengesManager challengesManager)
     {
-        this.sessionsArchive = new ConcurrentHashMap<>(ServerConstants.SESSIONS_ARCHIVE_INITIAL_SIZE);
+        this.sessionsArchive = new ConcurrentHashMap<>(Settings.SESSIONS_ARCHIVE_INITIAL_SIZE);
 
         // Set managers
         this.friendshipRequestsManager = friendshipRequestsManager;

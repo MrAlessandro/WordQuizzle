@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-public class ServerConstants
+public class Settings
 {
     // Properties
     public static final Properties PROPERTIES = new Properties();
@@ -70,12 +70,12 @@ public class ServerConstants
         URL propertiesFileURL;
 
         // Get resources directory URL
-        resourcesDirectoryURL = ServerConstants.class.getClassLoader().getResource("");
+        resourcesDirectoryURL = Settings.class.getClassLoader().getResource("");
         if (resourcesDirectoryURL == null)
             throw new FileNotFoundException("RESOURCES DIRECTORY NOT FOUND");
 
         // Get properties file URL
-        propertiesFileURL = ServerConstants.class.getClassLoader().getResource("config.properties");
+        propertiesFileURL = Settings.class.getClassLoader().getResource("config.properties");
         if (propertiesFileURL == null)
             throw new FileNotFoundException("PROPERTIES FILE NOT FOUND");
 

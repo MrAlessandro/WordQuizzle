@@ -9,7 +9,7 @@ import server.challenges.exceptions.*;
 import server.challenges.reports.ChallengeReport;
 import server.challenges.reports.ChallengeReportDelegation;
 import server.challenges.translators.Translator;
-import server.settings.ServerConstants;
+import server.settings.Settings;
 import commons.loggers.Logger;
 
 import java.io.FileNotFoundException;
@@ -47,7 +47,7 @@ public class ChallengesManager
     public ChallengesManager(Thread.UncaughtExceptionHandler errorsHandler)
     {
         // Initialize challenges archive
-        this.challengesArchive = new ConcurrentHashMap<>(ServerConstants.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
+        this.challengesArchive = new ConcurrentHashMap<>(Settings.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
         // Initialize timeouts archive
         this.timeOutsArchive = new ConcurrentHashMap<>(128);
         // Initialize timer
@@ -56,19 +56,19 @@ public class ChallengesManager
 
         try
         {
-            if (ServerConstants.LOG_FILES)
+            if (Settings.LOG_FILES)
             {
                 // Initialize translators logger with related log file
-                this.translatorsLogger = new Logger(ServerConstants.COLORED_LOGS, "Translators", ServerConstants.LOG_FILES_PATH);
+                this.translatorsLogger = new Logger(Settings.COLORED_LOGS, "Translators", Settings.LOG_FILES_PATH);
                 // Initialize timer logger  with related log file
-                this.timerLogger = new Logger(ServerConstants.COLORED_LOGS, "ChallengeTimers", ServerConstants.LOG_FILES_PATH);
+                this.timerLogger = new Logger(Settings.COLORED_LOGS, "ChallengeTimers", Settings.LOG_FILES_PATH);
             }
             else
             {
                 // Initialize translators logger
-                this.translatorsLogger = new Logger(ServerConstants.COLORED_LOGS);
+                this.translatorsLogger = new Logger(Settings.COLORED_LOGS);
                 // Initialize timer logger
-                this.timerLogger = new Logger(ServerConstants.COLORED_LOGS);
+                this.timerLogger = new Logger(Settings.COLORED_LOGS);
             }
         }
         catch (IOException e)
@@ -79,7 +79,7 @@ public class ChallengesManager
         // Setup challenges words from dictionary
         try
         {
-            String JSONdictionary = new String(Files.readAllBytes(Paths.get(ServerConstants.DICTIONARY_PATH)));
+            String JSONdictionary = new String(Files.readAllBytes(Paths.get(Settings.DICTIONARY_PATH)));
             JSONParser parser = new JSONParser();
             JSONArray words = (JSONArray) parser.parse(JSONdictionary);
             this.dictionary = new String[words.size()];
@@ -140,7 +140,7 @@ public class ChallengesManager
     public void recordChallenge(String from, String to, Consumer<ChallengeReportDelegation> completionOperation, Consumer<ChallengeReportDelegation> timeoutOperation) throws ApplicantEngagedInOtherChallengeException, ReceiverEngagedInOtherChallengeException
     {
         // Retrieve bulk of word associating to this challenge
-        String[] words = new String[ServerConstants.CHALLENGE_WORDS_QUANTITY];
+        String[] words = new String[Settings.CHALLENGE_WORDS_QUANTITY];
         for (int i = 0; i < words.length; i++)
         {
             int randomIndex = Math.abs(randomizer.nextInt() % dictionary.length);
@@ -186,15 +186,15 @@ public class ChallengesManager
             }
 
             // Start words translation for challenge
-            Future<String[]>[] translations = new Future[ServerConstants.CHALLENGE_WORDS_QUANTITY];
-            for (int i = 0; i < ServerConstants.CHALLENGE_WORDS_QUANTITY; i++)
+            Future<String[]>[] translations = new Future[Settings.CHALLENGE_WORDS_QUANTITY];
+            for (int i = 0; i < Settings.CHALLENGE_WORDS_QUANTITY; i++)
             {
                 translations[i] = this.translators.submit(new Translator(this.translatorsLogger, words[i]));
             }
             challenge.setTranslations(translations);
 
             // Schedule challenge timeout
-            ScheduledFuture<?> scheduledFuture = this.timer.schedule(challenge, ServerConstants.CHALLENGE_DURATION_SECONDS, TimeUnit.SECONDS);
+            ScheduledFuture<?> scheduledFuture = this.timer.schedule(challenge, Settings.CHALLENGE_DURATION_SECONDS, TimeUnit.SECONDS);
             this.timeOutsArchive.put(challenge, scheduledFuture);
             this.timerLogger.println("Challenge between \"" + from + "\" and \"" + to + "\" has been scheduled.");
         }

@@ -1,6 +1,6 @@
 package server.requests.friendship;
 
-import server.settings.ServerConstants;
+import server.settings.Settings;
 import server.requests.friendship.exceptions.FriendshipRequestAlreadyReceived;
 import server.requests.friendship.exceptions.FriendshipRequestAlreadySent;
 
@@ -14,7 +14,7 @@ public class FriendshipRequestsManager
 
     public FriendshipRequestsManager()
     {
-        this.friendshipRequestsArchive = new ConcurrentHashMap<>(ServerConstants.FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE);
+        this.friendshipRequestsArchive = new ConcurrentHashMap<>(Settings.FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE);
     }
 
     public void recordFriendshipRequest(String from, String to) throws FriendshipRequestAlreadyReceived, FriendshipRequestAlreadySent

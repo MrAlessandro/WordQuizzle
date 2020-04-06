@@ -1,22 +1,13 @@
 package server.challenges.challege;
 
 import commons.messages.exceptions.UnexpectedMessageException;
-import org.json.simple.JSONArray;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 import server.challenges.reports.ChallengeReport;
 import server.challenges.reports.ChallengeReportDelegation;
 import server.challenges.exceptions.NoFurtherWordsToGetException;
 import server.challenges.exceptions.TranslationProvisionOutOfSequenceException;
 import server.challenges.exceptions.WordRetrievalOutOfSequenceException;
-import server.challenges.translators.Translator;
-import server.settings.ServerConstants;
+import server.settings.Settings;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Random;
-import java.util.TimerTask;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
@@ -81,7 +72,7 @@ public class Challenge implements Runnable
 
     public void stopTranslations()
     {
-        for (int i = 0; i < ServerConstants.CHALLENGE_WORDS_QUANTITY; i++)
+        for (int i = 0; i < Settings.CHALLENGE_WORDS_QUANTITY; i++)
         {
             this.translations[i].cancel(true);
         }
@@ -227,9 +218,9 @@ public class Challenge implements Runnable
                     }
 
                     if (checked)
-                        this.fromScore += ServerConstants.CHALLENGE_RIGHT_TRANSLATION_SCORE;
+                        this.fromScore += Settings.CHALLENGE_RIGHT_TRANSLATION_SCORE;
                     else
-                        this.fromScore += ServerConstants.CHALLENGE_WRONG_TRANSLATION_SCORE;
+                        this.fromScore += Settings.CHALLENGE_WRONG_TRANSLATION_SCORE;
                 }
             }
             else
@@ -252,9 +243,9 @@ public class Challenge implements Runnable
                     }
 
                     if (checked)
-                        this.toScore += ServerConstants.CHALLENGE_RIGHT_TRANSLATION_SCORE;
+                        this.toScore += Settings.CHALLENGE_RIGHT_TRANSLATION_SCORE;
                     else
-                        this.toScore += ServerConstants.CHALLENGE_WRONG_TRANSLATION_SCORE;
+                        this.toScore += Settings.CHALLENGE_WRONG_TRANSLATION_SCORE;
                 }
             }
         }
@@ -272,7 +263,7 @@ public class Challenge implements Runnable
         }
 
         // Check if challenge is completed
-        if (this.fromTranslationsProgress == ServerConstants.CHALLENGE_WORDS_QUANTITY - 1 && this.toTranslationsProgress == ServerConstants.CHALLENGE_WORDS_QUANTITY - 1)
+        if (this.fromTranslationsProgress == Settings.CHALLENGE_WORDS_QUANTITY - 1 && this.toTranslationsProgress == Settings.CHALLENGE_WORDS_QUANTITY - 1)
             this.complete();
 
         return checked;

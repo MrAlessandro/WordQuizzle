@@ -10,7 +10,7 @@ import server.challenges.challege.Challenge;
 import server.challenges.exceptions.*;
 import server.challenges.reports.ChallengeReport;
 import server.challenges.reports.ChallengeReportDelegation;
-import server.settings.ServerConstants;
+import server.settings.Settings;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -35,7 +35,7 @@ public class TestChallengesManager
     {
         try
         {
-            ServerConstants.loadProperties();
+            Settings.loadProperties();
         }
         catch (IOException e)
         {
@@ -141,7 +141,7 @@ public class TestChallengesManager
         assertEquals(2, challengesArchive.size());
         timer.shutdownNow();
 
-        for (int i = 0; i < ServerConstants.CHALLENGE_WORDS_QUANTITY; i++)
+        for (int i = 0; i < Settings.CHALLENGE_WORDS_QUANTITY; i++)
         {
             assertDoesNotThrow(() -> this.challengesManager.retrieveNextWord(username1));
             assertDoesNotThrow(() -> this.challengesManager.retrieveNextWord(username2));
@@ -205,7 +205,7 @@ public class TestChallengesManager
         assertEquals(2, challengesArchive.size());
         timer.shutdownNow();
 
-        for (int i = 0; i < ServerConstants.CHALLENGE_WORDS_QUANTITY; i++)
+        for (int i = 0; i < Settings.CHALLENGE_WORDS_QUANTITY; i++)
         {
             assertDoesNotThrow(() -> this.challengesManager.retrieveNextWord(username1));
             assertDoesNotThrow(() -> this.challengesManager.provideTranslation(username1, ""));
@@ -223,7 +223,7 @@ public class TestChallengesManager
         @BeforeEach
         public void setUp()
         {
-            this.pool = Executors.newFixedThreadPool(ServerConstants.DEPUTIES_POOL_SIZE);
+            this.pool = Executors.newFixedThreadPool(Settings.DEPUTIES_POOL_SIZE);
         }
 
         @ParameterizedTest
@@ -292,7 +292,7 @@ public class TestChallengesManager
                         voidOperation));
 
                 pool.submit(() -> {
-                    for (int i1 = 0; i1 < ServerConstants.CHALLENGE_WORDS_QUANTITY; i1++)
+                    for (int i1 = 0; i1 < Settings.CHALLENGE_WORDS_QUANTITY; i1++)
                     {
                         assertDoesNotThrow(() -> challengesManager.retrieveNextWord(username1));
                         assertDoesNotThrow(() -> challengesManager.retrieveNextWord(username2));

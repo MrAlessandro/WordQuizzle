@@ -3,7 +3,7 @@ package server.users;
 import commons.remote.exceptions.UsernameAlreadyUsedException;
 import commons.remote.exceptions.VoidPasswordException;
 import commons.remote.exceptions.VoidUsernameException;
-import server.settings.ServerConstants;
+import server.settings.Settings;
 import server.users.user.User;
 
 import java.rmi.RemoteException;
@@ -17,7 +17,7 @@ public class UsersManager implements commons.remote.Registrable
 
     public UsersManager()
     {
-        this.usersArchive = new ConcurrentHashMap<>(ServerConstants.USERS_ARCHIVE_INITIAL_SIZE);
+        this.usersArchive = new ConcurrentHashMap<>(Settings.USERS_ARCHIVE_INITIAL_SIZE);
     }
 
     @Override

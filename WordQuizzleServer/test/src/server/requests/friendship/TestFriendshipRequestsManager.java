@@ -6,10 +6,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import server.requests.friendship.FriendshipRequestsManager;
 import server.requests.friendship.exceptions.FriendshipRequestAlreadyReceived;
 import server.requests.friendship.exceptions.FriendshipRequestAlreadySent;
-import server.settings.ServerConstants;
+import server.settings.Settings;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -32,7 +31,7 @@ public class TestFriendshipRequestsManager
     {
         try
         {
-            ServerConstants.loadProperties();
+            Settings.loadProperties();
         }
         catch (IOException e)
         {
@@ -112,7 +111,7 @@ public class TestFriendshipRequestsManager
         @BeforeEach
         public void setUp()
         {
-            this.pool = Executors.newFixedThreadPool(ServerConstants.DEPUTIES_POOL_SIZE);
+            this.pool = Executors.newFixedThreadPool(Settings.DEPUTIES_POOL_SIZE);
         }
 
         @ParameterizedTest

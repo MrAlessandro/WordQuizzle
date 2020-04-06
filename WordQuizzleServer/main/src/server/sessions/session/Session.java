@@ -6,7 +6,6 @@ import commons.messages.MessageType;
 import java.net.SocketAddress;
 import java.nio.channels.Selector;
 import java.util.Deque;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class Session
 {

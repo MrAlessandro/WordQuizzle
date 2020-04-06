@@ -25,7 +25,7 @@ import server.sessions.exceptions.ReceiverOfflineException;
 import server.sessions.exceptions.UnknownReceiverException;
 import server.sessions.exceptions.UserAlreadyLoggedException;
 import server.sessions.session.Session;
-import server.settings.ServerConstants;
+import server.settings.Settings;
 import server.users.UsersManager;
 import server.users.exceptions.UnknownUserException;
 import server.users.user.User;
@@ -73,7 +73,7 @@ public class TestSessionsManager
         try
         {
             Thread.currentThread().setUncaughtExceptionHandler(errorsHandler);
-            ServerConstants.loadProperties();
+            Settings.loadProperties();
         }
         catch (IOException e)
         {
@@ -1132,7 +1132,7 @@ public class TestSessionsManager
             int user1TranslationsProgress = Integer.MIN_VALUE;
             int user2TranslationsProgress = Integer.MIN_VALUE;
 
-            for (int i = 0; i < ServerConstants.CHALLENGE_WORDS_QUANTITY; i++)
+            for (int i = 0; i < Settings.CHALLENGE_WORDS_QUANTITY; i++)
             {
                 AtomicReference<String> user1Word = new AtomicReference<>(null);
                 AtomicReference<String> user2Word = new AtomicReference<>(null);

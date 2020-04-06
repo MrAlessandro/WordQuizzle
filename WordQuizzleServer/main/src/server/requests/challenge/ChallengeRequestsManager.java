@@ -1,6 +1,6 @@
 package server.requests.challenge;
 
-import server.settings.ServerConstants;
+import server.settings.Settings;
 import commons.loggers.Logger;
 import server.requests.challenge.exceptions.ReceiverEngagedInOtherChallengeRequestException;
 import server.requests.challenge.exceptions.PreviousChallengeRequestReceivedException;
@@ -21,18 +21,18 @@ public class ChallengeRequestsManager
 
     public ChallengeRequestsManager()
     {
-        this.challengeRequestsArchive = new ConcurrentHashMap<>(ServerConstants.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
+        this.challengeRequestsArchive = new ConcurrentHashMap<>(Settings.CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE);
         this.timeOutsArchive = new ConcurrentHashMap<>(128);
         this.timer = new ScheduledThreadPoolExecutor(5);
 
         try
         {
-            if (ServerConstants.LOG_FILES)
+            if (Settings.LOG_FILES)
                 // Create timer logger with related log file
-                this.timerLogger = new Logger(ServerConstants.COLORED_LOGS, "ChallengeRequestsTimer", ServerConstants.LOG_FILES_PATH);
+                this.timerLogger = new Logger(Settings.COLORED_LOGS, "ChallengeRequestsTimer", Settings.LOG_FILES_PATH);
             else
                 // Create timer logger
-                this.timerLogger = new Logger(ServerConstants.COLORED_LOGS);
+                this.timerLogger = new Logger(Settings.COLORED_LOGS);
         }
         catch (IOException e)
         {
@@ -66,7 +66,7 @@ public class ChallengeRequestsManager
             }
 
             // Schedule the request timeout
-            ScheduledFuture<?> scheduledFuture = this.timer.schedule(request, ServerConstants.CHALLENGE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            ScheduledFuture<?> scheduledFuture = this.timer.schedule(request, Settings.CHALLENGE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
             this.timeOutsArchive.put(request, scheduledFuture);
             this.timerLogger.println("Challenge request between \"" + from + "\" and \"" + to + "\" has been scheduled.");
         }

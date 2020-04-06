@@ -9,8 +9,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import server.settings.ServerConstants;
-import server.users.UsersManager;
+import server.settings.Settings;
 import server.users.exceptions.WrongPasswordException;
 import server.users.user.User;
 
@@ -36,7 +35,7 @@ public class TestUsersManager
     {
         try
         {
-            ServerConstants.loadProperties();
+            Settings.loadProperties();
         }
         catch (IOException e)
         {
@@ -158,7 +157,7 @@ public class TestUsersManager
         @BeforeEach
         public void setUp()
         {
-            this.pool = Executors.newFixedThreadPool(ServerConstants.DEPUTIES_POOL_SIZE);
+            this.pool = Executors.newFixedThreadPool(Settings.DEPUTIES_POOL_SIZE);
         }
 
         @ParameterizedTest

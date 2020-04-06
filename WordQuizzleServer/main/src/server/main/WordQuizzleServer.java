@@ -7,7 +7,7 @@ import server.challenges.ChallengesManager;
 import server.requests.challenge.ChallengeRequestsManager;
 import server.requests.friendship.FriendshipRequestsManager;
 import server.sessions.SessionsManager;
-import server.settings.ServerConstants;
+import server.settings.Settings;
 import server.users.UsersManager;
 
 import java.io.IOException;
@@ -32,7 +32,7 @@ class WordQuizzleServer
         {
             logger.printlnRed("\t" + stackTraceElements[i]);
         }
-        System.exit(1);
+        Runtime.getRuntime().halt(1);
     };
 
     private static ServerSocketChannel serverSocket;
@@ -66,7 +66,7 @@ class WordQuizzleServer
         System.out.print("Loading properties... ");
         try
         {
-            ServerConstants.loadProperties();
+            Settings.loadProperties();
         }
         catch (IOException e)
         {
@@ -76,7 +76,7 @@ class WordQuizzleServer
         System.out.println("LOADED");
 
         // Setup logger
-        logger = new Logger(ServerConstants.COLORED_LOGS);
+        logger = new Logger(Settings.COLORED_LOGS);
 
         // Server initialization
         logger.printlnCyan("SERVER INITIALIZATION");
@@ -111,12 +111,12 @@ class WordQuizzleServer
         logger.printlnGreen("INITIALIZED");
 
         // Initialize and starts deputies
-        logger.println("Initializing and starting " + ServerConstants.DEPUTIES_POOL_SIZE + " deputies... ");
-        deputies = new Deputy[ServerConstants.DEPUTIES_POOL_SIZE];
+        logger.println("Initializing and starting " + Settings.DEPUTIES_POOL_SIZE + " deputies... ");
+        deputies = new Deputy[Settings.DEPUTIES_POOL_SIZE];
         for (int i = 0; i < deputies.length; i++)
         {
             logger.print("\t\tStarting deputy \"Deputy_" + (i+1) + "\"... ");
-            deputies[i] = new Deputy("Deputy_" + (i+1), ServerConstants.UDP_BASE_PORT+i, usersManager, sessionsManager);
+            deputies[i] = new Deputy("Deputy_" + (i+1), Settings.UDP_BASE_PORT+i, usersManager, sessionsManager);
             deputies[i].start();
             logger.printlnGreen("STARTED");
         }
@@ -127,17 +127,17 @@ class WordQuizzleServer
             // Enabling RMI support for registration operation
             logger.print("Setting up RMI support... ");
             stub = (Registrable) UnicastRemoteObject.exportObject(usersManager, 0);
-            LocateRegistry.createRegistry(ServerConstants.USERS_MANAGER_REGISTRY_PORT);
-            registry = LocateRegistry.getRegistry(ServerConstants.USERS_MANAGER_REGISTRY_PORT);
-            registry.bind(ServerConstants.USERS_MANAGER_REMOTE_NAME, stub);
+            LocateRegistry.createRegistry(Settings.USERS_MANAGER_REGISTRY_PORT);
+            registry = LocateRegistry.getRegistry(Settings.USERS_MANAGER_REGISTRY_PORT);
+            registry.bind(Settings.USERS_MANAGER_REMOTE_NAME, stub);
             logger.printlnGreen("OK");
 
             // Variable for select deputies sequentially
             short dispatchingIndex = 0;
 
             // The opening server's connection socket
-            logger.print("The opening server's connection channel on \"" + ServerConstants.SERVER_HOST_NAME + ":" + ServerConstants.SERVER_CONNECTION_PORT + "\"... ");
-            serverAddress = new InetSocketAddress(ServerConstants.SERVER_HOST_NAME, ServerConstants.SERVER_CONNECTION_PORT);
+            logger.print("The opening server's connection channel on \"" + Settings.SERVER_HOST_NAME + ":" + Settings.SERVER_CONNECTION_PORT + "\"... ");
+            serverAddress = new InetSocketAddress(Settings.SERVER_HOST_NAME, Settings.SERVER_CONNECTION_PORT);
             serverSocket = ServerSocketChannel.open();
             serverSocket.bind(serverAddress);
             logger.printlnGreen("OPENED");
@@ -162,7 +162,7 @@ class WordQuizzleServer
                     logger.printlnGreen("Deputy_" + dispatchingIndex);
 
                     // Increment dispatching index
-                    dispatchingIndex = (short) (++dispatchingIndex % ServerConstants.DEPUTIES_POOL_SIZE);
+                    dispatchingIndex = (short) (++dispatchingIndex % Settings.DEPUTIES_POOL_SIZE);
                 }
                 catch (AsynchronousCloseException e)
                 {
@@ -187,7 +187,7 @@ class WordQuizzleServer
 
             // Unbind the RMI service
             logger.print("Unbinding RMI service... ");
-            registry.unbind(ServerConstants.USERS_MANAGER_REMOTE_NAME);
+            registry.unbind(Settings.USERS_MANAGER_REMOTE_NAME);
             logger.printlnGreen("UNBOUND");
 
             // Server closed

@@ -4,7 +4,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import commons.loggers.Logger;
-import server.settings.ServerConstants;
+import server.settings.Settings;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,7 +37,7 @@ public class Translator implements Callable<String[]>
         // Generate URL
         try
         {
-            url = new URL(ServerConstants.TRANSLATION_SERVICE_URL + "/get?q=" + word + "&langpair=it|en&mt=0");
+            url = new URL(Settings.TRANSLATION_SERVICE_URL + "/get?q=" + word + "&langpair=it|en&mt=0");
         }
         catch (MalformedURLException e)
         {

@@ -9,12 +9,12 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousCloseException;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 
 public class WordQuizzleClient
 {
+    public static String sessionUsername = null;
+
     private static Logger logger;
 
     private static final ByteBuffer BUFFER = ByteBuffer.allocateDirect(2048);
@@ -26,11 +26,11 @@ public class WordQuizzleClient
         {
             logger.printlnRed("\t" + stackTraceElements[i]);
         }
-        System.exit(1);
+        Runtime.getRuntime().halt(1);
     };
 
-    public static DatagramChannel notificationChannel;
-    public static SocketChannel server;
+    public static DatagramChannel notificationChannel = null;
+    public static SocketChannel server = null;
 
     private static boolean shut = false;
 
@@ -49,7 +49,7 @@ public class WordQuizzleClient
         // Registering a shutdown hook for main thread (current)
         Runtime.getRuntime().addShutdownHook(new Thread(WordQuizzleClient::shutDown));
 
-        System.out.println("Loading properties");
+        System.out.print("Loading properties... ");
         // Load client properties
         try
         {
@@ -71,9 +71,25 @@ public class WordQuizzleClient
         try
         {
             // Initialize the TCP connection
-            logger.print("Opening connection with server... ");
             TCPaddress = new InetSocketAddress(Settings.SERVER_HOST_NAME, Settings.CONNECTION_PORT);
-            server = SocketChannel.open(TCPaddress);
+            logger.print("Opening connection with server at \"" + TCPaddress + "\"... ");
+            while (server == null)
+            {
+                try
+                {
+                    server = SocketChannel.open(TCPaddress);
+                }
+                catch (UnresolvedAddressException | AsynchronousCloseException e)
+                {
+                    throw new Error(e.getMessage().toUpperCase(), e);
+                }
+                catch (IOException e)
+                {
+                    logger.printlnYellow(e.getMessage() + " ⟶  NEW CONNECTION ATTEMPT IN 5 SECONDS");
+                    Thread.sleep(5000);
+                    logger.print("Trying again... ");
+                }
+            }
             server.configureBlocking(true);
             logger.printlnGreen("CONNECTED");
 
@@ -110,7 +126,7 @@ public class WordQuizzleClient
             logger.printlnCyan("CLIENT TERMINATED");
 
         }
-        catch (IOException | InvalidMessageFormatException e)
+        catch (IOException | InvalidMessageFormatException | InterruptedException e)
         {
             throw new Error(e.getMessage().toUpperCase(), e);
         }
@@ -123,10 +139,9 @@ public class WordQuizzleClient
 
         try
         {
-            // Close the server's connection socket
-            server.close();
             // Close notification channel
-            notificationChannel.close();
+            if (notificationChannel != null)
+                notificationChannel.close();
             // Wait for main thread to finish
             MAIN_THREAD.join();
         }

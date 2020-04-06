@@ -6,7 +6,7 @@ import commons.messages.MessageType;
 import commons.messages.exceptions.InvalidMessageFormatException;
 import commons.messages.exceptions.UnexpectedMessageException;
 import org.json.simple.JSONArray;
-import server.settings.ServerConstants;
+import server.settings.Settings;
 import commons.loggers.Logger;
 import server.sessions.SessionsManager;
 import server.sessions.session.Session;
@@ -28,7 +28,7 @@ public class Deputy extends Thread
 
     protected final ConcurrentLinkedQueue<SocketChannel> dispatch = new ConcurrentLinkedQueue<>();
 
-    private final ByteBuffer buffer = ByteBuffer.allocateDirect(ServerConstants.BUFFERS_SIZE);
+    private final ByteBuffer buffer = ByteBuffer.allocateDirect(Settings.BUFFERS_SIZE);
 
     private Selector selector;
 
@@ -50,12 +50,12 @@ public class Deputy extends Thread
 
         try
         {
-            if (ServerConstants.LOG_FILES)
+            if (Settings.LOG_FILES)
                 // Create thread specific logger with related log file
-                this.logger = new Logger(ServerConstants.COLORED_LOGS, name, ServerConstants.LOG_FILES_PATH);
+                this.logger = new Logger(Settings.COLORED_LOGS, name, Settings.LOG_FILES_PATH);
             else
                 // Create thread specific logger
-                this.logger = new Logger(ServerConstants.COLORED_LOGS);
+                this.logger = new Logger(Settings.COLORED_LOGS);
         }
         catch (IOException e)
         {
