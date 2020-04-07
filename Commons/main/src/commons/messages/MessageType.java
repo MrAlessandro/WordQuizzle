@@ -160,7 +160,7 @@ public enum MessageType
      */
     public boolean isResponse()
     {
-        return this.value >= 300 && this.value < 400;
+        return this.value >= 200 && this.value < 300;
     }
 
     @Override

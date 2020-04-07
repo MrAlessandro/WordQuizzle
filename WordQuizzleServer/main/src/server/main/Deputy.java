@@ -334,7 +334,7 @@ public class Deputy extends Thread
                     openedSession.prependMessage(new Message(MessageType.OK));
 
                     // Associate session with connection
-                    selected.attach(username);
+                    selected.attach(openedSession);
                 }
                 catch (CommunicableException e)
                 {

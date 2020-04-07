@@ -1,7 +1,7 @@
 package client.settings;
 
 import javax.swing.ImageIcon;
-import java.awt.Color;
+import java.awt.*;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -17,12 +17,16 @@ public class Settings
     public static int CONNECTION_PORT;
     public static String SERVER_HOST_NAME;
 
+    // RMI service coordinates
+    public static String USERS_MANAGER_REMOTE_NAME;
+    public static int USERS_MANAGER_REGISTRY_PORT;
+
     // Log files flag
     public static boolean COLORED_LOGS;
 
     // Icons paths
-    public static ImageIcon LOGO;
-    public static ImageIcon LOADING_GIF;
+    public static ImageIcon LOGO_ICON;
+    public static ImageIcon LOADING_ICON;
     public static ImageIcon STOPWATCH_ICON;
     public static ImageIcon HANDSHAKE_ICON;
     public static ImageIcon THUMB_UP_ICON;
@@ -59,17 +63,19 @@ public class Settings
         // Getting properties
         CONNECTION_PORT = Integer.parseInt(PROPERTIES.getProperty("CONNECTION_PORT"));
         SERVER_HOST_NAME = PROPERTIES.getProperty("SERVER_HOST_NAME");
+        USERS_MANAGER_REMOTE_NAME = PROPERTIES.getProperty("USERS_MANAGER_REMOTE_NAME");
+        USERS_MANAGER_REGISTRY_PORT = Integer.parseInt(PROPERTIES.getProperty("USERS_MANAGER_REGISTRY_PORT"));
         COLORED_LOGS = Boolean.parseBoolean(PROPERTIES.getProperty("COLORED_LOGS"));
-        LOGO = new ImageIcon(PROPERTIES.getProperty("LOGO_PATH"));
-        LOADING_GIF = new ImageIcon(PROPERTIES.getProperty("LOADING_GIF_PATH"));
-        STOPWATCH_ICON = new ImageIcon(PROPERTIES.getProperty("STOPWATCH_ICON_PATH"));
-        HANDSHAKE_ICON = new ImageIcon(PROPERTIES.getProperty("HANDSHAKE_ICON_PATH"));
-        THUMB_UP_ICON = new ImageIcon(PROPERTIES.getProperty("THUMB_UP_ICON_PATH"));
-        THUMB_DOWN_ICON = new ImageIcon(PROPERTIES.getProperty("THUMB_DOWN_ICON_PATH"));
-        WARNING_ICON = new ImageIcon(PROPERTIES.getProperty("WARNING_ICON_PATH"));
-        CHALLENGE_ICON = new ImageIcon(PROPERTIES.getProperty("CHALLENGE_ICON_PATH"));
-        TIMEOUT_ICON = new ImageIcon(PROPERTIES.getProperty("TIMEOUT_ICON_PATH"));
-        LOGOUT_ICON = new ImageIcon(PROPERTIES.getProperty("LOGOUT_ICON_PATH"));
+        LOGO_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("LOGO_ICON_PATH"));
+        LOADING_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("LOADING_ICON_PATH"));
+        STOPWATCH_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("STOPWATCH_ICON_PATH"));
+        HANDSHAKE_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("HANDSHAKE_ICON_PATH"));
+        THUMB_UP_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("THUMB_UP_ICON_PATH"));
+        THUMB_DOWN_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("THUMB_DOWN_ICON_PATH"));
+        WARNING_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("WARNING_ICON_PATH"));
+        CHALLENGE_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("CHALLENGE_ICON_PATH"));
+        TIMEOUT_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("TIMEOUT_ICON_PATH"));
+        LOGOUT_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("LOGOUT_ICON_PATH"));
         MAIN_COLOR = extractColor(PROPERTIES.getProperty("MAIN_COLOR"));
         BACKGROUND_COLOR = extractColor(PROPERTIES.getProperty("BACKGROUND_COLOR"));
         SCROLL_PANE_BACKGROUND_COLOR = extractColor(PROPERTIES.getProperty("SCROLL_PANE_BACKGROUND_COLOR"));
