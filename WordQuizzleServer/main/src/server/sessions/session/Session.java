@@ -60,6 +60,6 @@ public class Session
 
     public void close()
     {
-        this.backlog.removeIf(message -> message.getType() != MessageType.REQUEST_FOR_FRIENDSHIP);
+        this.backlog.removeIf(message -> message.getType() != MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION);
     }
 }

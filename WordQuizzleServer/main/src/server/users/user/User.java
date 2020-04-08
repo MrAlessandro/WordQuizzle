@@ -9,7 +9,9 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import commons.messages.Message;
+import commons.messages.MessageType;
 import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import server.users.exceptions.WrongPasswordException;
 
 public class User
@@ -33,6 +35,27 @@ public class User
 
         // Arrears demands
         this.backlog = new ConcurrentLinkedDeque<>();
+    }
+
+    public User(JSONObject serializedUser)
+    {
+        this.username = (String) serializedUser.get("Username");
+        this.password = new Password((JSONObject) serializedUser.get("Password"));
+        this.score = new AtomicInteger(((Long) serializedUser.get("Score")).intValue());
+        this.friends = ConcurrentHashMap.newKeySet(32);
+        this.backlog = new ConcurrentLinkedDeque<>();
+
+        JSONArray serializedFriends = (JSONArray) serializedUser.get("Friends");
+        for (String friend : (Iterable<String>) serializedFriends)
+        {
+            this.friends.add(friend);
+        }
+
+        JSONArray serializedBacklog = (JSONArray) serializedUser.get("Backlog");
+        for (JSONObject message : (Iterable<JSONObject>) serializedBacklog)
+        {
+            this.backlog.add(new Message(message));
+        }
     }
 
     public User(String username, char[] password, int score, Collection<String> friends, Collection<Message> backlog)
@@ -75,5 +98,28 @@ public class User
         friendsList.addAll(this.friends);
 
         return friendsList;
+    }
+
+    public JSONObject serialize()
+    {
+        JSONObject user = new JSONObject();
+        JSONArray backLog = new JSONArray();
+        JSONArray friends;
+
+        user.put("Username", this.username);
+        user.put("Password", this.password.serialize());
+        user.put("Score", this.score);
+        friends = serializeFriends();
+
+        for (Message message : this.backlog)
+        {
+            if (message.getType() == MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION)
+                backLog.add(message.serialize());
+        }
+
+        user.put("Friends", friends);
+        user.put("Backlog", backLog);
+
+        return user;
     }
 }

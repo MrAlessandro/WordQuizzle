@@ -7,7 +7,6 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
-import java.util.Objects;
 
 import commons.messages.exceptions.InvalidMessageFormatException;
 
@@ -19,7 +18,7 @@ import commons.messages.exceptions.InvalidMessageFormatException;
 public class Field
 {
     private int size;
-    private char[] data;
+    private char[] body;
 
     /**
      * Initialize a new empty {@link Field}
@@ -27,7 +26,7 @@ public class Field
     protected Field()
     {
         this.size = 0;
-        this.data = null;
+        this.body = null;
     }
 
     /**
@@ -36,8 +35,19 @@ public class Field
      */
     protected Field(char[] content)
     {
-        this.data = content;
+        this.body = content;
         this.size = (short) content.length;
+    }
+
+    /**
+     * Initialize a new {@link Field} containing the data serialized in {@code serializedField}
+     * applying a proper deserialization function
+     * @param serializedField {@code char} array containing the data tu put in this {@link Field}
+     */
+    protected Field(JSONObject serializedField)
+    {
+        this.body = ((String) serializedField.get("Body")).toCharArray();
+        this.size = this.body.length;
     }
 
     /**
@@ -53,17 +63,17 @@ public class Field
      * Get the textual data contained in this {@link Field}
      * @return The textual data contained in this {@link Field} as {@code char} array
      */
-    public char[] getData()
+    public char[] getBody()
     {
-        return this.data;
+        return this.body;
     }
 
     /**
      * Sets the this {@link Field} content with the data contained in {@code body}
      */
-    private void setData(char[] data)
+    private void setBody(char[] body)
     {
-        this.data = data;
+        this.body = body;
     }
 
     /**
@@ -128,7 +138,7 @@ public class Field
         buffer.clear();
 
         // Set the field's data with the read data
-        field.setData(data);
+        field.setBody(data);
 
         return field;
     }
@@ -163,7 +173,7 @@ public class Field
         //Put the field's data
         buffer.clear();
         charView = buffer.asCharBuffer();
-        charView.put(field.getData());
+        charView.put(field.getBody());
         buffer.position(buffer.position() + charView.position()*2);
 
         // Write field's data on the socket
@@ -176,7 +186,7 @@ public class Field
 
     public String toString()
     {
-        return String.valueOf(this.data);
+        return String.valueOf(this.body);
     }
 
     /**
@@ -187,20 +197,8 @@ public class Field
     {
         JSONObject serializedThis = new JSONObject();
         serializedThis.put("Size", size);
-        serializedThis.put("Body", String.valueOf(this.data));
+        serializedThis.put("Body", String.valueOf(this.body));
         return serializedThis;
-    }
-
-    /**
-     * This static method takes a {@link JSONObject} representing the {@code JSON} serialization of a {@link Field}
-     * and returns the deserialized instance of the {@link Field}
-     * @param serialized The {@link JSONObject} serialization of the wanted {@link Field}
-     * @return The deserialized instance of {@link Field} represented by the given {@link JSONObject}
-     */
-    protected static Field deserialize(JSONObject serialized)
-    {
-        String gotBody = (String) serialized.get("Body");
-        return new Field(gotBody.toCharArray());
     }
 
     @Override
@@ -212,6 +210,6 @@ public class Field
             return false;
 
         Field field = (Field) o;
-        return this.size == field.size && Arrays.equals(this.getData(), field.getData());
+        return this.size == field.size && Arrays.equals(this.getBody(), field.getBody());
     }
 }

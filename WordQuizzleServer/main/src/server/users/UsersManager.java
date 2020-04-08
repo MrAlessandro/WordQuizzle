@@ -3,10 +3,13 @@ package server.users;
 import commons.remote.exceptions.UsernameAlreadyUsedException;
 import commons.remote.exceptions.VoidPasswordException;
 import commons.remote.exceptions.VoidUsernameException;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import server.settings.Settings;
 import server.users.user.User;
 
 import java.rmi.RemoteException;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.simple.JSONArray;
@@ -18,6 +21,18 @@ public class UsersManager implements commons.remote.Registrable
     public UsersManager()
     {
         this.usersArchive = new ConcurrentHashMap<>(Settings.USERS_ARCHIVE_INITIAL_SIZE);
+    }
+
+    public UsersManager(JSONArray serializedUsersArchive)
+    {
+        this.usersArchive = new ConcurrentHashMap<>(Settings.USERS_ARCHIVE_INITIAL_SIZE);
+
+        for (JSONObject serializedUser : (Iterable<JSONObject>) serializedUsersArchive)
+        {
+            // Deserialize user and add to users archive
+            User user = new User(serializedUser);
+            this.usersArchive.put(user.getUsername(), user);
+        }
     }
 
     @Override
@@ -53,5 +68,18 @@ public class UsersManager implements commons.remote.Registrable
     {
         User user = getUser(username);
         return user.serializeFriends();
+    }
+
+    public JSONArray serialize()
+    {
+        JSONArray users = new JSONArray();
+        Collection<User> collectedUsers = this.usersArchive.values();
+
+        for (User user : collectedUsers)
+        {
+            users.add(user.serialize());
+        }
+
+        return users;
     }
 }

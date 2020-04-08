@@ -55,6 +55,16 @@ public class Logger
         output.flush();
     }
 
+    public void printBlue(Object o)
+    {
+        if (colored)
+            output.print(ANSI_BLUE + o.toString() + ANSI_RESET);
+        else
+            output.print(o.toString());
+
+        output.flush();
+    }
+
     public void println(Object o)
     {
         Date actual = new Date();

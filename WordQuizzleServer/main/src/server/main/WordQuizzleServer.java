@@ -3,6 +3,9 @@ package server.main;
 import commons.remote.Registrable;
 import commons.loggers.Logger;
 
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import server.challenges.ChallengesManager;
 import server.requests.challenge.ChallengeRequestsManager;
 import server.requests.friendship.FriendshipRequestsManager;
@@ -10,11 +13,15 @@ import server.sessions.SessionsManager;
 import server.settings.Settings;
 import server.users.UsersManager;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
@@ -81,21 +88,42 @@ class WordQuizzleServer
         // Server initialization
         logger.printlnCyan("SERVER INITIALIZATION");
 
-        /*TODO*/
-        // Restoring eventual previous server.users' manager state
-        //UsersManager.restore();
-
-        // Setup server.users manager
+        // Setup users manager
         logger.print("Initializing users manager... ");
-        usersManager = new UsersManager();
-        logger.printlnGreen("INITIALIZED");
+        try
+        {
+            File backUpFile = new File(Settings.USERS_ARCHIVE_BACKUP_PATH);
+            if (backUpFile.exists())
+            {
+                logger.printBlue("RESTORING FROM \"" + Settings.USERS_ARCHIVE_BACKUP_PATH + "\"... ");
+                String jsonString = new String(Files.readAllBytes(backUpFile.toPath()));
 
-        // Set up friendship server.requests manager
+                JSONParser parser = new JSONParser();
+                JSONArray serializedUsersArchive = (JSONArray) parser.parse(jsonString);
+                usersManager = new UsersManager(serializedUsersArchive);
+                logger.printlnGreen("RESTORED");
+            }
+            else
+            {
+                usersManager = new UsersManager();
+                logger.printlnGreen("INITIALIZED");
+            }
+        }
+        catch (IOException e)
+        {
+            throw new Error("RESTORING BACKUP FROM FILE", e);
+        }
+        catch (ParseException e)
+        {
+            throw new Error("PARSING BACKUP FILE", e);
+        }
+
+        // Set up friendship requests manager
         logger.print("Initializing friendship requests manager... ");
         friendshipRequestsManager = new FriendshipRequestsManager();
         logger.printlnGreen("INITIALIZED");
 
-        // Set up challenge server.requests manager
+        // Set up challenge requests manager
         logger.print("Initializing challenge requests manager... ");
         challengeRequestsManager = new ChallengeRequestsManager();
         logger.printlnGreen("INITIALIZED");
@@ -182,8 +210,21 @@ class WordQuizzleServer
             }
             logger.printlnGreen("DEPUTIES TERMINATED");
 
-            // Backup server.users' system in order to make it persistent
-            //UsersManager.backUp();
+            // Backup users manager in order to make it persistent
+            logger.print("Backing up of users manager... ");
+            try
+            {
+                JSONArray serializedUsersArchive = usersManager.serialize();
+                byte[] jsonBytes = serializedUsersArchive.toJSONString().getBytes();
+
+                Files.deleteIfExists(Paths.get(Settings.USERS_ARCHIVE_BACKUP_PATH));
+                Files.write(Paths.get(Settings.USERS_ARCHIVE_BACKUP_PATH), jsonBytes, StandardOpenOption.CREATE_NEW);
+                logger.printlnGreen("BACKED UP");
+            }
+            catch (IOException e)
+            {
+                throw new Error("ERROR WRITING BACKUP ON FILE", e);
+            }
 
             // Unbind the RMI service
             logger.print("Unbinding RMI service... ");

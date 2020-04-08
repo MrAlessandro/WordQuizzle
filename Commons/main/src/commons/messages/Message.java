@@ -10,7 +10,6 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.Objects;
 
 import commons.messages.exceptions.InvalidMessageFormatException;
 
@@ -60,10 +59,23 @@ public class Message
      * @param type The {@link MessageType} of the new {@link Message}
      * @param fields The {@link LinkedList} containing the strings used to make the fields
      */
-    private Message(MessageType type, Collection<Field> fields)
+    public Message(MessageType type, Collection<Field> fields)
     {
         this.type = type;
         this.fields = new LinkedList<>(fields);
+    }
+
+    public Message(JSONObject serializedMessage)
+    {
+        // Get message type
+        this.type =  MessageType.valueOf((short) ((Long) serializedMessage.get("Type")).intValue());
+        this.fields = new LinkedList<>();
+
+        JSONArray serializedFields = (JSONArray) serializedMessage.get("Fields");
+        for (JSONObject field : (Iterable<JSONObject>) serializedFields)
+        {
+            this.fields.add(new Field(field));
+        }
     }
 
     /**
@@ -137,7 +149,7 @@ public class Message
     {
         try
         {
-            return this.fields.get(index).getData();
+            return this.fields.get(index).getBody();
         }
         catch (IndexOutOfBoundsException e)
         {
@@ -226,29 +238,6 @@ public class Message
         retValue.put("Fields", fieldsList);
 
         return retValue;
-    }
-
-    /**
-     * This static method takes a {@link JSONObject} representing the {@code JSON} serialization of a {@link Message}
-     * and returns the deserialized instance of the {@link Message}
-     * @param serialized The {@link JSONObject} serialization of the wanted {@link Field}
-     * @return The deserialized instance of {@link Field} represented by the given {@link JSONObject}
-     */
-    public static Message deserialize(JSONObject serialized)
-    {
-        // Get message type
-        MessageType resType =  MessageType.valueOf((short) ((Long) serialized.get("Type")).intValue());
-
-        // Get the list of fields
-        LinkedList<Field> DEfields = new LinkedList<>();
-        JSONArray messageFiledList = (JSONArray) serialized.get("Fields");
-        for (JSONObject field : (Iterable<JSONObject>) messageFiledList)
-        {
-            // Deserialize field
-            DEfields.addLast(Field.deserialize(field));
-        }
-
-        return new Message(resType, DEfields);
     }
 
     /**
@@ -459,9 +448,9 @@ public class Message
         for (Field field : toSend.fields)
         {
             buffer.putInt(field.size());
-            for (int i = 0; i < field.getData().length; i++)
+            for (int i = 0; i < field.getBody().length; i++)
             {
-                buffer.putChar(field.getData()[i]);
+                buffer.putChar(field.getBody()[i]);
             }
         }
 
