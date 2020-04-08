@@ -35,7 +35,7 @@ class WordQuizzleServer
     public static final Thread.UncaughtExceptionHandler ERRORS_HANDLER = (thread, throwable) -> {
         logger.printlnRed("FATAL ERROR FROM THREAD: " + thread.getName() + " ⟶ " + throwable.getMessage());
         StackTraceElement[] stackTraceElements = throwable.getCause().getStackTrace();
-        for (int i = stackTraceElements.length - 1; i >= 0 ; i--)
+        for (int i = stackTraceElements.length - 1; i >= 0; i--)
         {
             logger.printlnRed("\t" + stackTraceElements[i]);
         }
@@ -92,16 +92,24 @@ class WordQuizzleServer
         logger.print("Initializing users manager... ");
         try
         {
-            File backUpFile = new File(Settings.USERS_ARCHIVE_BACKUP_PATH);
-            if (backUpFile.exists())
+            if (!Settings.DEBUG)
             {
-                logger.printBlue("RESTORING FROM \"" + Settings.USERS_ARCHIVE_BACKUP_PATH + "\"... ");
-                String jsonString = new String(Files.readAllBytes(backUpFile.toPath()));
+                File backUpFile = new File(Settings.USERS_ARCHIVE_BACKUP_PATH);
+                if (backUpFile.exists())
+                {
+                    logger.printBlue("RESTORING FROM \"" + Settings.USERS_ARCHIVE_BACKUP_PATH + "\"... ");
+                    String jsonString = new String(Files.readAllBytes(backUpFile.toPath()));
 
-                JSONParser parser = new JSONParser();
-                JSONArray serializedUsersArchive = (JSONArray) parser.parse(jsonString);
-                usersManager = new UsersManager(serializedUsersArchive);
-                logger.printlnGreen("RESTORED");
+                    JSONParser parser = new JSONParser();
+                    JSONArray serializedUsersArchive = (JSONArray) parser.parse(jsonString);
+                    usersManager = new UsersManager(serializedUsersArchive);
+                    logger.printlnGreen("RESTORED");
+                }
+                else
+                {
+                    usersManager = new UsersManager();
+                    logger.printlnGreen("INITIALIZED");
+                }
             }
             else
             {
@@ -143,8 +151,8 @@ class WordQuizzleServer
         deputies = new Deputy[Settings.DEPUTIES_POOL_SIZE];
         for (int i = 0; i < deputies.length; i++)
         {
-            logger.print("\t\tStarting deputy \"Deputy_" + (i+1) + "\"... ");
-            deputies[i] = new Deputy("Deputy_" + (i+1), Settings.UDP_BASE_PORT+i, usersManager, sessionsManager);
+            logger.print("\t\tStarting deputy \"Deputy_" + (i + 1) + "\"... ");
+            deputies[i] = new Deputy("Deputy_" + (i + 1), Settings.UDP_BASE_PORT + i, usersManager, sessionsManager);
             deputies[i].start();
             logger.printlnGreen("STARTED");
         }
@@ -211,19 +219,22 @@ class WordQuizzleServer
             logger.printlnGreen("DEPUTIES TERMINATED");
 
             // Backup users manager in order to make it persistent
-            logger.print("Backing up of users manager... ");
-            try
+            if (!Settings.DEBUG)
             {
-                JSONArray serializedUsersArchive = usersManager.serialize();
-                byte[] jsonBytes = serializedUsersArchive.toJSONString().getBytes();
+                logger.print("Backing up of users manager... ");
+                try
+                {
+                    JSONArray serializedUsersArchive = usersManager.serialize();
+                    byte[] jsonBytes = serializedUsersArchive.toJSONString().getBytes();
 
-                Files.deleteIfExists(Paths.get(Settings.USERS_ARCHIVE_BACKUP_PATH));
-                Files.write(Paths.get(Settings.USERS_ARCHIVE_BACKUP_PATH), jsonBytes, StandardOpenOption.CREATE_NEW);
-                logger.printlnGreen("BACKED UP");
-            }
-            catch (IOException e)
-            {
-                throw new Error("ERROR WRITING BACKUP ON FILE", e);
+                    Files.deleteIfExists(Paths.get(Settings.USERS_ARCHIVE_BACKUP_PATH));
+                    Files.write(Paths.get(Settings.USERS_ARCHIVE_BACKUP_PATH), jsonBytes, StandardOpenOption.CREATE_NEW);
+                    logger.printlnGreen("BACKED UP");
+                }
+                catch (IOException e)
+                {
+                    throw new Error("ERROR WRITING BACKUP ON FILE", e);
+                }
             }
 
             // Unbind the RMI service

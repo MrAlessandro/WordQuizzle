@@ -63,7 +63,6 @@ public class UsersManager implements commons.remote.Registrable
         return user1.getFriends().contains(user2.getUsername()) && user2.getFriends().contains(user1.getUsername());
     }
 
-    /*TODO*/
     public JSONArray getSerializedFriendsList(String username)
     {
         User user = getUser(username);

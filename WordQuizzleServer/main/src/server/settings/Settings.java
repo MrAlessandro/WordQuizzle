@@ -13,13 +13,16 @@ public class Settings
     // Properties
     public static final Properties PROPERTIES = new Properties();
 
-    // RMI service coordinates
-    public static String USERS_MANAGER_REMOTE_NAME;
-    public static int USERS_MANAGER_REGISTRY_PORT;
+    // Debug flag
+    public static boolean DEBUG;
 
     // Server coordinates
     public static String SERVER_HOST_NAME;
     public static int SERVER_CONNECTION_PORT;
+
+    // RMI service coordinates
+    public static String USERS_MANAGER_REMOTE_NAME;
+    public static int USERS_MANAGER_REGISTRY_PORT;
 
     // Base port number for UDP channels
     public static int UDP_BASE_PORT;
@@ -83,10 +86,11 @@ public class Settings
         PROPERTIES.load(new FileInputStream(propertiesFileURL.getPath()));
 
         // Getting properties
-        USERS_MANAGER_REMOTE_NAME = PROPERTIES.getProperty("USERS_MANAGER_REMOTE_NAME");
-        USERS_MANAGER_REGISTRY_PORT = Integer.parseInt(PROPERTIES.getProperty("USERS_MANAGER_REGISTRY_PORT"));
+        DEBUG = Boolean.parseBoolean(PROPERTIES.getProperty("DEBUG"));
         SERVER_HOST_NAME = PROPERTIES.getProperty("SERVER_HOST_NAME");
         SERVER_CONNECTION_PORT = Integer.parseInt(PROPERTIES.getProperty("SERVER_CONNECTION_PORT"));
+        USERS_MANAGER_REMOTE_NAME = PROPERTIES.getProperty("USERS_MANAGER_REMOTE_NAME");
+        USERS_MANAGER_REGISTRY_PORT = Integer.parseInt(PROPERTIES.getProperty("USERS_MANAGER_REGISTRY_PORT"));
         UDP_BASE_PORT = Integer.parseInt(PROPERTIES.getProperty("UDP_BASE_PORT"));
         BUFFERS_SIZE = Integer.parseInt(PROPERTIES.getProperty("BUFFERS_SIZE"));
         DEPUTIES_POOL_SIZE = Integer.parseInt(PROPERTIES.getProperty("DEPUTIES_POOL_SIZE"));

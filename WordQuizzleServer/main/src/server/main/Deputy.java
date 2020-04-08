@@ -472,19 +472,6 @@ public class Deputy extends Thread
 
                 // Store the response message
                 session.prependMessage(new Message(MessageType.FRIENDS_LIST, friends.toJSONString()));
-
-                /*try
-                {
-
-                }
-                catch (UnknownUserException e)
-                {
-                    this.logger.printlnRed("FATAL ERROR: SESSION ARCHIVE INCONSISTENCY");
-                    this.logger.printlnRed(Thread.currentThread().getStackTrace());
-                    System.exit(1);
-                    return;
-                }*/
-
                 break;
             }
             case REQUEST_FOR_CHALLENGE:
