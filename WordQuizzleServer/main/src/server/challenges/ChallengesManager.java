@@ -66,9 +66,9 @@ public class ChallengesManager
             else
             {
                 // Initialize translators logger
-                this.translatorsLogger = new Logger(Settings.COLORED_LOGS);
+                this.translatorsLogger = new Logger(Settings.COLORED_LOGS, Settings.DEBUG);
                 // Initialize timer logger
-                this.timerLogger = new Logger(Settings.COLORED_LOGS);
+                this.timerLogger = new Logger(Settings.COLORED_LOGS, Settings.DEBUG);
             }
         }
         catch (IOException e)

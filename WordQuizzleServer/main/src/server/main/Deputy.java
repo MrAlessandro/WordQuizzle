@@ -55,7 +55,7 @@ public class Deputy extends Thread
                 this.logger = new Logger(Settings.COLORED_LOGS, name, Settings.LOG_FILES_PATH);
             else
                 // Create thread specific logger
-                this.logger = new Logger(Settings.COLORED_LOGS);
+                this.logger = new Logger(Settings.COLORED_LOGS, Settings.DEBUG);
         }
         catch (IOException e)
         {

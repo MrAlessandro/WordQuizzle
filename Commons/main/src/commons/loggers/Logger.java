@@ -19,9 +19,19 @@ public class Logger
     private PrintStream output = System.out;
     private boolean colored;
 
-    public Logger(boolean colored)
+    public Logger(boolean colored, boolean suppress)
     {
         this.colored = colored;
+
+        if (suppress)
+        {
+            this.output = new PrintStream(new OutputStream()
+            {
+                @Override
+                public void write(int b) throws IOException
+                {}
+            });
+        }
     }
 
     public Logger(boolean colored, String name, String logFilesPath) throws IOException

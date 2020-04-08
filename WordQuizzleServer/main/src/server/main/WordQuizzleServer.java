@@ -28,10 +28,11 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-class WordQuizzleServer
+class WordQuizzleServer implements Runnable
 {
-    private static final Thread MAIN_THREAD = Thread.currentThread();
     private static Logger logger;
+
+    private static final Thread MAIN_THREAD = Thread.currentThread();
     public static final Thread.UncaughtExceptionHandler ERRORS_HANDLER = (thread, throwable) -> {
         logger.printlnRed("FATAL ERROR FROM THREAD: " + thread.getName() + " ⟶ " + throwable.getMessage());
         StackTraceElement[] stackTraceElements = throwable.getCause().getStackTrace();
@@ -45,21 +46,13 @@ class WordQuizzleServer
     private static ServerSocketChannel serverSocket;
     public static volatile boolean shut = false;
 
+    // Managers
+    private UsersManager usersManager;
+    private Registry registry;
+    private Deputy[] deputies;
 
-    public static void main(String[] args)
+    public WordQuizzleServer()
     {
-        // Managers
-        UsersManager usersManager;
-        FriendshipRequestsManager friendshipRequestsManager;
-        ChallengeRequestsManager challengeRequestsManager;
-        ChallengesManager challengesManager;
-        SessionsManager sessionsManager;
-
-        InetSocketAddress serverAddress;
-        Registry registry;
-        Deputy[] deputies;
-        Registrable stub;
-
         // Setup thread name
         Thread.currentThread().setName("Main");
 
@@ -83,7 +76,7 @@ class WordQuizzleServer
         System.out.println("LOADED");
 
         // Setup logger
-        logger = new Logger(Settings.COLORED_LOGS);
+        logger = new Logger(Settings.COLORED_LOGS, Settings.DEBUG);
 
         // Server initialization
         logger.printlnCyan("SERVER INITIALIZATION");
@@ -128,22 +121,22 @@ class WordQuizzleServer
 
         // Set up friendship requests manager
         logger.print("Initializing friendship requests manager... ");
-        friendshipRequestsManager = new FriendshipRequestsManager();
+        FriendshipRequestsManager friendshipRequestsManager = new FriendshipRequestsManager();
         logger.printlnGreen("INITIALIZED");
 
         // Set up challenge requests manager
         logger.print("Initializing challenge requests manager... ");
-        challengeRequestsManager = new ChallengeRequestsManager();
+        ChallengeRequestsManager challengeRequestsManager = new ChallengeRequestsManager();
         logger.printlnGreen("INITIALIZED");
 
         // Setup challenges manager
         logger.print("Initializing challenges manager... ");
-        challengesManager = new ChallengesManager(ERRORS_HANDLER);
+        ChallengesManager challengesManager = new ChallengesManager(ERRORS_HANDLER);
         logger.printlnGreen("INITIALIZED");
 
         // Setup sessions manager
         logger.print("Initializing sessions manager... ");
-        sessionsManager = new SessionsManager(usersManager, friendshipRequestsManager, challengeRequestsManager, challengesManager);
+        SessionsManager sessionsManager = new SessionsManager(usersManager, friendshipRequestsManager, challengeRequestsManager, challengesManager);
         logger.printlnGreen("INITIALIZED");
 
         // Initialize and starts deputies
@@ -157,29 +150,47 @@ class WordQuizzleServer
             logger.printlnGreen("STARTED");
         }
 
-
         try
         {
             // Enabling RMI support for registration operation
             logger.print("Setting up RMI support... ");
-            stub = (Registrable) UnicastRemoteObject.exportObject(usersManager, 0);
+            Registrable stub = (Registrable) UnicastRemoteObject.exportObject(usersManager, 0);
             LocateRegistry.createRegistry(Settings.USERS_MANAGER_REGISTRY_PORT);
             registry = LocateRegistry.getRegistry(Settings.USERS_MANAGER_REGISTRY_PORT);
             registry.bind(Settings.USERS_MANAGER_REMOTE_NAME, stub);
             logger.printlnGreen("OK");
 
-            // Variable for select deputies sequentially
-            short dispatchingIndex = 0;
-
             // The opening server's connection socket
             logger.print("The opening server's connection channel on \"" + Settings.SERVER_HOST_NAME + ":" + Settings.SERVER_CONNECTION_PORT + "\"... ");
-            serverAddress = new InetSocketAddress(Settings.SERVER_HOST_NAME, Settings.SERVER_CONNECTION_PORT);
+            InetSocketAddress serverAddress = new InetSocketAddress(Settings.SERVER_HOST_NAME, Settings.SERVER_CONNECTION_PORT);
             serverSocket = ServerSocketChannel.open();
             serverSocket.bind(serverAddress);
             logger.printlnGreen("OPENED");
+        }
+        catch (IOException | AlreadyBoundException  e)
+        {
+            throw new Error(e.getMessage().toUpperCase(), e);
+        }
 
-            // Initialization completed
-            logger.printlnCyan("INITIALIZATION COMPLETED");
+
+        // Initialization completed
+        logger.printlnCyan("INITIALIZATION COMPLETED");
+    }
+
+
+    public static void main(String[] args)
+    {
+        WordQuizzleServer server = new WordQuizzleServer();
+        server.run();
+    }
+
+    @Override
+    public void run()
+    {
+        try
+        {
+            // Variable for select deputies sequentially
+            short dispatchingIndex = 0;
 
             // Start server listening cycle
             while (!shut)
@@ -245,7 +256,7 @@ class WordQuizzleServer
             // Server closed
             logger.printlnCyan("SERVER SHUTTED DOWN");
         }
-        catch (IOException | NotBoundException | AlreadyBoundException | InterruptedException e)
+        catch (IOException | NotBoundException | InterruptedException e)
         {
             throw new Error(e.getMessage().toUpperCase(), e);
         }

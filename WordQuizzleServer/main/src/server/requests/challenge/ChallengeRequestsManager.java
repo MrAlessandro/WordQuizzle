@@ -32,7 +32,7 @@ public class ChallengeRequestsManager
                 this.timerLogger = new Logger(Settings.COLORED_LOGS, "ChallengeRequestsTimer", Settings.LOG_FILES_PATH);
             else
                 // Create timer logger
-                this.timerLogger = new Logger(Settings.COLORED_LOGS);
+                this.timerLogger = new Logger(Settings.COLORED_LOGS, Settings.DEBUG);
         }
         catch (IOException e)
         {
