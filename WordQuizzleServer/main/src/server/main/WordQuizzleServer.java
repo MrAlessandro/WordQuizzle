@@ -50,9 +50,7 @@ class WordQuizzleServer
     public WordQuizzleServer() throws IOException, ParseException, AlreadyBoundException
     {
         // Loading properties
-        System.out.print("Loading properties... ");
         Settings.loadProperties();
-        System.out.println("LOADED");
 
         // Setup logger
         logger = new Logger(Settings.COLORED_LOGS, Settings.DEBUG);
