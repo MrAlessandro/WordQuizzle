@@ -30,23 +30,20 @@ public class Deputy extends Thread
 
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(Settings.BUFFERS_SIZE);
 
-    private Selector selector;
+    private final Selector selector;
 
-    private DatagramChannel UDPchannel;
-    private int UDPport;
+    private final DatagramChannel UDPchannel;
+    private final int UDPport;
 
     public Logger logger;
 
     // Managers
-    private UsersManager usersManager;
-    private SessionsManager sessionsManager;
+    private final UsersManager usersManager;
+    private final SessionsManager sessionsManager;
 
     public Deputy(String name, int UDPport, UsersManager usersManager, SessionsManager sessionsManager)
     {
         super(name);
-
-        // Set the handler for uncaught exception
-        this.setUncaughtExceptionHandler(WordQuizzleServer.ERRORS_HANDLER);
 
         try
         {
@@ -722,7 +719,7 @@ public class Deputy extends Thread
         }
     }
 
-    public void wakeUp()
+    public void wakeup()
     {
         this.selector.wakeup();
     }
@@ -730,6 +727,6 @@ public class Deputy extends Thread
     public void shutDown()
     {
         SHUT.set(true);
-        this.selector.wakeup();
+        this.wakeup();
     }
 }

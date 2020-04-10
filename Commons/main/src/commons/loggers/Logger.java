@@ -16,8 +16,8 @@ public class Logger
     public static final String ANSI_CYAN = "\u001B[36m";
     public static final String ANSI_WHITE = "\u001B[37m";
 
-    private PrintStream output = System.out;
     private boolean colored;
+    private PrintStream output = System.out;
 
     public Logger(boolean colored, boolean suppress)
     {
@@ -25,10 +25,9 @@ public class Logger
 
         if (suppress)
         {
-            this.output = new PrintStream(new OutputStream()
-            {
+            this.output = new PrintStream(new OutputStream() {
                 @Override
-                public void write(int b) throws IOException
+                public void write(int b)
                 {}
             });
         }

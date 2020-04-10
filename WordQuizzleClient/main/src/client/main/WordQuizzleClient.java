@@ -75,7 +75,7 @@ public class WordQuizzleClient
         System.out.println("LOADED");
 
         // Setup logger
-        logger = new Logger(Settings.COLORED_LOGS);
+        logger = new Logger(Settings.COLORED_LOGS, false);
 
         // Server initialization
         logger.printlnCyan("CLIENT INITIALIZATION");

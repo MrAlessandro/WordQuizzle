@@ -27,52 +27,31 @@ import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
-class WordQuizzleServer implements Runnable
+class WordQuizzleServer
 {
-    private static Logger logger;
+    // Main thread's logger
+    private static Logger logger = null;
 
-    private static final Thread MAIN_THREAD = Thread.currentThread();
-    public static final Thread.UncaughtExceptionHandler ERRORS_HANDLER = (thread, throwable) -> {
-        logger.printlnRed("FATAL ERROR FROM THREAD: " + thread.getName() + " ⟶ " + throwable.getMessage());
-        StackTraceElement[] stackTraceElements = throwable.getCause().getStackTrace();
-        for (int i = stackTraceElements.length - 1; i >= 0; i--)
-        {
-            logger.printlnRed("\t" + stackTraceElements[i]);
-        }
-        Runtime.getRuntime().halt(1);
-    };
-
+    // Server connection socket channel
     private static ServerSocketChannel serverSocket;
-    public static volatile boolean shut = false;
+
+    // Shutdown flag
+    private static volatile boolean shut = false;
 
     // Managers
-    private UsersManager usersManager;
-    private Registry registry;
-    private Deputy[] deputies;
+    private final UsersManager usersManager;
+    private final Registry registry;
+    private final Deputy[] deputies;
 
-    public WordQuizzleServer()
+    public WordQuizzleServer() throws IOException, ParseException, AlreadyBoundException
     {
-        // Setup thread name
-        Thread.currentThread().setName("Main");
-
-        // Set error handler for this main thread (current)
-        Thread.currentThread().setUncaughtExceptionHandler(ERRORS_HANDLER);
-
-        // Registering a shutdown hook for main thread (current)
-        Runtime.getRuntime().addShutdownHook(new Thread(WordQuizzleServer::shutDown));
-
         // Loading properties
         System.out.print("Loading properties... ");
-        try
-        {
-            Settings.loadProperties();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            System.exit(1);
-        }
+        Settings.loadProperties();
         System.out.println("LOADED");
 
         // Setup logger
@@ -83,40 +62,21 @@ class WordQuizzleServer implements Runnable
 
         // Setup users manager
         logger.print("Initializing users manager... ");
-        try
+        File backUpFile = new File(Settings.USERS_ARCHIVE_BACKUP_PATH);
+        if (!Settings.DEBUG && backUpFile.exists())
         {
-            if (!Settings.DEBUG)
-            {
-                File backUpFile = new File(Settings.USERS_ARCHIVE_BACKUP_PATH);
-                if (backUpFile.exists())
-                {
-                    logger.printBlue("RESTORING FROM \"" + Settings.USERS_ARCHIVE_BACKUP_PATH + "\"... ");
-                    String jsonString = new String(Files.readAllBytes(backUpFile.toPath()));
+            logger.printBlue("RESTORING FROM \"" + Settings.USERS_ARCHIVE_BACKUP_PATH + "\"... ");
+            String jsonString = new String(Files.readAllBytes(backUpFile.toPath()));
 
-                    JSONParser parser = new JSONParser();
-                    JSONArray serializedUsersArchive = (JSONArray) parser.parse(jsonString);
-                    usersManager = new UsersManager(serializedUsersArchive);
-                    logger.printlnGreen("RESTORED");
-                }
-                else
-                {
-                    usersManager = new UsersManager();
-                    logger.printlnGreen("INITIALIZED");
-                }
-            }
-            else
-            {
-                usersManager = new UsersManager();
-                logger.printlnGreen("INITIALIZED");
-            }
+            JSONParser parser = new JSONParser();
+            JSONArray serializedUsersArchive = (JSONArray) parser.parse(jsonString);
+            usersManager = new UsersManager(serializedUsersArchive);
+            logger.printlnGreen("RESTORED");
         }
-        catch (IOException e)
+        else
         {
-            throw new Error("RESTORING BACKUP FROM FILE", e);
-        }
-        catch (ParseException e)
-        {
-            throw new Error("PARSING BACKUP FILE", e);
+            usersManager = new UsersManager();
+            logger.printlnGreen("INITIALIZED");
         }
 
         // Set up friendship requests manager
@@ -131,7 +91,7 @@ class WordQuizzleServer implements Runnable
 
         // Setup challenges manager
         logger.print("Initializing challenges manager... ");
-        ChallengesManager challengesManager = new ChallengesManager(ERRORS_HANDLER);
+        ChallengesManager challengesManager = new ChallengesManager(Thread.currentThread().getUncaughtExceptionHandler());
         logger.printlnGreen("INITIALIZED");
 
         // Setup sessions manager
@@ -140,38 +100,29 @@ class WordQuizzleServer implements Runnable
         logger.printlnGreen("INITIALIZED");
 
         // Initialize and starts deputies
-        logger.println("Initializing and starting " + Settings.DEPUTIES_POOL_SIZE + " deputies... ");
+        logger.println("Initializing " + Settings.DEPUTIES_POOL_SIZE + " deputies... ");
         deputies = new Deputy[Settings.DEPUTIES_POOL_SIZE];
         for (int i = 0; i < deputies.length; i++)
         {
-            logger.print("\t\tStarting deputy \"Deputy_" + (i + 1) + "\"... ");
+            logger.print("\t\tInitializing deputy \"Deputy_" + (i + 1) + "\"... ");
             deputies[i] = new Deputy("Deputy_" + (i + 1), Settings.UDP_BASE_PORT + i, usersManager, sessionsManager);
-            deputies[i].start();
-            logger.printlnGreen("STARTED");
+            logger.printlnGreen("INITIALIZED");
         }
 
-        try
-        {
-            // Enabling RMI support for registration operation
-            logger.print("Setting up RMI support... ");
-            Registrable stub = (Registrable) UnicastRemoteObject.exportObject(usersManager, 0);
-            LocateRegistry.createRegistry(Settings.USERS_MANAGER_REGISTRY_PORT);
-            registry = LocateRegistry.getRegistry(Settings.USERS_MANAGER_REGISTRY_PORT);
-            registry.bind(Settings.USERS_MANAGER_REMOTE_NAME, stub);
-            logger.printlnGreen("OK");
+        // Enabling RMI support for registration operation
+        logger.print("Setting up RMI support... ");
+        Registrable stub = (Registrable) UnicastRemoteObject.exportObject(usersManager, 0);
+        LocateRegistry.createRegistry(Settings.USERS_MANAGER_REGISTRY_PORT);
+        registry = LocateRegistry.getRegistry(Settings.USERS_MANAGER_REGISTRY_PORT);
+        registry.bind(Settings.USERS_MANAGER_REMOTE_NAME, stub);
+        logger.printlnGreen("OK");
 
-            // The opening server's connection socket
-            logger.print("The opening server's connection channel on \"" + Settings.SERVER_HOST_NAME + ":" + Settings.SERVER_CONNECTION_PORT + "\"... ");
-            InetSocketAddress serverAddress = new InetSocketAddress(Settings.SERVER_HOST_NAME, Settings.SERVER_CONNECTION_PORT);
-            serverSocket = ServerSocketChannel.open();
-            serverSocket.bind(serverAddress);
-            logger.printlnGreen("OPENED");
-        }
-        catch (IOException | AlreadyBoundException  e)
-        {
-            throw new Error(e.getMessage().toUpperCase(), e);
-        }
-
+        // The opening server's connection socket
+        logger.print("The opening server's connection channel on \"" + Settings.SERVER_HOST_NAME + ":" + Settings.SERVER_CONNECTION_PORT + "\"... ");
+        InetSocketAddress serverAddress = new InetSocketAddress(Settings.SERVER_HOST_NAME, Settings.SERVER_CONNECTION_PORT);
+        serverSocket = ServerSocketChannel.open();
+        serverSocket.bind(serverAddress);
+        logger.printlnGreen("OPENED");
 
         // Initialization completed
         logger.printlnCyan("INITIALIZATION COMPLETED");
@@ -180,13 +131,103 @@ class WordQuizzleServer implements Runnable
 
     public static void main(String[] args)
     {
-        WordQuizzleServer server = new WordQuizzleServer();
-        server.run();
+        try
+        {
+            WordQuizzleServer server;
+            Thread mainThread;
+
+            // Set error handler for this main thread (current)
+            Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> {
+                if (logger != null)
+                {
+                    logger.printlnRed("FATAL ERROR FROM THREAD: " + thread.getName() + " ⟶ " + throwable.getMessage());
+                    if (throwable.getCause() != null)
+                    {
+                        StackTraceElement[] stackTraceElements = throwable.getCause().getStackTrace();
+                        for (int i = stackTraceElements.length - 1; i >= 0; i--)
+                        {
+                            logger.printlnRed("\t" + stackTraceElements[i]);
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < throwable.getStackTrace().length; i++)
+                        {
+                            logger.printlnRed("\t" + throwable.getStackTrace()[i]);
+                        }
+                    }
+                }
+                else
+                {
+                    System.out.println("FATAL ERROR FROM THREAD: " + thread.getName() + " ⟶ " + throwable.getMessage());
+                    if (throwable.getCause() != null)
+                    {
+                        StackTraceElement[] stackTraceElements = throwable.getCause().getStackTrace();
+                        for (int i = stackTraceElements.length - 1; i >= 0; i--)
+                        {
+                            System.out.println("\t" + stackTraceElements[i]);
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < throwable.getStackTrace().length; i++)
+                        {
+                            System.out.println("\t" + throwable.getStackTrace()[i]);
+                        }
+                    }
+                }
+
+                System.exit(1);
+            });
+
+            // Save current thread reference
+            mainThread = Thread.currentThread();
+
+            // Setup thread name
+            Thread.currentThread().setName("Main");
+
+            // Initialize server
+            server = new WordQuizzleServer();
+
+            // Registering a shutdown hook for main thread (current)
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try
+                {
+                    server.shutDown();
+                    mainThread.join();
+                }
+                catch (InterruptedException | IOException e)
+                {
+                    e.printStackTrace();
+                    Runtime.getRuntime().halt(1);
+                }
+            }));
+
+            // Run server
+            server.run();
+        }
+        catch (ParseException | AlreadyBoundException | IOException e)
+        {
+            if (logger != null)
+                logger.printlnRed(e.getMessage().toUpperCase());
+            else
+                System.out.println(e.getMessage().toUpperCase());
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
-    @Override
     public void run()
     {
+        // Initialize and starts deputies
+        logger.println("Starting " + Settings.DEPUTIES_POOL_SIZE + " deputies... ");
+        for (int i = 0; i < deputies.length; i++)
+        {
+            logger.print("\t\tStarting deputy \"Deputy_" + (i + 1) + "\"... ");
+            deputies[i].start();
+            logger.printlnGreen("STARTED");
+        }
+
         try
         {
             // Variable for select deputies sequentially
@@ -205,7 +246,7 @@ class WordQuizzleServer implements Runnable
                     // Dispatch the socket to be served to one of the deputies
                     logger.print("Delegate connection to... ");
                     deputies[dispatchingIndex].dispatch.add(connection);
-                    deputies[dispatchingIndex].wakeUp();
+                    deputies[dispatchingIndex].wakeup();
                     logger.printlnGreen("Deputy_" + dispatchingIndex);
 
                     // Increment dispatching index
@@ -262,22 +303,12 @@ class WordQuizzleServer implements Runnable
         }
     }
 
-    public static void shutDown()
+    public void shutDown() throws IOException
     {
         // Set the shutdown flag
         shut = true;
 
-        try
-        {
-            // Close the server's connection socket
-            serverSocket.close();
-            // Wait for the main thread to finish
-            MAIN_THREAD.join();
-        }
-        catch (InterruptedException | IOException e)
-        {
-            e.printStackTrace();
-            throw new Error("During shutdown", e);
-        }
+        // Close the server's connection socket
+        serverSocket.close();
     }
 }
