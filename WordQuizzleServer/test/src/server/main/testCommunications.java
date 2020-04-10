@@ -181,7 +181,7 @@ public class testCommunications
         assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.REQUEST_FOR_FRIENDS_LIST))));
         assertEquals(MessageType.FRIENDS_LIST, responseMessage1.get().getType());
 
-        System.out.println(responseMessage1.get());
+        System.out.println(responseMessage1.get()); /*TODO*/
     }
 
     static class Client
