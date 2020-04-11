@@ -199,6 +199,11 @@ public class SessionsManager
         if (receiverUser == null)
             throw new UnknownReceiverException("UNKNOWN USER \"" + to + "\"");
 
+        // Check if users are friends
+        boolean checkFriendship = usersManager.areFriends(senderUser, receiverUser);
+        if (!checkFriendship)
+            throw new UnexpectedMessageException("USER \"" + from + "\" AND USER \"" + to + "\" ARE NOT FRIENDS");
+
         // Check if receiver is online. If it is check if is engaged in a challenge or in a challenge request and then store challenge request archive.
         receiverSession = this.sessionsArchive.computeIfPresent(to, (key, session) -> {
             try
