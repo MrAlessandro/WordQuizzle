@@ -7,6 +7,8 @@ import commons.remote.Registrable;
 import commons.remote.exceptions.UsernameAlreadyUsedException;
 import commons.remote.exceptions.VoidPasswordException;
 import commons.remote.exceptions.VoidUsernameException;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,10 +27,12 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -131,6 +135,52 @@ public class testCommunications
     }
 
     @Test
+    public void testFriendshipDeclination()
+    {
+        String username1 = UUID.randomUUID().toString();
+        char[] password1 = UUID.randomUUID().toString().toCharArray();
+        char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
+        AtomicReference<Message> responseMessage1 = new AtomicReference<>(null);
+        AtomicReference<Message> notificationMessage1 = new AtomicReference<>(null);
+        Client client1 = new Client();
+
+        String username2 = UUID.randomUUID().toString();
+        char[] password2 = UUID.randomUUID().toString().toCharArray();
+        char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
+        AtomicReference<Message> responseMessage2 = new AtomicReference<>(null);
+        AtomicReference<Message> notificationMessage2 = new AtomicReference<>(null);
+        Client client2 = new Client();
+
+        // Register and login client 1
+        assertDoesNotThrow(() -> client1.register(username1, password1));
+        assertDoesNotThrow(() -> responseMessage1.set(client1.logIn(username1, passwordCopy1)));
+        assertEquals(MessageType.OK, responseMessage1.get().getType());
+
+        // Register and login client 2
+        assertDoesNotThrow(() -> client2.register(username2, password2));
+        assertDoesNotThrow(() -> responseMessage2.set(client2.logIn(username2, passwordCopy2)));
+        assertEquals(MessageType.OK, responseMessage2.get().getType());
+
+        // Client1 send friendship request to client2
+        assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, username2))));
+        assertEquals(MessageType.OK, responseMessage1.get().getType());
+
+        // Client2 receive the request
+        assertDoesNotThrow(() -> notificationMessage2.set(client2.readNotification()));
+        assertEquals(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, notificationMessage2.get().getType());
+        assertEquals(username1, String.valueOf(notificationMessage2.get().getFields()[0].getBody()));
+
+        // Client2 decline request
+        assertDoesNotThrow(() -> responseMessage2.set(client2.require(new Message(MessageType.DECLINE_FRIENDSHIP_REQUEST, username1))));
+        assertEquals(MessageType.OK, responseMessage2.get().getType());
+
+        // Client1 receive declination message
+        assertDoesNotThrow(() -> notificationMessage1.set(client1.readNotification()));
+        assertEquals(MessageType.FRIENDSHIP_REQUEST_DECLINED, notificationMessage1.get().getType());
+        assertEquals(username2, String.valueOf(notificationMessage1.get().getFields()[0].getBody()));
+    }
+
+    @Test
     public void testFriendsListRetrieval()
     {
         String username1 = UUID.randomUUID().toString();
@@ -181,7 +231,249 @@ public class testCommunications
         assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.REQUEST_FOR_FRIENDS_LIST))));
         assertEquals(MessageType.FRIENDS_LIST, responseMessage1.get().getType());
 
-        System.out.println(responseMessage1.get()); /*TODO*/
+        // Parse response
+        AtomicReference<JSONArray> serializedFriends = new AtomicReference<>(new JSONArray());
+        ArrayList<String> friends = new ArrayList<>();
+        JSONParser parser = new JSONParser();
+        assertDoesNotThrow(() -> serializedFriends.set((JSONArray) parser.parse(String.valueOf(responseMessage1.get().getFields()[0]))));
+        for (String friend : (Iterable<String>) serializedFriends.get())
+        {
+            friends.add(friend);
+        }
+
+        assertEquals(1, friends.size());
+        assertEquals(username2, friends.get(0));
+    }
+
+    @Test
+    public void testChallengeRequestExpiration()
+    {
+        String username1 = UUID.randomUUID().toString();
+        char[] password1 = UUID.randomUUID().toString().toCharArray();
+        char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
+        AtomicReference<Message> responseMessage1 = new AtomicReference<>(null);
+        AtomicReference<Message> notificationMessage1 = new AtomicReference<>(null);
+        Client client1 = new Client();
+
+        String username2 = UUID.randomUUID().toString();
+        char[] password2 = UUID.randomUUID().toString().toCharArray();
+        char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
+        AtomicReference<Message> responseMessage2 = new AtomicReference<>(null);
+        AtomicReference<Message> notificationMessage2 = new AtomicReference<>(null);
+        Client client2 = new Client();
+
+        // Register and login client 1
+        assertDoesNotThrow(() -> client1.register(username1, password1));
+        assertDoesNotThrow(() -> responseMessage1.set(client1.logIn(username1, passwordCopy1)));
+        assertEquals(MessageType.OK, responseMessage1.get().getType());
+
+        // Register and login client 2
+        assertDoesNotThrow(() -> client2.register(username2, password2));
+        assertDoesNotThrow(() -> responseMessage2.set(client2.logIn(username2, passwordCopy2)));
+        assertEquals(MessageType.OK, responseMessage2.get().getType());
+
+        // Client1 send friendship request to client2
+        assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, username2))));
+        assertEquals(MessageType.OK, responseMessage1.get().getType());
+
+        // Client2 receive the request
+        assertDoesNotThrow(() -> notificationMessage2.set(client2.readNotification()));
+        assertEquals(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, notificationMessage2.get().getType());
+        assertEquals(username1, String.valueOf(notificationMessage2.get().getFields()[0].getBody()));
+
+        // Client2 confirm request
+        assertDoesNotThrow(() -> responseMessage2.set(client2.require(new Message(MessageType.CONFIRM_FRIENDSHIP_REQUEST, username1))));
+        assertEquals(MessageType.OK, responseMessage2.get().getType());
+
+        // Client1 receive confirmation message
+        assertDoesNotThrow(() -> notificationMessage1.set(client1.readNotification()));
+        assertEquals(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, notificationMessage1.get().getType());
+        assertEquals(username2, String.valueOf(notificationMessage1.get().getFields()[0].getBody()));
+
+        // ---> User1 and user2 now are friends
+
+        // Client 1 send challenge request to Client 2
+        assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.REQUEST_FOR_CHALLENGE, username2))));
+        assertEquals(MessageType.OK, responseMessage1.get().getType());
+
+        // Client2 receive the request
+        assertDoesNotThrow(() -> notificationMessage2.set(client2.readNotification()));
+        assertEquals(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, notificationMessage2.get().getType());
+        assertEquals(username1, String.valueOf(notificationMessage2.get().getFields()[0].getBody()));
+
+        // Wait for challenge expiration
+        assertDoesNotThrow(() -> Thread.sleep(Settings.CHALLENGE_REQUEST_TIMEOUT * 1000));
+
+        // Both clients receive notification for challenge request expiration
+        assertDoesNotThrow(() -> notificationMessage1.set(client1.readNotification()));
+        assertEquals(MessageType.CHALLENGE_REQUEST_EXPIRED, notificationMessage1.get().getType());
+        assertDoesNotThrow(() -> notificationMessage2.set(client2.readNotification()));
+        assertEquals(MessageType.CHALLENGE_REQUEST_EXPIRED, notificationMessage2.get().getType());
+    }
+
+    @Test
+    public void testChallenge()
+    {
+        String username1 = UUID.randomUUID().toString();
+        char[] password1 = UUID.randomUUID().toString().toCharArray();
+        char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
+        AtomicReference<Message> responseMessage1 = new AtomicReference<>(null);
+        AtomicReference<Message> notificationMessage1 = new AtomicReference<>(null);
+        Client client1 = new Client();
+
+        String username2 = UUID.randomUUID().toString();
+        char[] password2 = UUID.randomUUID().toString().toCharArray();
+        char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
+        AtomicReference<Message> responseMessage2 = new AtomicReference<>(null);
+        AtomicReference<Message> notificationMessage2 = new AtomicReference<>(null);
+        Client client2 = new Client();
+
+        // Register and login client 1
+        assertDoesNotThrow(() -> client1.register(username1, password1));
+        assertDoesNotThrow(() -> responseMessage1.set(client1.logIn(username1, passwordCopy1)));
+        assertEquals(MessageType.OK, responseMessage1.get().getType());
+
+        // Register and login client 2
+        assertDoesNotThrow(() -> client2.register(username2, password2));
+        assertDoesNotThrow(() -> responseMessage2.set(client2.logIn(username2, passwordCopy2)));
+        assertEquals(MessageType.OK, responseMessage2.get().getType());
+
+        // Client1 send friendship request to client2
+        assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, username2))));
+        assertEquals(MessageType.OK, responseMessage1.get().getType());
+
+        // Client2 receive the request
+        assertDoesNotThrow(() -> notificationMessage2.set(client2.readNotification()));
+        assertEquals(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, notificationMessage2.get().getType());
+        assertEquals(username1, String.valueOf(notificationMessage2.get().getFields()[0].getBody()));
+
+        // Client2 confirm request
+        assertDoesNotThrow(() -> responseMessage2.set(client2.require(new Message(MessageType.CONFIRM_FRIENDSHIP_REQUEST, username1))));
+        assertEquals(MessageType.OK, responseMessage2.get().getType());
+
+        // Client1 receive confirmation message
+        assertDoesNotThrow(() -> notificationMessage1.set(client1.readNotification()));
+        assertEquals(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, notificationMessage1.get().getType());
+        assertEquals(username2, String.valueOf(notificationMessage1.get().getFields()[0].getBody()));
+
+        // ---> User1 and user2 now are friends
+
+        // Client 1 send challenge request to Client 2
+        assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.REQUEST_FOR_CHALLENGE, username2))));
+        assertEquals(MessageType.OK, responseMessage1.get().getType());
+
+        // Client2 receive the request
+        assertDoesNotThrow(() -> notificationMessage2.set(client2.readNotification()));
+        assertEquals(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, notificationMessage2.get().getType());
+        assertEquals(username1, String.valueOf(notificationMessage2.get().getFields()[0].getBody()));
+
+        // Client 2 confirm request
+        assertDoesNotThrow(() -> responseMessage2.set(client2.require(new Message(MessageType.CONFIRM_CHALLENGE_REQUEST, username1))));
+        assertEquals(MessageType.OK, responseMessage2.get().getType());
+
+        // Client1 receive confirmation message
+        assertDoesNotThrow(() -> notificationMessage1.set(client1.readNotification()));
+        assertEquals(MessageType.CHALLENGE_REQUEST_CONFIRMED, notificationMessage1.get().getType());
+        assertEquals(username2, String.valueOf(notificationMessage1.get().getFields()[0].getBody()));
+
+        // Both clients play the challenge
+        for (int i = 0; i < Settings.CHALLENGE_WORDS_QUANTITY; i++)
+        {
+            // Get word to translate
+            assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.CHALLENGE_GET_WORD))));
+            assertEquals(MessageType.OK, responseMessage1.get().getType());
+            System.out.println("User1 received \"" + String.valueOf(responseMessage1.get().getFields()[0].getBody()) + "\" to translate");
+            assertDoesNotThrow(() -> responseMessage2.set(client2.require(new Message(MessageType.CHALLENGE_GET_WORD, username1))));
+            assertEquals(MessageType.OK, responseMessage2.get().getType());
+            System.out.println("User2 received \"" + String.valueOf(responseMessage2.get().getFields()[0].getBody()) + "\" to translate");
+
+            // Send translation
+            assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.CHALLENGE_PROVIDE_TRANSLATION, "A"))));
+            assertTrue(responseMessage1.get().getType() == MessageType.TRANSLATION_WRONG || responseMessage1.get().getType() == MessageType.TRANSLATION_CORRECT);
+            assertDoesNotThrow(() -> responseMessage2.set(client2.require(new Message(MessageType.CHALLENGE_PROVIDE_TRANSLATION, "A"))));
+            assertTrue(responseMessage2.get().getType() == MessageType.TRANSLATION_WRONG || responseMessage2.get().getType() == MessageType.TRANSLATION_CORRECT);
+        }
+
+        // Both clients receive challenge report
+        assertDoesNotThrow(() -> notificationMessage1.set(client1.readNotification()));
+        assertEquals(MessageType.CHALLENGE_REPORT, notificationMessage1.get().getType());
+        assertDoesNotThrow(() -> notificationMessage2.set(client2.readNotification()));
+        assertEquals(MessageType.CHALLENGE_REPORT, notificationMessage1.get().getType());
+    }
+
+    @Test
+    public void testChallengeExpiration()
+    {
+        String username1 = UUID.randomUUID().toString();
+        char[] password1 = UUID.randomUUID().toString().toCharArray();
+        char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
+        AtomicReference<Message> responseMessage1 = new AtomicReference<>(null);
+        AtomicReference<Message> notificationMessage1 = new AtomicReference<>(null);
+        Client client1 = new Client();
+
+        String username2 = UUID.randomUUID().toString();
+        char[] password2 = UUID.randomUUID().toString().toCharArray();
+        char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
+        AtomicReference<Message> responseMessage2 = new AtomicReference<>(null);
+        AtomicReference<Message> notificationMessage2 = new AtomicReference<>(null);
+        Client client2 = new Client();
+
+        // Register and login client 1
+        assertDoesNotThrow(() -> client1.register(username1, password1));
+        assertDoesNotThrow(() -> responseMessage1.set(client1.logIn(username1, passwordCopy1)));
+        assertEquals(MessageType.OK, responseMessage1.get().getType());
+
+        // Register and login client 2
+        assertDoesNotThrow(() -> client2.register(username2, password2));
+        assertDoesNotThrow(() -> responseMessage2.set(client2.logIn(username2, passwordCopy2)));
+        assertEquals(MessageType.OK, responseMessage2.get().getType());
+
+        // Client1 send friendship request to client2
+        assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.REQUEST_FOR_FRIENDSHIP, username2))));
+        assertEquals(MessageType.OK, responseMessage1.get().getType());
+
+        // Client2 receive the request
+        assertDoesNotThrow(() -> notificationMessage2.set(client2.readNotification()));
+        assertEquals(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, notificationMessage2.get().getType());
+        assertEquals(username1, String.valueOf(notificationMessage2.get().getFields()[0].getBody()));
+
+        // Client2 confirm request
+        assertDoesNotThrow(() -> responseMessage2.set(client2.require(new Message(MessageType.CONFIRM_FRIENDSHIP_REQUEST, username1))));
+        assertEquals(MessageType.OK, responseMessage2.get().getType());
+
+        // Client1 receive confirmation message
+        assertDoesNotThrow(() -> notificationMessage1.set(client1.readNotification()));
+        assertEquals(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, notificationMessage1.get().getType());
+        assertEquals(username2, String.valueOf(notificationMessage1.get().getFields()[0].getBody()));
+
+        // ---> User1 and user2 now are friends
+
+        // Client 1 send challenge request to Client 2
+        assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.REQUEST_FOR_CHALLENGE, username2))));
+        assertEquals(MessageType.OK, responseMessage1.get().getType());
+
+        // Client2 receive the request
+        assertDoesNotThrow(() -> notificationMessage2.set(client2.readNotification()));
+        assertEquals(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, notificationMessage2.get().getType());
+        assertEquals(username1, String.valueOf(notificationMessage2.get().getFields()[0].getBody()));
+
+        // Client 2 confirm request
+        assertDoesNotThrow(() -> responseMessage2.set(client2.require(new Message(MessageType.CONFIRM_CHALLENGE_REQUEST, username1))));
+        assertEquals(MessageType.OK, responseMessage2.get().getType());
+
+        // Client1 receive confirmation message
+        assertDoesNotThrow(() -> notificationMessage1.set(client1.readNotification()));
+        assertEquals(MessageType.CHALLENGE_REQUEST_CONFIRMED, notificationMessage1.get().getType());
+        assertEquals(username2, String.valueOf(notificationMessage1.get().getFields()[0].getBody()));
+
+        // Wait for challenge expiration
+        assertDoesNotThrow(() ->Thread.sleep(Settings.CHALLENGE_DURATION_SECONDS * 1000));
+
+        // Both clients receive challenge report
+        assertDoesNotThrow(() -> notificationMessage1.set(client1.readNotification()));
+        assertEquals(MessageType.CHALLENGE_EXPIRED, notificationMessage1.get().getType());
+        assertDoesNotThrow(() -> notificationMessage2.set(client2.readNotification()));
+        assertEquals(MessageType.CHALLENGE_EXPIRED, notificationMessage1.get().getType());
     }
 
     static class Client
