@@ -12,10 +12,12 @@ import server.challenges.translators.Translator;
 import server.settings.Settings;
 import commons.loggers.Logger;
 
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.NoSuchFileException;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -59,9 +61,9 @@ public class ChallengesManager
             if (Settings.LOG_FILES)
             {
                 // Initialize translators logger with related log file
-                this.translatorsLogger = new Logger(Settings.COLORED_LOGS, "Translators", Settings.LOG_FILES_PATH);
+                this.translatorsLogger = new Logger(Settings.COLORED_LOGS, "Translators", Settings.LOG_FILES_DIR_PATH);
                 // Initialize timer logger  with related log file
-                this.timerLogger = new Logger(Settings.COLORED_LOGS, "ChallengeTimers", Settings.LOG_FILES_PATH);
+                this.timerLogger = new Logger(Settings.COLORED_LOGS, "ChallengeTimers", Settings.LOG_FILES_DIR_PATH);
             }
             else
             {
@@ -79,7 +81,8 @@ public class ChallengesManager
         // Setup challenges words from dictionary
         try
         {
-            String JSONdictionary = new String(Files.readAllBytes(Paths.get(Settings.DICTIONARY_PATH)));
+            File dictionaryFile = new File(Settings.DICTIONARY_URL.toURI());
+            String JSONdictionary = new String(Files.readAllBytes(dictionaryFile.toPath()));
             JSONParser parser = new JSONParser();
             JSONArray words = (JSONArray) parser.parse(JSONdictionary);
             this.dictionary = new String[words.size()];
@@ -89,7 +92,7 @@ public class ChallengesManager
                 dictionary[i++] = word;
             }
         }
-        catch (FileNotFoundException e)
+        catch (NoSuchFileException | URISyntaxException e)
         {
             throw new Error("DICTIONARY FILE NOT FOUND", e);
         }

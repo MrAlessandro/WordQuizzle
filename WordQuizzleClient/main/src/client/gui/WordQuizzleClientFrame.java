@@ -2,6 +2,8 @@ package client.gui;
 
 import client.gui.fields.JPlaceholderPasswordField;
 import client.gui.fields.JPlaceholderTextField;
+import client.gui.panels.ChallengePanel;
+import client.gui.panels.FriendsPanel;
 import client.operators.LoginOperator;
 import client.operators.SignupOperator;
 import client.settings.Settings;
@@ -12,6 +14,8 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 
 public class WordQuizzleClientFrame extends JFrame
@@ -31,6 +35,8 @@ public class WordQuizzleClientFrame extends JFrame
     public Border errorBorder;
     public DocumentListener loginFieldsChecker;
     public DocumentListener signupFieldsChecker;
+    public FriendsPanel friendsPanel;
+    public ChallengePanel challengePanel;
 
     public WordQuizzleClientFrame()
     {
@@ -211,6 +217,13 @@ public class WordQuizzleClientFrame extends JFrame
             usernameTextField.setText("");
             passwordTextField.setText("");
         }));
+
+        // Setup panels
+        this.challengePanel = new ChallengePanel();
+        this.friendsPanel = new FriendsPanel(this, e -> {
+            if (challengePanel.isBusy())
+                friendsPanel.setEnableChallengeButton(true);
+        });
     }
 
     public void loading(String message)
@@ -367,9 +380,11 @@ public class WordQuizzleClientFrame extends JFrame
         this.getContentPane().removeAll();
 
         // Setup outer container
-        this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
+        this.getContentPane().setLayout(new BorderLayout());
 
-        this.getContentPane().add(new Label("LOGGED IN!"));
+        // Add components to outer container
+        this.getContentPane().add(this.friendsPanel, BorderLayout.WEST);
+        //this.getContentPane().add(this.challengePanel, BorderLayout.CENTER);
 
         // Resize accordingly
         this.pack();

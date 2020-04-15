@@ -49,7 +49,7 @@ public class Deputy extends Thread
         {
             if (Settings.LOG_FILES)
                 // Create thread specific logger with related log file
-                this.logger = new Logger(Settings.COLORED_LOGS, name, Settings.LOG_FILES_PATH);
+                this.logger = new Logger(Settings.COLORED_LOGS, name, Settings.LOG_FILES_DIR_PATH);
             else
                 // Create thread specific logger
                 this.logger = new Logger(Settings.COLORED_LOGS, Settings.DEBUG);

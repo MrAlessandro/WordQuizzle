@@ -1,6 +1,8 @@
 package commons.loggers;
 
 import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -16,7 +18,7 @@ public class Logger
     public static final String ANSI_CYAN = "\u001B[36m";
     public static final String ANSI_WHITE = "\u001B[37m";
 
-    private boolean colored;
+    private final boolean colored;
     private PrintStream output = System.out;
 
     public Logger(boolean colored, boolean suppress)
@@ -33,11 +35,12 @@ public class Logger
         }
     }
 
-    public Logger(boolean colored, String name, String logFilesPath) throws IOException
+    public Logger(boolean colored, String name, Path logFilesDirPath) throws IOException
     {
         this.colored = colored;
 
-        File logFile = new File(logFilesPath + name + ".log");
+        Path logFilePath = Paths.get(logFilesDirPath.toString(), name + ".log");
+        File logFile = new File(logFilePath.toString());
         if (logFile.exists())
             logFile.delete();
 

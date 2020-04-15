@@ -2,12 +2,19 @@ package client.operators;
 
 import client.gui.WordQuizzleClientFrame;
 import client.main.WordQuizzleClient;
+import client.settings.Settings;
 import commons.messages.Message;
 import commons.messages.MessageType;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import javax.swing.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 public class LoginOperator extends Operator
 {
@@ -49,6 +56,28 @@ public class LoginOperator extends Operator
             {
                 // Setting the global logged username
                 WordQuizzleClient.SESSION_USERNAME.set(this.username);
+
+                // Retrieve friends list
+                Message friendsListMessage = new Message(MessageType.REQUEST_FOR_FRIENDS_LIST);
+                response = WordQuizzleClient.require(friendsListMessage);
+
+                try
+                {
+                    // Parse friends list
+                    JSONParser parser = new JSONParser();
+                    JSONArray serializedFriendsList = (JSONArray) parser.parse(String.valueOf(response.getFields()[0].getBody()));
+                    List<String> friends = new LinkedList<>((Collection<String>) serializedFriendsList);
+                    // Add friends to friends panel
+                    this.frame.friendsPanel.setFriendsList(friends);
+                }
+                catch (ParseException e)
+                {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+
+
+                // Access at sessioned gui
                 SwingUtilities.invokeLater(this.frame::session);
                 break;
             }

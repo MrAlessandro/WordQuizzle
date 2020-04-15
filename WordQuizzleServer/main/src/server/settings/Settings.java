@@ -1,10 +1,11 @@
 package server.settings;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
@@ -34,27 +35,28 @@ public class Settings
     public static int DEPUTIES_POOL_SIZE;
 
     // Users database properties
-    public static String USERS_ARCHIVE_BACKUP_PATH;
+    public static Path USERS_ARCHIVE_BACKUP_PATH;
     public static int USERS_ARCHIVE_INITIAL_SIZE;
 
     // Session archive properties
     public static int SESSIONS_ARCHIVE_INITIAL_SIZE;
 
     // Log files properties
-    public static String LOG_FILES_PATH;
+    public static Path LOG_FILES_DIR_PATH;
     public static boolean LOG_FILES;
     public static boolean COLORED_LOGS;
 
     // Words dictionary.json
-    public static String DICTIONARY_PATH;
+    public static URL DICTIONARY_URL;
 
     // Translation service
     public static String TRANSLATION_SERVICE_URL;
 
-    // Friendship server.requests properties
+    // Friendship requests properties
     public static int FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE;
+    public static Path FRIENDSHIP_REQUESTS_ARCHIVE_BACKUP_PATH;
 
-    // Challenge server.requests properties
+    // Challenge requests properties
     public static int CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE;
     public static int CHALLENGE_REQUEST_TIMEOUT;
 
@@ -69,21 +71,15 @@ public class Settings
 
     public static void loadProperties() throws IOException
     {
-        URL resourcesDirectoryURL;
-        URL propertiesFileURL;
-
-        // Get resources directory URL
-        resourcesDirectoryURL = Settings.class.getClassLoader().getResource("");
-        if (resourcesDirectoryURL == null)
-            throw new FileNotFoundException("RESOURCES DIRECTORY NOT FOUND");
+        InputStream propertiesFileStream;
 
         // Get properties file URL
-        propertiesFileURL = Settings.class.getClassLoader().getResource("config.properties");
-        if (propertiesFileURL == null)
+        propertiesFileStream = Settings.class.getClassLoader().getResourceAsStream("config.properties");
+        if (propertiesFileStream == null)
             throw new FileNotFoundException("PROPERTIES FILE NOT FOUND");
 
-        // Reading properties file
-        PROPERTIES.load(new FileInputStream(propertiesFileURL.getPath()));
+        // Load properties file
+        PROPERTIES.load(propertiesFileStream);
 
         // Getting properties
         DEBUG = Boolean.parseBoolean(PROPERTIES.getProperty("DEBUG"));
@@ -94,13 +90,10 @@ public class Settings
         UDP_BASE_PORT = Integer.parseInt(PROPERTIES.getProperty("UDP_BASE_PORT"));
         BUFFERS_SIZE = Integer.parseInt(PROPERTIES.getProperty("BUFFERS_SIZE"));
         DEPUTIES_POOL_SIZE = Integer.parseInt(PROPERTIES.getProperty("DEPUTIES_POOL_SIZE"));
-        USERS_ARCHIVE_BACKUP_PATH = resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("USERS_ARCHIVE_BACKUP_PATH");
         USERS_ARCHIVE_INITIAL_SIZE = Integer.parseInt(PROPERTIES.getProperty("USERS_ARCHIVE_INITIAL_SIZE"));
         SESSIONS_ARCHIVE_INITIAL_SIZE = Integer.parseInt(PROPERTIES.getProperty("SESSIONS_ARCHIVE_INITIAL_SIZE"));
-        LOG_FILES_PATH = resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("LOG_FILES_PATH");
         LOG_FILES = Boolean.parseBoolean(PROPERTIES.getProperty("LOG_FILES"));
         COLORED_LOGS = Boolean.parseBoolean(PROPERTIES.getProperty("COLORED_LOGS"));
-        DICTIONARY_PATH = resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("DICTIONARY_PATH");
         TRANSLATION_SERVICE_URL = PROPERTIES.getProperty("TRANSLATION_SERVICE_URL");
         FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE = Integer.parseInt(PROPERTIES.getProperty("FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE"));
         CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE = Integer.parseInt(PROPERTIES.getProperty("CHALLENGE_REQUESTS_ARCHIVE_INITIAL_SIZE"));
@@ -112,8 +105,19 @@ public class Settings
         CHALLENGE_WRONG_TRANSLATION_SCORE = Integer.parseInt(PROPERTIES.getProperty("CHALLENGE_WRONG_TRANSLATION_SCORE"));
         CHALLENGE_WINNER_EXTRA_SCORE = Integer.parseInt(PROPERTIES.getProperty("CHALLENGE_WINNER_EXTRA_SCORE"));
 
+        // Getting dictionary resource
+        DICTIONARY_URL = Settings.class.getClassLoader().getResource(PROPERTIES.getProperty("DICTIONARY_PATH"));
+
+        // Getting saved files
+        Path serverSaveDir = Paths.get(PROPERTIES.getProperty("SERVER_SAVE_DIR"));
+        LOG_FILES_DIR_PATH = Paths.get(serverSaveDir.toString(), PROPERTIES.getProperty("LOG_FILES_DIR_PATH"));
+        USERS_ARCHIVE_BACKUP_PATH = Paths.get(serverSaveDir.toString(), PROPERTIES.getProperty("USERS_ARCHIVE_BACKUP_PATH"));
+        FRIENDSHIP_REQUESTS_ARCHIVE_BACKUP_PATH = Paths.get(serverSaveDir.toString(), PROPERTIES.getProperty("FRIENDSHIP_REQUESTS_ARCHIVE_BACKUP_PATH"));
+
         // Create necessary directories
-        if (LOG_FILES && !(Files.exists(Paths.get(LOG_FILES_PATH))))
-            Files.createDirectory(Paths.get(LOG_FILES_PATH));
+        if (!Files.exists(serverSaveDir))
+            Files.createDirectory(serverSaveDir);
+        if (LOG_FILES && !Files.exists(LOG_FILES_DIR_PATH))
+            Files.createDirectory(LOG_FILES_DIR_PATH);
     }
 }

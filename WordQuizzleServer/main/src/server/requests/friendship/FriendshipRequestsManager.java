@@ -1,5 +1,7 @@
 package server.requests.friendship;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import server.settings.Settings;
 import server.requests.friendship.exceptions.FriendshipRequestAlreadyReceived;
 import server.requests.friendship.exceptions.FriendshipRequestAlreadySent;
@@ -15,6 +17,19 @@ public class FriendshipRequestsManager
     public FriendshipRequestsManager()
     {
         this.friendshipRequestsArchive = new ConcurrentHashMap<>(Settings.FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE);
+    }
+
+    public FriendshipRequestsManager(JSONArray serializedFriendshipRequestsArchive)
+    {
+        this.friendshipRequestsArchive = new ConcurrentHashMap<>(Settings.FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE);
+
+        for (JSONObject request : (Iterable<JSONObject>) serializedFriendshipRequestsArchive)
+        {
+            String username = (String) request.get("username");
+            JSONArray applicants = (JSONArray) request.get("applicants");
+            HashSet<String> requests = new HashSet<>(applicants);
+            friendshipRequestsArchive.put(username, requests);
+        }
     }
 
     public void recordFriendshipRequest(String from, String to) throws FriendshipRequestAlreadyReceived, FriendshipRequestAlreadySent
@@ -67,5 +82,23 @@ public class FriendshipRequestsManager
         });
 
         return removed[0];
+    }
+
+    public JSONArray serialize()
+    {
+        JSONArray serializedFriendshipRequestsArchive = new JSONArray();
+        this.friendshipRequestsArchive.forEach((key, value) -> {
+            JSONObject request = new JSONObject();
+
+            JSONArray applicants = new JSONArray();
+            applicants.addAll(value);
+
+            request.put("username", key);
+            request.put("applicants",applicants);
+
+            serializedFriendshipRequestsArchive.add(request);
+        });
+
+        return serializedFriendshipRequestsArchive;
     }
 }

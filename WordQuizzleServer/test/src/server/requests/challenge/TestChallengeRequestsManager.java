@@ -171,7 +171,7 @@ public class TestChallengeRequestsManager
                 });
             }
 
-            pool.shutdownNow();
+            pool.shutdown();
             assertDoesNotThrow(() -> pool.awaitTermination(tasksNum, TimeUnit.SECONDS));
             assertEquals(tasksNum * 2, challengeRequestsArchive.size());
         }

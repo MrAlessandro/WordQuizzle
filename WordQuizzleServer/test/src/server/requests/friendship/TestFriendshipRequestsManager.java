@@ -150,7 +150,7 @@ public class TestFriendshipRequestsManager
                 });
             }
 
-            pool.shutdownNow();
+            pool.shutdown();
             assertDoesNotThrow(() -> pool.awaitTermination(tasksNum, TimeUnit.SECONDS));
             assertEquals(tasksNum, friendshipRequestsArchive.size());
         }

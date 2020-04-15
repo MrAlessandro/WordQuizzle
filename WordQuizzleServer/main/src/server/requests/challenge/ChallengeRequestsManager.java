@@ -29,7 +29,7 @@ public class ChallengeRequestsManager
         {
             if (Settings.LOG_FILES)
                 // Create timer logger with related log file
-                this.timerLogger = new Logger(Settings.COLORED_LOGS, "ChallengeRequestsTimer", Settings.LOG_FILES_PATH);
+                this.timerLogger = new Logger(Settings.COLORED_LOGS, "ChallengeRequestsTimer", Settings.LOG_FILES_DIR_PATH);
             else
                 // Create timer logger
                 this.timerLogger = new Logger(Settings.COLORED_LOGS, Settings.DEBUG);

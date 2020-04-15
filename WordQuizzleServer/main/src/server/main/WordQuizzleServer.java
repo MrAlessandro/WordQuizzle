@@ -16,6 +16,7 @@ import server.users.UsersManager;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URL;
 import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -27,9 +28,6 @@ import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 class WordQuizzleServer
 {
@@ -44,6 +42,7 @@ class WordQuizzleServer
 
     // Managers
     private final UsersManager usersManager;
+    private final FriendshipRequestsManager friendshipRequestsManager;
     private final Registry registry;
     private final Deputy[] deputies;
 
@@ -60,12 +59,10 @@ class WordQuizzleServer
 
         // Setup users manager
         logger.print("Initializing users manager... ");
-        File backUpFile = new File(Settings.USERS_ARCHIVE_BACKUP_PATH);
-        if (!Settings.DEBUG && backUpFile.exists())
+        if (!Settings.DEBUG && Files.exists(Settings.USERS_ARCHIVE_BACKUP_PATH))
         {
             logger.printBlue("RESTORING FROM \"" + Settings.USERS_ARCHIVE_BACKUP_PATH + "\"... ");
-            String jsonString = new String(Files.readAllBytes(backUpFile.toPath()));
-
+            String jsonString = new String(Files.readAllBytes(Settings.USERS_ARCHIVE_BACKUP_PATH));
             JSONParser parser = new JSONParser();
             JSONArray serializedUsersArchive = (JSONArray) parser.parse(jsonString);
             usersManager = new UsersManager(serializedUsersArchive);
@@ -79,8 +76,20 @@ class WordQuizzleServer
 
         // Set up friendship requests manager
         logger.print("Initializing friendship requests manager... ");
-        FriendshipRequestsManager friendshipRequestsManager = new FriendshipRequestsManager();
-        logger.printlnGreen("INITIALIZED");
+        if (!Settings.DEBUG && Files.exists(Settings.FRIENDSHIP_REQUESTS_ARCHIVE_BACKUP_PATH))
+        {
+            logger.printBlue("RESTORING FROM \"" + Settings.FRIENDSHIP_REQUESTS_ARCHIVE_BACKUP_PATH + "\"... ");
+            String jsonString = new String(Files.readAllBytes(Settings.FRIENDSHIP_REQUESTS_ARCHIVE_BACKUP_PATH));
+            JSONParser parser = new JSONParser();
+            JSONArray serializedFriendshipRequestsArchive = (JSONArray) parser.parse(jsonString);
+            friendshipRequestsManager = new FriendshipRequestsManager(serializedFriendshipRequestsArchive);
+            logger.printlnGreen("RESTORED");
+        }
+        else
+        {
+            friendshipRequestsManager = new FriendshipRequestsManager();
+            logger.printlnGreen("INITIALIZED");
+        }
 
         // Set up challenge requests manager
         logger.print("Initializing challenge requests manager... ");
@@ -277,8 +286,27 @@ class WordQuizzleServer
                     JSONArray serializedUsersArchive = usersManager.serialize();
                     byte[] jsonBytes = serializedUsersArchive.toJSONString().getBytes();
 
-                    Files.deleteIfExists(Paths.get(Settings.USERS_ARCHIVE_BACKUP_PATH));
-                    Files.write(Paths.get(Settings.USERS_ARCHIVE_BACKUP_PATH), jsonBytes, StandardOpenOption.CREATE_NEW);
+                    Files.deleteIfExists(Settings.USERS_ARCHIVE_BACKUP_PATH);
+                    Files.write(Settings.USERS_ARCHIVE_BACKUP_PATH, jsonBytes, StandardOpenOption.CREATE_NEW);
+                    logger.printlnGreen("BACKED UP");
+                }
+                catch (IOException e)
+                {
+                    throw new Error("ERROR WRITING BACKUP ON FILE", e);
+                }
+            }
+
+            // Backup friendship requests manager in order to make it persistent
+            if (!Settings.DEBUG)
+            {
+                logger.print("Backing up of friendship requests manager... ");
+                try
+                {
+                    JSONArray serializedFriendshipRequestsArchive = friendshipRequestsManager.serialize();
+                    byte[] jsonBytes = serializedFriendshipRequestsArchive.toJSONString().getBytes();
+
+                    Files.deleteIfExists(Settings.FRIENDSHIP_REQUESTS_ARCHIVE_BACKUP_PATH);
+                    Files.write(Settings.FRIENDSHIP_REQUESTS_ARCHIVE_BACKUP_PATH, jsonBytes, StandardOpenOption.CREATE_NEW);
                     logger.printlnGreen("BACKED UP");
                 }
                 catch (IOException e)
