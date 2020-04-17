@@ -1,6 +1,9 @@
 package client.main;
 
 import client.gui.WordQuizzleClientFrame;
+import client.operators.FriendshipRequestConfirmedOperator;
+import client.operators.FriendshipRequestDeclinedOperator;
+import client.operators.ReplyFriendshipRequestOperator;
 import client.settings.Settings;
 import commons.loggers.Logger;
 import commons.messages.Message;
@@ -28,16 +31,50 @@ public class WordQuizzleClient
 
     private static Logger logger;
 
-    private static final ByteBuffer BUFFER = ByteBuffer.allocateDirect(2048);
+    private static final ByteBuffer TCP_BUFFER = ByteBuffer.allocateDirect(2048);
+    private static final ByteBuffer UDP_BUFFER = ByteBuffer.allocateDirect(2048);
     private static final Thread MAIN_THREAD = Thread.currentThread();
     public static final Thread.UncaughtExceptionHandler ERRORS_HANDLER = (thread, throwable) -> {
-        logger.printlnRed("FATAL ERROR FROM THREAD: " + thread.getName() + " ⟶ " + throwable.getMessage());
-        StackTraceElement[] stackTraceElements = throwable.getCause().getStackTrace();
-        for (int i = stackTraceElements.length - 1; i >= 0 ; i--)
+        if (logger != null)
         {
-            logger.printlnRed("\t" + stackTraceElements[i]);
+            logger.printlnRed("FATAL ERROR ⟶ " + (throwable.getMessage() != null ? throwable.getMessage() : throwable.getClass().getName()));
+            if (throwable.getCause() != null)
+            {
+                StackTraceElement[] stackTraceElements = throwable.getCause().getStackTrace();
+                for (int i = stackTraceElements.length - 1; i >= 0; i--)
+                {
+                    logger.printlnRed("\t" + stackTraceElements[i]);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < throwable.getStackTrace().length; i++)
+                {
+                    logger.printlnRed("\t" + throwable.getStackTrace()[i]);
+                }
+            }
         }
-        Runtime.getRuntime().halt(1);
+        else
+        {
+            System.out.println("FATAL ERROR ⟶ " + (throwable.getMessage() != null ? throwable.getMessage() : throwable.getClass().getName()));
+            if (throwable.getCause() != null)
+            {
+                StackTraceElement[] stackTraceElements = throwable.getCause().getStackTrace();
+                for (int i = stackTraceElements.length - 1; i >= 0; i--)
+                {
+                    System.out.println("\t" + stackTraceElements[i]);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < throwable.getStackTrace().length; i++)
+                {
+                    System.out.println("\t" + throwable.getStackTrace()[i]);
+                }
+            }
+        }
+
+        System.exit(1);
     };
 
     public static DatagramChannel notificationChannel = null;
@@ -61,7 +98,6 @@ public class WordQuizzleClient
         // Registering a shutdown hook for main thread (current)
         Runtime.getRuntime().addShutdownHook(new Thread(WordQuizzleClient::shutDown));
 
-        System.out.print("Loading properties... ");
         // Load client properties
         try
         {
@@ -72,7 +108,6 @@ public class WordQuizzleClient
             e.printStackTrace();
             System.exit(1);
         }
-        System.out.println("LOADED");
 
         // Setup logger
         logger = new Logger(Settings.COLORED_LOGS, false);
@@ -131,8 +166,40 @@ public class WordQuizzleClient
                 try
                 {
                     logger.print("Listening for notifications from server... ");
-                    Message message = Message.readNotification(notificationChannel, BUFFER);
+                    Message message = Message.readNotification(notificationChannel, UDP_BUFFER);
                     logger.printlnGreen("RECEIVED NOTIFICATION ⟶ " + message);
+
+                    switch (message.getType())
+                    {
+                        case REQUEST_FOR_FRIENDSHIP_CONFIRMATION:
+                            (new ReplyFriendshipRequestOperator(frame, String.valueOf(message.getFields()[0].getBody()))).execute();
+                            break;
+                        case FRIENDSHIP_REQUEST_CONFIRMED:
+                            (new FriendshipRequestConfirmedOperator(frame,String.valueOf(message.getFields()[0].getBody()))).execute();
+                            break;
+                        case FRIENDSHIP_REQUEST_DECLINED:
+                            (new FriendshipRequestDeclinedOperator(frame,String.valueOf(message.getFields()[0].getBody()))).execute();
+                            break;
+                        case REQUEST_FOR_CHALLENGE_CONFIRMATION:
+                            break;
+                        case CHALLENGE_REQUEST_CONFIRMED:
+                            break;
+                        case CHALLENGE_REQUEST_DECLINED:
+                            break;
+                        case CHALLENGE_REQUEST_EXPIRED:
+                            break;
+                        case CHALLENGE_REQUEST_OPPONENT_LOGGED_OUT:
+                            break;
+                        case CHALLENGE_EXPIRED:
+                            break;
+                        case CHALLENGE_REPORT:
+                            break;
+                        case CHALLENGE_OPPONENT_LOGGED_OUT:
+                            break;
+                        default:
+                        {}
+                    }
+
                 }
                 catch (AsynchronousCloseException e)
                 {
@@ -181,10 +248,10 @@ public class WordQuizzleClient
 
         try
         {
-            synchronized (BUFFER)
+            synchronized (TCP_BUFFER)
             {
-                Message.writeMessage(server, BUFFER, message);
-                response = Message.readMessage(server, BUFFER);
+                Message.writeMessage(server, TCP_BUFFER, message);
+                response = Message.readMessage(server, TCP_BUFFER);
             }
         }
         catch (IOException | InvalidMessageFormatException e)

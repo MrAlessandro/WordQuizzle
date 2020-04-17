@@ -147,7 +147,7 @@ class WordQuizzleServer
             Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> {
                 if (logger != null)
                 {
-                    logger.printlnRed("FATAL ERROR FROM THREAD: " + thread.getName() + " ⟶ " + throwable.getMessage());
+                    logger.printlnRed("FATAL ERROR FROM THREAD: " + thread.getName() + " ⟶ " + (throwable.getMessage() != null ? throwable.getMessage() : throwable.getClass().getName()));
                     if (throwable.getCause() != null)
                     {
                         StackTraceElement[] stackTraceElements = throwable.getCause().getStackTrace();
@@ -166,7 +166,7 @@ class WordQuizzleServer
                 }
                 else
                 {
-                    System.out.println("FATAL ERROR FROM THREAD: " + thread.getName() + " ⟶ " + throwable.getMessage());
+                    System.out.println("FATAL ERROR FROM THREAD: " + thread.getName() + " ⟶ " + (throwable.getMessage() != null ? throwable.getMessage() : throwable.getClass().getName()));
                     if (throwable.getCause() != null)
                     {
                         StackTraceElement[] stackTraceElements = throwable.getCause().getStackTrace();

@@ -24,6 +24,13 @@ public class Settings
     // Log files flag
     public static boolean COLORED_LOGS;
 
+    // Gui sizes
+    public static int SESSION_PANE_WIDTH;
+    public static int SESSION_PANE_HEIGHT;
+    public static int FRIENDS_PANE_WIDTH;
+    public static int CHALLENGE_PANE_WIDTH;
+    public static int SCORE_PANE_WIDTH;
+
     // Icons paths
     public static ImageIcon LOGO_ICON;
     public static ImageIcon LOADING_ICON;
@@ -66,6 +73,11 @@ public class Settings
         USERS_MANAGER_REMOTE_NAME = PROPERTIES.getProperty("USERS_MANAGER_REMOTE_NAME");
         USERS_MANAGER_REGISTRY_PORT = Integer.parseInt(PROPERTIES.getProperty("USERS_MANAGER_REGISTRY_PORT"));
         COLORED_LOGS = Boolean.parseBoolean(PROPERTIES.getProperty("COLORED_LOGS"));
+        SESSION_PANE_WIDTH = Integer.parseInt(PROPERTIES.getProperty("SESSION_PANE_WIDTH"));
+        SESSION_PANE_HEIGHT = Integer.parseInt(PROPERTIES.getProperty("SESSION_PANE_HEIGHT"));
+        FRIENDS_PANE_WIDTH = Integer.parseInt(PROPERTIES.getProperty("FRIENDS_PANE_WIDTH"));
+        CHALLENGE_PANE_WIDTH = Integer.parseInt(PROPERTIES.getProperty("CHALLENGE_PANE_WIDTH"));
+        SCORE_PANE_WIDTH = Integer.parseInt(PROPERTIES.getProperty("SCORE_PANE_WIDTH"));
         LOGO_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("LOGO_ICON_PATH"));
         LOADING_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("LOADING_ICON_PATH"));
         STOPWATCH_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("STOPWATCH_ICON_PATH"));

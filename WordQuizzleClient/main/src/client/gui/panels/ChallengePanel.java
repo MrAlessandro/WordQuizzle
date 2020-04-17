@@ -1,5 +1,6 @@
 package client.gui.panels;
 
+import client.gui.WordQuizzleClientFrame;
 import client.settings.Settings;
 
 import javax.swing.*;
@@ -26,7 +27,7 @@ public class ChallengePanel extends JPanel
 
     private AtomicBoolean busy;
 
-//    public volatile String applicant = null;
+    public String opponent;
 //    public volatile static String opponent = null;
 //    private static int challengeTimeout;
 //    public static int challengeWordsQuantity;
@@ -112,8 +113,45 @@ public class ChallengePanel extends JPanel
             translationField.setText("");
         });*/
 
-        // Set challenge status
+        // Set busy flag
         this.busy = new AtomicBoolean(false);
+
+        // Set challenge data
+        this.opponent = null;
+
+        // Start with unemployed status
+        this.unemploy();
+    }
+
+    public void unemploy()
+    {
+        // Empty the challenge playground
+        this.challengeProgressPanel.setText("");
+
+        // Clean challenge data
+        this.opponent = null;
+
+        // Empty panel
+        this.removeAll();
+
+        // Setup panel
+        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
+        // Add components to panel
+        this.add(Box.createVerticalGlue());
+        this.add(this.noChallengeInProgressLabel);
+        this.add(this.instructionLabel);
+        this.add(Box.createVerticalGlue());
+
+        // Enable challenge button
+        //((WordQuizzleClientFrame) this.getParent()).friendsPanel.setEnableChallengeButton(true);
+
+        // Set busy flag
+        this.busy.set(false);
+
+        // Repaint
+        this.repaint();
+        this.revalidate();
     }
 
     public boolean isBusy()
@@ -121,4 +159,15 @@ public class ChallengePanel extends JPanel
         return this.busy.get();
     }
 
+    @Override
+    public Dimension getPreferredSize()
+    {
+        return new Dimension(Settings.CHALLENGE_PANE_WIDTH, Settings.SESSION_PANE_HEIGHT);
+    }
+
+    @Override
+    public Dimension getMinimumSize()
+    {
+        return new Dimension(Settings.CHALLENGE_PANE_WIDTH, Settings.SESSION_PANE_HEIGHT);
+    }
 }

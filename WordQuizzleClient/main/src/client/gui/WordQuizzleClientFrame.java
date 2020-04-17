@@ -384,7 +384,7 @@ public class WordQuizzleClientFrame extends JFrame
 
         // Add components to outer container
         this.getContentPane().add(this.friendsPanel, BorderLayout.WEST);
-        //this.getContentPane().add(this.challengePanel, BorderLayout.CENTER);
+        this.getContentPane().add(this.challengePanel, BorderLayout.CENTER);
 
         // Resize accordingly
         this.pack();

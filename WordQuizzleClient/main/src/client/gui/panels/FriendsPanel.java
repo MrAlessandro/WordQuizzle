@@ -40,6 +40,8 @@ public class FriendsPanel extends JPanel
         this.friendsList = new JList<>(this.listModel);
         this.friendsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         this.friendsList.addListSelectionListener(listSelectionListener);
+        this.friendsList.setBackground(Settings.BACKGROUND_COLOR);
+        this.friendsList.setForeground(Settings.FOREGROUND_COLOR);
 
         // Setup label
         this.friendListLabel = new JLabel("Friends list:");
@@ -48,7 +50,7 @@ public class FriendsPanel extends JPanel
         // Setup scroll pane
         this.friendsScrollPane = new JScrollPane(friendsList);
         this.friendsScrollPane.setBorder(new LineBorder(Settings.MAIN_COLOR, 1));
-        this.friendsScrollPane.setBackground(Settings.SCROLL_PANE_BACKGROUND_COLOR);
+        this.friendsScrollPane.setBackground(Settings.BACKGROUND_COLOR);
         this.friendsScrollPane.setForeground(Settings.FOREGROUND_COLOR);
         this.friendsScrollPane.setPreferredSize(new Dimension(160, 220));
         this.friendsScrollPane.setMaximumSize(new Dimension(160, 220));
@@ -76,12 +78,15 @@ public class FriendsPanel extends JPanel
         this.friendsScrollPaneHeader.add(this.addFriendButton, BorderLayout.EAST);
 
         // Add components (with margins) to friends panel
+        this.add(Box.createVerticalGlue());
         this.add(Box.createRigidArea(new Dimension(0, 10)));
         this.add(this.friendsScrollPaneHeader);
         this.add(Box.createRigidArea(new Dimension(0, 5)));
         this.add(this.friendsScrollPane);
         this.add(Box.createRigidArea(new Dimension(0, 10)));
         this.add(this.challengeButton);
+        this.add(Box.createVerticalGlue());
+
     }
 
     public void setEnableChallengeButton(boolean enabled)
@@ -102,12 +107,12 @@ public class FriendsPanel extends JPanel
     @Override
     public Dimension getPreferredSize()
     {
-        return new Dimension(180, 400);
+        return new Dimension(Settings.FRIENDS_PANE_WIDTH, Settings.SESSION_PANE_HEIGHT);
     }
 
     @Override
     public Dimension getMinimumSize()
     {
-        return new Dimension(180, 400);
+        return new Dimension(Settings.FRIENDS_PANE_WIDTH, Settings.SESSION_PANE_HEIGHT);
     }
 }
