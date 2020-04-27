@@ -215,8 +215,8 @@ public class SessionsManager
                     // Record the challenge request
                     this.challengeRequestsManager.recordChallengeRequest(from, to, () -> {
                         // Send expiration challenge request message to both applicant and receiver
-                        sendMessage(from, new Message(MessageType.CHALLENGE_REQUEST_EXPIRED));
-                        sendMessage(to, new Message(MessageType.CHALLENGE_REQUEST_EXPIRED));
+                        sendMessage(from, new Message(MessageType.CHALLENGE_REQUEST_EXPIRED_APPLICANT));
+                        sendMessage(to, new Message(MessageType.CHALLENGE_REQUEST_EXPIRED_RECEIVER));
                     });
                 }
             }

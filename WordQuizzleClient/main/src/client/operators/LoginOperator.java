@@ -2,7 +2,6 @@ package client.operators;
 
 import client.gui.WordQuizzleClientFrame;
 import client.main.WordQuizzleClient;
-import client.settings.Settings;
 import commons.messages.Message;
 import commons.messages.MessageType;
 import org.json.simple.JSONArray;
@@ -68,7 +67,7 @@ public class LoginOperator extends Operator
                     JSONArray serializedFriendsList = (JSONArray) parser.parse(String.valueOf(response.getFields()[0].getBody()));
                     List<String> friends = new LinkedList<>((Collection<String>) serializedFriendsList);
                     // Add friends to friends panel
-                    this.frame.friendsPanel.setFriendsList(friends);
+                    this.frame.friendsPanel.setFriendsTable(friends);
                 }
                 catch (ParseException e)
                 {

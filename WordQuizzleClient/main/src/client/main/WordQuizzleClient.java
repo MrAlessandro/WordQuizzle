@@ -1,9 +1,7 @@
 package client.main;
 
 import client.gui.WordQuizzleClientFrame;
-import client.operators.FriendshipRequestConfirmedOperator;
-import client.operators.FriendshipRequestDeclinedOperator;
-import client.operators.ReplyFriendshipRequestOperator;
+import client.operators.*;
 import client.settings.Settings;
 import commons.loggers.Logger;
 import commons.messages.Message;
@@ -181,14 +179,21 @@ public class WordQuizzleClient
                             (new FriendshipRequestDeclinedOperator(frame,String.valueOf(message.getFields()[0].getBody()))).execute();
                             break;
                         case REQUEST_FOR_CHALLENGE_CONFIRMATION:
+                            (new ReplyChallengeRequestOperator(frame, String.valueOf(message.getFields()[0].getBody()))).execute();
                             break;
                         case CHALLENGE_REQUEST_CONFIRMED:
                             break;
                         case CHALLENGE_REQUEST_DECLINED:
+                            (new ChallengeRequestDeclinedOperator(frame, String.valueOf(message.getFields()[0].getBody()))).execute();
                             break;
-                        case CHALLENGE_REQUEST_EXPIRED:
+                        case CHALLENGE_REQUEST_EXPIRED_APPLICANT:
+                            (new ChallengeRequestExpiredApplicantOperator(frame)).execute();
+                            break;
+                        case CHALLENGE_REQUEST_EXPIRED_RECEIVER:
+                            ReplyChallengeRequestOperator.optionPane.setValue(Settings.CHALLENGE_REQUEST_TIMER_EXPIRED_NOTIFICATION_VALUE);
                             break;
                         case CHALLENGE_REQUEST_OPPONENT_LOGGED_OUT:
+                            (new OpponentLoggedOutOperator(frame, String.valueOf(message.getFields()[0].getBody()))).execute();
                             break;
                         case CHALLENGE_EXPIRED:
                             break;

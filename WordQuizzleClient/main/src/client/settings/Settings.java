@@ -49,6 +49,10 @@ public class Settings
     public static Color SCROLL_PANE_BACKGROUND_COLOR;
     public static Color FOREGROUND_COLOR;
 
+    // Response values
+    public static final int CHALLENGE_REQUEST_APPLICANT_OFFLINE_NOTIFICATION_VALUE = -100;
+    public static final int CHALLENGE_REQUEST_TIMER_EXPIRED_NOTIFICATION_VALUE = -200;
+
     public static void loadProperties() throws IOException
     {
         URL resourcesDirectoryURL;

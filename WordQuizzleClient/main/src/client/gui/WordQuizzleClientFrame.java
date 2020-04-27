@@ -220,10 +220,7 @@ public class WordQuizzleClientFrame extends JFrame
 
         // Setup panels
         this.challengePanel = new ChallengePanel();
-        this.friendsPanel = new FriendsPanel(this, e -> {
-            if (challengePanel.isBusy())
-                friendsPanel.setEnableChallengeButton(true);
-        });
+        this.friendsPanel = new FriendsPanel(this, this.challengePanel);
     }
 
     public void loading(String message)

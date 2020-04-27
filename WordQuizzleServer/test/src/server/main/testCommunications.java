@@ -306,9 +306,9 @@ public class testCommunications
 
         // Both clients receive notification for challenge request expiration
         assertDoesNotThrow(() -> notificationMessage1.set(client1.readNotification()));
-        assertEquals(MessageType.CHALLENGE_REQUEST_EXPIRED, notificationMessage1.get().getType());
+        assertEquals(MessageType.CHALLENGE_REQUEST_EXPIRED_APPLICANT, notificationMessage1.get().getType());
         assertDoesNotThrow(() -> notificationMessage2.set(client2.readNotification()));
-        assertEquals(MessageType.CHALLENGE_REQUEST_EXPIRED, notificationMessage2.get().getType());
+        assertEquals(MessageType.CHALLENGE_REQUEST_EXPIRED_RECEIVER, notificationMessage2.get().getType());
     }
 
     @Test

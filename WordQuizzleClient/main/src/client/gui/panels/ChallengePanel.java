@@ -123,6 +123,31 @@ public class ChallengePanel extends JPanel
         this.unemploy();
     }
 
+    public void waitingReply(String receiver)
+    {
+        // Empty panel
+        this.removeAll();
+
+        // Setup panel
+        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
+        // Set waiting label
+        this.waitingForResponseLabel.setText("Waiting reply from \"" + receiver + "\"...");
+
+        // Add components to panel
+        this.add(Box.createVerticalGlue());
+        this.add(this.waitingForResponseLabel);
+        this.add(this.loadingChallengeIconLabel);
+        this.add(Box.createVerticalGlue());
+
+        // Set busy flag
+        this.busy.set(true);
+
+        // Repaint
+        this.repaint();
+        this.revalidate();
+    }
+
     public void unemploy()
     {
         // Empty the challenge playground

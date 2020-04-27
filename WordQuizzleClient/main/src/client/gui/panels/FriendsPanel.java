@@ -1,54 +1,63 @@
 package client.gui.panels;
 
 import client.gui.WordQuizzleClientFrame;
+import client.gui.tables.FriendsTable;
+import client.operators.SendChallengeRequestOperator;
 import client.operators.SendFriendshipRequestOperator;
 import client.settings.Settings;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
+import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.util.Collection;
 
 public class FriendsPanel extends JPanel
 {
     private final WordQuizzleClientFrame parentFrame;
-    private final DefaultListModel<String> listModel;
-    private final JList<String> friendsList;
+    private ChallengePanel challengePanel;
+
+    private final FriendsTable friendsTable;
     private final JPanel friendsScrollPaneHeader;
     private final JScrollPane friendsScrollPane;
     private final JLabel friendListLabel;
     private final JButton addFriendButton;
     private final JButton challengeButton;
 
-    public FriendsPanel(WordQuizzleClientFrame parentFrame, ListSelectionListener listSelectionListener)
+    public FriendsPanel(WordQuizzleClientFrame parentFrame, ChallengePanel challengePanel)
     {
         super();
 
         // Set parent frame
         this.parentFrame = parentFrame;
 
+        // Set relative challenge panel
+        this.challengePanel = challengePanel;
+
         // Setup Friend panel
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         this.setBackground(Settings.BACKGROUND_COLOR);
         this.setBorder(new LineBorder(Settings.MAIN_COLOR, 1));
 
-        // Setup list model
-        this.listModel = new DefaultListModel<>();
-
-        // Setup list
-        this.friendsList = new JList<>(this.listModel);
-        this.friendsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        this.friendsList.addListSelectionListener(listSelectionListener);
-        this.friendsList.setBackground(Settings.BACKGROUND_COLOR);
-        this.friendsList.setForeground(Settings.FOREGROUND_COLOR);
+        // Setup friend table
+        this.friendsTable = new FriendsTable();
+        this.friendsTable.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e)
+            {
+                if (!challengePanel.isBusy())
+                    challengeButton.setEnabled(true);
+            }
+        });
 
         // Setup label
         this.friendListLabel = new JLabel("Friends list:");
         this.friendListLabel.setForeground(Settings.MAIN_COLOR);
 
         // Setup scroll pane
-        this.friendsScrollPane = new JScrollPane(friendsList);
+        this.friendsScrollPane = new JScrollPane(friendsTable);
         this.friendsScrollPane.setBorder(new LineBorder(Settings.MAIN_COLOR, 1));
         this.friendsScrollPane.setBackground(Settings.BACKGROUND_COLOR);
         this.friendsScrollPane.setForeground(Settings.FOREGROUND_COLOR);
@@ -69,7 +78,13 @@ public class FriendsPanel extends JPanel
 
         // Setup challenge button
         this.challengeButton = new JButton("Challenge");
-        //this.challengeButton.addActionListener(e -> WordQuizzleClient.POOL.execute(new SendChallengeRequestOperator(FRIENDS_LIST.getSelectedValue())));
+        this.challengeButton.addActionListener(e -> {
+            new SendChallengeRequestOperator(this.parentFrame, this.friendsTable.getSelectedValue().friendName).execute();
+            SwingUtilities.invokeLater(() -> {
+                challengeButton.setEnabled(false);
+                challengePanel.waitingReply(friendsTable.getSelectedValue().friendName);
+            });
+        });
         this.challengeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         this.challengeButton.setEnabled(false); // Initially disabled
 
@@ -94,14 +109,14 @@ public class FriendsPanel extends JPanel
         this.challengeButton.setEnabled(enabled);
     }
 
-    public void setFriendsList(Collection<String> friendsList)
+    public void setFriendsTable(Collection<String> friends)
     {
-        friendsList.forEach(listModel::addElement);
+        friends.forEach(friendName -> this.friendsTable.addRecord(friendName, 0));
     }
 
     public void addFriend(String friend)
     {
-        listModel.addElement(friend);
+        this.friendsTable.addRecord(friend, 0);
     }
 
     @Override
