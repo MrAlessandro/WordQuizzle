@@ -135,33 +135,16 @@ public class Challenge implements Runnable
         this.completionOperation.accept(challengeReportDelegation);
     }
 
-    public ChallengeReport getOpponentReport(String canceler)
+    public ChallengeReport[] getReports()
     {
-        ChallengeReport report;
+        ChallengeReport[] reports = new ChallengeReport[2];
 
-        String player;
-        int status;
-        int progress;
-        int score;
+        reports[0] = new ChallengeReport(this.from, Integer.compare(this.fromScore, this.toScore),
+                this.fromTranslationsProgress, this.fromScore);
+        reports[1] = new ChallengeReport(this.to, Integer.compare(this.toScore, this.fromScore),
+                this.toTranslationsProgress, this.toScore);
 
-        if (canceler.equals(this.from))
-        {
-            player = this.to;
-            status = Integer.compare(this.toScore, this.fromScore);
-            progress = this.toTranslationsProgress;
-            score = this.toScore;
-        }
-        else
-        {
-            player = this.from;
-            status = Integer.compare(this.fromScore, this.toScore);
-            progress = this.fromTranslationsProgress;
-            score = this.fromScore;
-        }
-
-        report = new ChallengeReport(player, status, progress, score);
-
-        return report;
+        return reports;
     }
 
     public String getWord(String player) throws NoFurtherWordsToGetException, WordRetrievalOutOfSequenceException

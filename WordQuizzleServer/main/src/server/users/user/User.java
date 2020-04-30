@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntUnaryOperator;
 
 import commons.messages.Message;
 import commons.messages.MessageType;
@@ -83,6 +84,16 @@ public class User
     public Deque<Message> getBacklog()
     {
         return this.backlog;
+    }
+
+    public int getScore()
+    {
+        return this.score.get();
+    }
+
+    public int updateScore(int gain)
+    {
+        return this.score.updateAndGet((x) -> x + gain);
     }
 
     public void checkPassword(char[] password) throws WrongPasswordException

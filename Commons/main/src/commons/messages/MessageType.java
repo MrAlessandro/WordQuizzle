@@ -30,6 +30,8 @@ public enum MessageType
     DECLINE_CHALLENGE_REQUEST((short) 7, "DeclineChallengeRequest"),
     CHALLENGE_GET_WORD((short) 12, "ChallengeGetWord"),
     CHALLENGE_PROVIDE_TRANSLATION((short)13, "ChallengeProvideTranslation"),
+    REQUEST_FOR_SCORE_AMOUNT((short)14, "RequestForScoreAmount"),
+    REQUEST_FOR_FRIENDS_LIST_WITH_SCORES((short)15, "RequestForFriendsListWithScores"),
 
     /*LOG_OUT((short) 2, "LogOut"),
     REQUEST_FOR_FRIENDSHIP((short) 3, "RequestForFriend"),
@@ -55,6 +57,7 @@ public enum MessageType
     CHALLENGE_EXPIRED((short)110, "ChallengeExpired"),
     CHALLENGE_REPORT((short)111,"ChallengeReport"),
     CHALLENGE_OPPONENT_LOGGED_OUT((short)113, "ChallengeOpponentLoggedOut"),
+    FRIEND_SCORE_UPDATE((short)120, "FriendScoreUpdate"),
     /*
     REQUEST_FOR_CHALLENGE_CONFIRMATION((short) 103, "NotifyChallenge"),
     CHALLENGE_CONFIRMED((short) 104, "ChallengeConfirmed"),
@@ -92,7 +95,7 @@ public enum MessageType
     USER_ALREADY_LOGGED((short) 202, "UserAlreadyLogged"),
     PASSWORD_WRONG((short) 203, "PasswordWrong"),
     USERNAME_UNKNOWN((short) 204, "UsernameUnknown"),
-    UNKNOWN_RECEIVER_EXCEPTION((short) 205, "UnknownReceiver"),
+    UNKNOWN_RECEIVER((short) 205, "UnknownReceiver"),
     ALREADY_FRIENDS((short) 206, "AlreadyFriends"),
     FRIENDSHIP_REQUEST_ALREADY_SENT ((short) 207, "FriendshipRequestAlreadySent"),
     FRIENDSHIP_REQUEST_ALREADY_RECEIVED ((short) 208, "FriendshipRequestAlreadyReceived"),
@@ -104,7 +107,9 @@ public enum MessageType
     RECEIVER_ENGAGED_IN_OTHER_CHALLENGE((short) 214, "ReceiverEngagedInOtherChallenge"),
     UNEXPECTED_MESSAGE((short) 215, "UnexpectedMessage"),
     TRANSLATION_CORRECT((short) 216, "TranslationCorrect"),
-    TRANSLATION_WRONG((short) 217, "TranslationWrong");
+    TRANSLATION_WRONG((short) 217, "TranslationWrong"),
+    SCORE_AMOUNT((short)220, "ScoreAmount"),
+    FRIENDS_LIST_WITH_SCORES((short)221, "FriendsListWithScores");
 
 
     /**

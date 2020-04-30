@@ -37,7 +37,30 @@ public class ReplyChallengeRequestOperator extends Operator
         {
             case JOptionPane.YES_OPTION:
             {
-                System.out.println("YES");
+                // Prepare message
+                Message message = new Message(MessageType.CONFIRM_CHALLENGE_REQUEST, this.applicant);
+                // Send confirmation message
+                Message response = WordQuizzleClient.require(message);
+                if (response.getType() != MessageType.OK)
+                    throw new Error("COMMUNICATION INCONSISTENCY");
+                // Extract challenge data
+                String opponent = String.valueOf(response.getFields()[0].getBody());
+                int wordsQuantity = Integer.parseInt(String.valueOf(response.getFields()[2].getBody()));
+                int challengeDuration = Integer.parseInt(String.valueOf(response.getFields()[1].getBody()));
+
+                // Rend request for first word
+                message = new Message(MessageType.CHALLENGE_GET_WORD);
+                response = WordQuizzleClient.require(message);
+                if (response.getType() != MessageType.OK)
+                    throw new Error("COMMUNICATION INCONSISTENCY");
+
+                // Extract firs word from response message
+                String firstWord = String.valueOf(response.getFields()[0].getBody());
+
+                // Set gui for challenge
+                SwingUtilities.invokeLater(() -> frame.challengePanel.challenge(firstWord, opponent, wordsQuantity, challengeDuration));
+
+                break;
             }
             case JOptionPane.NO_OPTION:
             {

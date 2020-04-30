@@ -4,6 +4,8 @@ import client.gui.fields.JPlaceholderPasswordField;
 import client.gui.fields.JPlaceholderTextField;
 import client.gui.panels.ChallengePanel;
 import client.gui.panels.FriendsPanel;
+import client.gui.panels.HeaderPanel;
+import client.main.WordQuizzleClient;
 import client.operators.LoginOperator;
 import client.operators.SignupOperator;
 import client.settings.Settings;
@@ -14,8 +16,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 
 public class WordQuizzleClientFrame extends JFrame
@@ -35,6 +35,7 @@ public class WordQuizzleClientFrame extends JFrame
     public Border errorBorder;
     public DocumentListener loginFieldsChecker;
     public DocumentListener signupFieldsChecker;
+    public HeaderPanel headerPanel;
     public FriendsPanel friendsPanel;
     public ChallengePanel challengePanel;
 
@@ -219,7 +220,8 @@ public class WordQuizzleClientFrame extends JFrame
         }));
 
         // Setup panels
-        this.challengePanel = new ChallengePanel();
+        this.headerPanel = new HeaderPanel();
+        this.challengePanel = new ChallengePanel(this);
         this.friendsPanel = new FriendsPanel(this, this.challengePanel);
     }
 
@@ -371,7 +373,7 @@ public class WordQuizzleClientFrame extends JFrame
         this.pack();
     }
 
-    public void session()
+    public void session(String username, int score)
     {
         // Empty frame
         this.getContentPane().removeAll();
@@ -379,9 +381,14 @@ public class WordQuizzleClientFrame extends JFrame
         // Setup outer container
         this.getContentPane().setLayout(new BorderLayout());
 
+        // Setup header panel
+        this.headerPanel.setUsername(username);
+        this.headerPanel.setScore(score);
+
         // Add components to outer container
         this.getContentPane().add(this.friendsPanel, BorderLayout.WEST);
         this.getContentPane().add(this.challengePanel, BorderLayout.CENTER);
+        this.getContentPane().add(this.headerPanel, BorderLayout.NORTH);
 
         // Resize accordingly
         this.pack();

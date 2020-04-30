@@ -8,10 +8,13 @@ import javax.swing.*;
 public class FriendshipRequestConfirmedOperator extends Operator
 {
     private final String receiver;
-    public FriendshipRequestConfirmedOperator(WordQuizzleClientFrame frame, String receiver)
+    private int receiverScore;
+
+    public FriendshipRequestConfirmedOperator(WordQuizzleClientFrame frame, String receiver, int receiverScore)
     {
         super(frame);
         this.receiver = receiver;
+        this.receiverScore = receiverScore;
     }
 
     @Override
@@ -21,7 +24,7 @@ public class FriendshipRequestConfirmedOperator extends Operator
         SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this.frame,
                 "User \"" + this.receiver + "\" accepted your friendship request", "Friendship request confirmed",
                 JOptionPane.INFORMATION_MESSAGE, Settings.THUMB_UP_ICON));
-        this.frame.friendsPanel.addFriend(this.receiver);
+        this.frame.friendsPanel.addFriend(this.receiver, this.receiverScore);
 
         return null;
     }

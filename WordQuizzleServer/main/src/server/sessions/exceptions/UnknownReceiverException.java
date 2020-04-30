@@ -5,7 +5,7 @@ import commons.messages.MessageType;
 
 public class UnknownReceiverException extends CommunicableException
 {
-    private static final MessageType RESPONSE_TYPE = MessageType.UNKNOWN_RECEIVER_EXCEPTION;
+    private static final MessageType RESPONSE_TYPE = MessageType.UNKNOWN_RECEIVER;
     private static final String DEFAULT_MESSAGE = "RECEIVER UNKNOWN";
 
     public UnknownReceiverException()

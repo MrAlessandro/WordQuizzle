@@ -25,6 +25,22 @@ public class FriendsTable extends JList<FriendRecord>
         this.listModel.addElement(new FriendRecord(friend, score));
     }
 
+    public void updateRecord(String friend, int score){
+        boolean found = false;
+        int i = 0;
+
+        while (i<listModel.getSize() && !found)
+        {
+            FriendRecord record = listModel.getElementAt(i);
+            if(record.friendName.equals(friend))
+            {
+                record.friendScore = score;
+                found = true;
+            }
+            i++;
+        }
+    }
+
     private static class CellRender extends JPanel implements ListCellRenderer<FriendRecord>
     {
         private final JLabel friendLabel;

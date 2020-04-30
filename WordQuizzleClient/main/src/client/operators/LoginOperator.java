@@ -5,6 +5,7 @@ import client.main.WordQuizzleClient;
 import commons.messages.Message;
 import commons.messages.MessageType;
 import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -57,15 +58,15 @@ public class LoginOperator extends Operator
                 WordQuizzleClient.SESSION_USERNAME.set(this.username);
 
                 // Retrieve friends list
-                Message friendsListMessage = new Message(MessageType.REQUEST_FOR_FRIENDS_LIST);
-                response = WordQuizzleClient.require(friendsListMessage);
+                Message friendsListRequest = new Message(MessageType.REQUEST_FOR_FRIENDS_LIST_WITH_SCORES);
+                Message friendsListResponse = WordQuizzleClient.require(friendsListRequest);
 
                 try
                 {
                     // Parse friends list
                     JSONParser parser = new JSONParser();
-                    JSONArray serializedFriendsList = (JSONArray) parser.parse(String.valueOf(response.getFields()[0].getBody()));
-                    List<String> friends = new LinkedList<>((Collection<String>) serializedFriendsList);
+                    JSONArray serializedFriendsList = (JSONArray) parser.parse(String.valueOf(friendsListResponse.getFields()[0].getBody()));
+                    List<JSONObject> friends = new LinkedList<>((Collection<JSONObject>) serializedFriendsList);
                     // Add friends to friends panel
                     this.frame.friendsPanel.setFriendsTable(friends);
                 }
@@ -75,9 +76,12 @@ public class LoginOperator extends Operator
                     System.exit(1);
                 }
 
+                // Retrieve score
+                Message scoreRequest = new Message(MessageType.REQUEST_FOR_SCORE_AMOUNT);
+                Message scoreResponse = WordQuizzleClient.require(scoreRequest);
 
                 // Access at sessioned gui
-                SwingUtilities.invokeLater(this.frame::session);
+                SwingUtilities.invokeLater(() -> this.frame.session(this.username, Integer.parseInt(String.valueOf(scoreResponse.getFields()[0]))));
                 break;
             }
             case USERNAME_UNKNOWN:

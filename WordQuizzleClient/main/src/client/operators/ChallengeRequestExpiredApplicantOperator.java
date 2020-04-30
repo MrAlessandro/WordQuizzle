@@ -19,6 +19,7 @@ public class ChallengeRequestExpiredApplicantOperator extends Operator
         SwingUtilities.invokeLater(() -> frame.challengePanel.unemploy());
         JOptionPane.showMessageDialog(this.frame, "Your challenge request has expired...",
                 "Challenge request expired", JOptionPane.INFORMATION_MESSAGE, Settings.TIMEOUT_ICON);
+        this.frame.friendsPanel.setEnableChallengeButton(true);
         return null;
     }
 }

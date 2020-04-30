@@ -22,6 +22,7 @@ public class ChallengeRequestDeclinedOperator extends Operator
         SwingUtilities.invokeLater(() -> this.frame.challengePanel.unemploy());
         JOptionPane.showMessageDialog(this.frame, "\"" + receiver + "\" declined your challenge request",
                 "Challenge request declined", JOptionPane.INFORMATION_MESSAGE, Settings.THUMB_DOWN_ICON);
+        this.frame.friendsPanel.setEnableChallengeButton(true);
         return null;
     }
 }

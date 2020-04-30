@@ -5,6 +5,7 @@ import client.gui.tables.FriendsTable;
 import client.operators.SendChallengeRequestOperator;
 import client.operators.SendFriendshipRequestOperator;
 import client.settings.Settings;
+import org.json.simple.JSONObject;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
@@ -109,14 +110,22 @@ public class FriendsPanel extends JPanel
         this.challengeButton.setEnabled(enabled);
     }
 
-    public void setFriendsTable(Collection<String> friends)
+    public void setFriendsTable(Collection<JSONObject> friends)
     {
-        friends.forEach(friendName -> this.friendsTable.addRecord(friendName, 0));
+        for (JSONObject item : friends)
+        {
+            this.friendsTable.addRecord((String) item.get("Username"), Integer.parseInt(String.valueOf(item.get("Score"))));
+        }
     }
 
-    public void addFriend(String friend)
+    public void addFriend(String friend, int score)
     {
-        this.friendsTable.addRecord(friend, 0);
+        this.friendsTable.addRecord(friend, score);
+    }
+
+    public void updateFriendScore(String friend, int score)
+    {
+        this.friendsTable.updateRecord(friend, score);
     }
 
     @Override

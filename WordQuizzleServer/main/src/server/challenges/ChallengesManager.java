@@ -151,24 +151,16 @@ public class ChallengesManager
         }
 
         // Initialize challenge
+        // Completion operation
+        // Timeout operation
         Challenge challenge = new Challenge(from, to, words,
-                new Consumer<ChallengeReportDelegation>()
-                { // Completion operation
-                    @Override
-                    public void accept(ChallengeReportDelegation challengeReportDelegation)
-                    {
-                        closeChallenge(from, to);
-                        completionOperation.accept(challengeReportDelegation);
-                    }
+                challengeReportDelegation -> {
+                    closeChallenge(from, to);
+                    completionOperation.accept(challengeReportDelegation);
                 },
-                new Consumer<ChallengeReportDelegation>()
-                { // Timeout operation
-                    @Override
-                    public void accept(ChallengeReportDelegation challengeReportDelegation)
-                    {
-                        expireChallenge(from, to);
-                        timeoutOperation.accept(challengeReportDelegation);
-                    }
+                challengeReportDelegation -> {
+                    expireChallenge(from, to);
+                    timeoutOperation.accept(challengeReportDelegation);
                 });
 
         synchronized (ChallengesManager.class)
@@ -249,7 +241,7 @@ public class ChallengesManager
     }
 
     // Called when a player logout
-    public ChallengeReport cancelChallenge(String username)
+    public ChallengeReport[] cancelChallenge(String username)
     {
         Challenge consequentialChallenge;
         Challenge challenge;
@@ -285,8 +277,8 @@ public class ChallengesManager
             this.timerLogger.println("Challenge between \"" + challenge.from + "\" and \"" + challenge.to + "\" has been canceled.");
         }
 
-        // Return the opponent's challenge report
-        return challenge.getOpponentReport(username);
+        // Return challenge's reports
+        return challenge.getReports();
     }
 
     public String retrieveNextWord(String player) throws NoChallengeRelatedException, NoFurtherWordsToGetException, WordRetrievalOutOfSequenceException

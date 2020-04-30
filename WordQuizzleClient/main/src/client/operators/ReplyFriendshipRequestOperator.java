@@ -31,7 +31,8 @@ public class ReplyFriendshipRequestOperator extends Operator
             Message response = WordQuizzleClient.require(message);
             if (response.getType() == MessageType.OK)
             {
-                frame.friendsPanel.addFriend(this.applicant);
+                int applicantScore = Integer.parseInt(String.valueOf(response.getFields()[0].getBody()));
+                frame.friendsPanel.addFriend(this.applicant, applicantScore);
             }
         }
         else

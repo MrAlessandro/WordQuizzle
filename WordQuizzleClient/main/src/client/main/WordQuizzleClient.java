@@ -173,15 +173,21 @@ public class WordQuizzleClient
                             (new ReplyFriendshipRequestOperator(frame, String.valueOf(message.getFields()[0].getBody()))).execute();
                             break;
                         case FRIENDSHIP_REQUEST_CONFIRMED:
-                            (new FriendshipRequestConfirmedOperator(frame,String.valueOf(message.getFields()[0].getBody()))).execute();
+                            String whoConfirmed = String.valueOf(message.getFields()[0].getBody());
+                            int whoConfirmedScore = Integer.parseInt(String.valueOf(String.valueOf(message.getFields()[1].getBody())));
+                            (new FriendshipRequestConfirmedOperator(frame, whoConfirmed, whoConfirmedScore)).execute();
                             break;
                         case FRIENDSHIP_REQUEST_DECLINED:
-                            (new FriendshipRequestDeclinedOperator(frame,String.valueOf(message.getFields()[0].getBody()))).execute();
+                            (new FriendshipRequestDeclinedOperator(frame, String.valueOf(message.getFields()[0].getBody()))).execute();
                             break;
                         case REQUEST_FOR_CHALLENGE_CONFIRMATION:
                             (new ReplyChallengeRequestOperator(frame, String.valueOf(message.getFields()[0].getBody()))).execute();
                             break;
                         case CHALLENGE_REQUEST_CONFIRMED:
+                            String opponent = String.valueOf(message.getFields()[0].getBody());
+                            int wordsQuantity = Integer.parseInt(String.valueOf(message.getFields()[2].getBody()));
+                            int challengeDuration = Integer.parseInt(String.valueOf(message.getFields()[1].getBody()));
+                            (new SetUpChallengeOperator(frame, opponent, wordsQuantity, challengeDuration)).execute();
                             break;
                         case CHALLENGE_REQUEST_DECLINED:
                             (new ChallengeRequestDeclinedOperator(frame, String.valueOf(message.getFields()[0].getBody()))).execute();
@@ -193,16 +199,26 @@ public class WordQuizzleClient
                             ReplyChallengeRequestOperator.optionPane.setValue(Settings.CHALLENGE_REQUEST_TIMER_EXPIRED_NOTIFICATION_VALUE);
                             break;
                         case CHALLENGE_REQUEST_OPPONENT_LOGGED_OUT:
-                            (new OpponentLoggedOutOperator(frame, String.valueOf(message.getFields()[0].getBody()))).execute();
+                            (new RequestOpponentLoggedOutOperator(frame, String.valueOf(message.getFields()[0].getBody()))).execute();
                             break;
                         case CHALLENGE_EXPIRED:
-                            break;
                         case CHALLENGE_REPORT:
-                            break;
                         case CHALLENGE_OPPONENT_LOGGED_OUT:
+                        {
+                            int winStatus = Integer.parseInt(String.valueOf(message.getFields()[0].getBody()));
+                            int progress = Integer.parseInt(String.valueOf(message.getFields()[1].getBody()));
+                            int scoreGain = Integer.parseInt(String.valueOf(message.getFields()[2].getBody()));
+                            (new ChallengeTerminationOperator(frame, message.getType(), winStatus, progress, scoreGain)).execute();
+                            break;
+                        }
+                        case FRIEND_SCORE_UPDATE:
+                            String friend = String.copyValueOf(message.getFields()[0].getBody());
+                            int friendScore = Integer.parseInt(String.valueOf(message.getFields()[1].getBody()));
+                            SwingUtilities.invokeLater(() -> frame.friendsPanel.updateFriendScore(friend, friendScore));
                             break;
                         default:
-                        {}
+                        {
+                        }
                     }
 
                 }

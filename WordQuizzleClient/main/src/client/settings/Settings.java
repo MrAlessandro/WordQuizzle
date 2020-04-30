@@ -2,10 +2,10 @@ package client.settings;
 
 import javax.swing.ImageIcon;
 import java.awt.*;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public class Settings
@@ -48,6 +48,9 @@ public class Settings
     public static Color BACKGROUND_COLOR;
     public static Color SCROLL_PANE_BACKGROUND_COLOR;
     public static Color FOREGROUND_COLOR;
+
+    // Challenge playground model html file path
+    public static String CHALLENGE_PLAYGROUND_MODEL;
 
     // Response values
     public static final int CHALLENGE_REQUEST_APPLICANT_OFFLINE_NOTIFICATION_VALUE = -100;
@@ -96,6 +99,9 @@ public class Settings
         BACKGROUND_COLOR = extractColor(PROPERTIES.getProperty("BACKGROUND_COLOR"));
         SCROLL_PANE_BACKGROUND_COLOR = extractColor(PROPERTIES.getProperty("SCROLL_PANE_BACKGROUND_COLOR"));
         FOREGROUND_COLOR = extractColor(PROPERTIES.getProperty("FOREGROUND_COLOR"));
+
+        // Load challenge playground model
+        CHALLENGE_PLAYGROUND_MODEL = new String(Files.readAllBytes(Paths.get(Settings.class.getClassLoader().getResource(PROPERTIES.getProperty("CHALLENGE_PLAYGROUND_MODEL")).getPath())));
     }
 
     private static Color extractColor(String colorStr)

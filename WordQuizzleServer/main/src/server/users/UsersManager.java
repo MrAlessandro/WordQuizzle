@@ -10,6 +10,7 @@ import server.users.user.User;
 
 import java.rmi.RemoteException;
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.simple.JSONArray;
@@ -67,6 +68,37 @@ public class UsersManager implements commons.remote.Registrable
     {
         User user = getUser(username);
         return user.serializeFriends();
+    }
+
+    public JSONArray getSerializedFriendsListWithScores(String username)
+    {
+        User user = getUser(username);
+        Set<String> friends = user.getFriends();
+
+        JSONArray serializeList = new JSONArray();
+
+        for (String friend : friends)
+        {
+            JSONObject friendEntry = new JSONObject();
+            User friendUser = getUser(friend);
+            friendEntry.put("Username", friendUser.getUsername());
+            friendEntry.put("Score", friendUser.getScore());
+            serializeList.add(friendEntry);
+        }
+
+        return serializeList;
+    }
+
+    public int updateUserScore(String username, int gain)
+    {
+        User user = getUser(username);
+        return user.updateScore(gain);
+    }
+
+    public int getUsersScore(String username)
+    {
+        User user = getUser(username);
+        return user.getScore();
     }
 
     public JSONArray serialize()

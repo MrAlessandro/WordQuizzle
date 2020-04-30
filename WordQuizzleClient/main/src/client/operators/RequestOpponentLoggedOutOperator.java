@@ -5,10 +5,10 @@ import client.settings.Settings;
 
 import javax.swing.*;
 
-public class OpponentLoggedOutOperator extends Operator
+public class RequestOpponentLoggedOutOperator extends Operator
 {
     private String opponent;
-    public OpponentLoggedOutOperator(WordQuizzleClientFrame frame, String opponent)
+    public RequestOpponentLoggedOutOperator(WordQuizzleClientFrame frame, String opponent)
     {
         super(frame);
         this.opponent = opponent;

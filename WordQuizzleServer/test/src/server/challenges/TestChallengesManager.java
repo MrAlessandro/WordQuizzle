@@ -114,21 +114,21 @@ public class TestChallengesManager
         assertEquals(0, challengesArchive.size());
     }
 
-    @Test
-    public void testChallengeCanceling()
-    {
-        String username1 = UUID.randomUUID().toString();
-        String username2 = UUID.randomUUID().toString();
-
-        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidOperation, voidOperation));
-        assertEquals(2, challengesArchive.size());
-        timer.shutdownNow();
-
-        AtomicReference<ChallengeReport> opponent = new AtomicReference<>(null);
-        assertDoesNotThrow(() -> {opponent.set(this.challengesManager.cancelChallenge(username1));});
-        assertEquals(username2, opponent.get().player);
-        assertEquals(0, challengesArchive.size());
-    }
+//    @Test
+//    public void testChallengeCanceling()
+//    {
+//        String username1 = UUID.randomUUID().toString();
+//        String username2 = UUID.randomUUID().toString();
+//
+//        assertDoesNotThrow(() -> this.challengesManager.recordChallenge(username1, username2, voidOperation, voidOperation));
+//        assertEquals(2, challengesArchive.size());
+//        timer.shutdownNow();
+//
+//        AtomicReference<ChallengeReport> opponent = new AtomicReference<>(null);
+//        assertDoesNotThrow(() -> {opponent.set(this.challengesManager.cancelChallenge(username1));});
+//        assertEquals(username2, opponent.get().player);
+//        assertEquals(0, challengesArchive.size());
+//    }
 
     @Test
     public void testChallengeCompletion()

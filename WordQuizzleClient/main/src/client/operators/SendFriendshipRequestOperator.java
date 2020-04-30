@@ -32,7 +32,7 @@ public class SendFriendshipRequestOperator extends Operator
 
         if (response.getType() == MessageType.OK)
             JOptionPane.showMessageDialog(this.frame, "Request sent", "Request sent", JOptionPane.INFORMATION_MESSAGE, Settings.THUMB_UP_ICON);
-        else if (response.getType() == MessageType.USERNAME_UNKNOWN)
+        else if (response.getType() == MessageType.UNKNOWN_RECEIVER)
             JOptionPane.showMessageDialog(this.frame, "User \"" + friend +"\" does not exist", "Request not sent", JOptionPane.ERROR_MESSAGE, Settings.WARNING_ICON);
         else if (response.getType() == MessageType.ALREADY_FRIENDS)
             JOptionPane.showMessageDialog(this.frame, "You are already friend with \"" + friend +"\"", "Request not sent", JOptionPane.ERROR_MESSAGE, Settings.WARNING_ICON);

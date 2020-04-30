@@ -410,7 +410,8 @@ public class Deputy extends Thread
                     this.logger.printlnGreen("CONFIRMED");
 
                     // Prepare response message for applicant
-                    response = new Message(MessageType.OK);
+                    int applicantScore = usersManager.getUsersScore(from);
+                    response = new Message(MessageType.OK, String.valueOf(applicantScore));
                 }
                 catch (CommunicableException e)
                 {// Impossible to confirm the request
@@ -471,6 +472,35 @@ public class Deputy extends Thread
                 session.prependMessage(new Message(MessageType.FRIENDS_LIST, friends.toJSONString()));
                 break;
             }
+            case REQUEST_FOR_FRIENDS_LIST_WITH_SCORES:
+            {
+                assert session != null;
+
+                JSONArray friendsWithScores;
+
+                // Get serialized friends list
+                this.logger.print("Getting serialized friends list with scores of \"" + session.getUsername() + "\"... ");
+                friendsWithScores = usersManager.getSerializedFriendsListWithScores(session.getUsername());
+                this.logger.printlnGreen("GOT");
+
+                // Store the response message
+                session.prependMessage(new Message(MessageType.FRIENDS_LIST_WITH_SCORES, friendsWithScores.toJSONString()));
+                break;
+            }
+            case REQUEST_FOR_SCORE_AMOUNT:
+            {
+                assert session != null;
+                int score;
+
+                // Retrieving users's score
+                this.logger.print("Retrieving score of \"" + session.getUsername() + "\"... ");
+                score = usersManager.getUsersScore(session.getUsername());
+                this.logger.printlnGreen("RETRIEVED");
+
+                // Store the response message
+                session.prependMessage(new Message(MessageType.SCORE_AMOUNT, String.valueOf(score)));
+                break;
+            }
             case REQUEST_FOR_CHALLENGE:
             {
                 assert session != null;
@@ -521,7 +551,7 @@ public class Deputy extends Thread
                     this.logger.printlnGreen("CONFIRMED");
 
                     // Prepare response message
-                    response = new Message(MessageType.OK);
+                    response = new Message(MessageType.OK, from, String.valueOf(Settings.CHALLENGE_DURATION_SECONDS), String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY));
                 }
                 catch (CommunicableException e)
                 {// Impossible to confirm the request

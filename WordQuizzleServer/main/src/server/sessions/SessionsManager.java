@@ -25,6 +25,8 @@ import server.users.user.User;
 
 import java.net.SocketAddress;
 import java.nio.channels.Selector;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -88,12 +90,27 @@ public class SessionsManager
         synchronized (challengesMonitor)
         {
             // Discard eventual active challenge
-            ChallengeReport eventualOpponentReport = this.challengesManager.cancelChallenge(session.getUsername());
-            if (eventualOpponentReport != null)
-                sendMessage(eventualOpponentReport.player, new Message(MessageType.CHALLENGE_OPPONENT_LOGGED_OUT,
-                        String.valueOf(eventualOpponentReport.winStatus),
-                        String.valueOf(eventualOpponentReport.challengeProgress),
-                        String.valueOf(eventualOpponentReport.scoreGain)));
+            ChallengeReport[] reports = this.challengesManager.cancelChallenge(session.getUsername());
+            if (reports != null)
+            {
+                // Send message to eventual opponent
+                if (reports[0].player.equals(session.getUsername()))
+                    sendMessage(reports[1].player, new Message(MessageType.CHALLENGE_OPPONENT_LOGGED_OUT,
+                            String.valueOf(reports[1].winStatus),
+                            String.valueOf(reports[1].challengeProgress + 1),
+                            String.valueOf(reports[1].scoreGain)));
+                else
+                    sendMessage(reports[0].player, new Message(MessageType.CHALLENGE_OPPONENT_LOGGED_OUT,
+                            String.valueOf(reports[0].winStatus),
+                            String.valueOf(reports[0].challengeProgress + 1),
+                            String.valueOf(reports[0].scoreGain)));
+
+                // Update both scores
+                usersManager.updateUserScore(reports[0].player, reports[0].scoreGain);
+                usersManager.updateUserScore(reports[1].player, reports[1].scoreGain);
+                sendMessageToAllFriends(reports[0].player, new Message(MessageType.FRIEND_SCORE_UPDATE, reports[0].player, String.valueOf(usersManager.getUser(reports[0].player).getScore())));
+                sendMessageToAllFriends(reports[1].player, new Message(MessageType.FRIEND_SCORE_UPDATE, reports[1].player, String.valueOf(usersManager.getUser(reports[1].player).getScore())));
+            }
 
             // Discard eventual challenge request
             String eventualRequestPeer = this.challengeRequestsManager.cancelChallengeRequest(session.getUsername());
@@ -169,7 +186,8 @@ public class SessionsManager
         }
 
         // Send confirmation message to applicant user if is online
-        sendMessage(whoSentRequest, new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, whoConfirmedRequest));
+        int receiverScore = usersManager.getUsersScore(whoConfirmedRequest);
+        sendMessage(whoSentRequest, new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, whoConfirmedRequest, String.valueOf(receiverScore)));
     }
 
     public void declineFriendshipRequest(String whoSentRequest, String whoDeclinedRequest) throws UnexpectedMessageException
@@ -256,28 +274,26 @@ public class SessionsManager
 
                     // Record challenge
                     this.challengesManager.recordChallenge(whoSentRequest, whoConfirmedRequest,
-                            new Consumer<ChallengeReportDelegation>()
-                            {
-                                @Override
-                                public void accept(ChallengeReportDelegation challengeReportDelegation)
-                                {
-                                    ChallengeReport fromReport = challengeReportDelegation.getFromChallengeReport();
-                                    ChallengeReport toReport = challengeReportDelegation.getToChallengeReport();
-                                    sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_REPORT, String.valueOf(fromReport.winStatus), String.valueOf(fromReport.challengeProgress), String.valueOf(fromReport.scoreGain)));
-                                    sendMessage(whoConfirmedRequest, new Message(MessageType.CHALLENGE_REPORT, String.valueOf(toReport.winStatus), String.valueOf(toReport.challengeProgress), String.valueOf(toReport.scoreGain)));
-                                }
+                            challengeReportDelegation -> {
+                                ChallengeReport fromReport = challengeReportDelegation.getFromChallengeReport();
+                                ChallengeReport toReport = challengeReportDelegation.getToChallengeReport();
+                                usersManager.updateUserScore(whoSentRequest, fromReport.scoreGain);
+                                usersManager.updateUserScore(whoConfirmedRequest, toReport.scoreGain);
+                                sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_REPORT, String.valueOf(fromReport.winStatus), String.valueOf(fromReport.challengeProgress + 1), String.valueOf(fromReport.scoreGain)));
+                                sendMessage(whoConfirmedRequest, new Message(MessageType.CHALLENGE_REPORT, String.valueOf(toReport.winStatus), String.valueOf(toReport.challengeProgress + 1), String.valueOf(toReport.scoreGain)));
+                                sendMessageToAllFriends(whoSentRequest, new Message(MessageType.FRIEND_SCORE_UPDATE, whoSentRequest, String.valueOf(usersManager.getUser(whoSentRequest).getScore())));
+                                sendMessageToAllFriends(whoConfirmedRequest, new Message(MessageType.FRIEND_SCORE_UPDATE, whoConfirmedRequest, String.valueOf(usersManager.getUser(whoConfirmedRequest).getScore())));
                             },
-                            new Consumer<ChallengeReportDelegation>()
-                            {
-                                @Override
-                                public void accept(ChallengeReportDelegation challengeReportDelegation)
-                                {
-                                    // Send expiration challenge request message containing challenge reports to both applicant and receiver
-                                    ChallengeReport fromReport = challengeReportDelegation.getFromChallengeReport();
-                                    ChallengeReport toReport = challengeReportDelegation.getToChallengeReport();
-                                    sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_EXPIRED, String.valueOf(fromReport.winStatus), String.valueOf(fromReport.challengeProgress), String.valueOf(fromReport.scoreGain)));
-                                    sendMessage(whoConfirmedRequest, new Message(MessageType.CHALLENGE_EXPIRED, String.valueOf(toReport.winStatus), String.valueOf(toReport.challengeProgress), String.valueOf(toReport.scoreGain)));
-                                }
+                            challengeReportDelegation -> {
+                                // Send expiration challenge request message containing challenge reports to both applicant and receiver
+                                ChallengeReport fromReport = challengeReportDelegation.getFromChallengeReport();
+                                ChallengeReport toReport = challengeReportDelegation.getToChallengeReport();
+                                usersManager.updateUserScore(whoSentRequest, fromReport.scoreGain);
+                                usersManager.updateUserScore(whoConfirmedRequest, toReport.scoreGain);
+                                sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_EXPIRED, String.valueOf(fromReport.winStatus), String.valueOf(fromReport.challengeProgress + 1), String.valueOf(fromReport.scoreGain)));
+                                sendMessage(whoConfirmedRequest, new Message(MessageType.CHALLENGE_EXPIRED, String.valueOf(toReport.winStatus), String.valueOf(toReport.challengeProgress + 1), String.valueOf(toReport.scoreGain)));
+                                sendMessageToAllFriends(whoSentRequest, new Message(MessageType.FRIEND_SCORE_UPDATE, whoSentRequest, String.valueOf(usersManager.getUser(whoSentRequest).getScore())));
+                                sendMessageToAllFriends(whoConfirmedRequest, new Message(MessageType.FRIEND_SCORE_UPDATE, whoConfirmedRequest, String.valueOf(usersManager.getUser(whoConfirmedRequest).getScore())));
                             });
                 }
             }
@@ -300,7 +316,10 @@ public class SessionsManager
             throw exception.get();
 
         //Send confirmation message to applicant
-        sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, whoConfirmedRequest));
+        sendMessage(whoSentRequest, new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED,
+                whoConfirmedRequest,
+                String.valueOf(Settings.CHALLENGE_DURATION_SECONDS),
+                String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY)));
     }
 
     public void declineChallengeRequest(String whoSentRequest, String whoDeclinedRequest) throws UnexpectedMessageException
@@ -360,5 +379,18 @@ public class SessionsManager
             session.wakeUp();
             return true;
         }
+    }
+
+    public boolean sendMessageToAllFriends(String username, Message message)
+    {
+        User user = usersManager.getUser(username);
+        Set<String> friends = user.getFriends();
+
+        for (String friend : friends)
+        {
+            sendMessage(friend, message);
+        }
+
+        return true;
     }
 }
