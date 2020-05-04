@@ -357,7 +357,7 @@ public class TestSessionsManager
             assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
 
             assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
-            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
 
             User user1 = usersManager.getUser(username1);
             User user2 = usersManager.getUser(username2);
@@ -552,33 +552,40 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
+
             assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
             assertEquals(2, challengeRequestsArchive.size());
         }
 
-        @Test
-        public void testChallengeRequestSending_ReceiverUnlogged()
-        {
-            String username1 = UUID.randomUUID().toString();
-            char[] password1 = UUID.randomUUID().toString().toCharArray();
-            char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
-            AtomicReference<Session> session1 = new AtomicReference<>();
-
-            String username2 = UUID.randomUUID().toString();
-            char[] password2 = UUID.randomUUID().toString().toCharArray();
-
-
-            assertDoesNotThrow(() -> usersManager.registerUser(username1, password1));
-            assertDoesNotThrow(() -> session1.set(sessionsManager.openSession(username1, passwordCopy1, selector, socketAddress)));
-            assertEquals(username1, session1.get().getUsername());
-            assertEquals(1, sessionsArchive.size());
-
-            assertDoesNotThrow(() -> usersManager.registerUser(username2, password2));
-
-            assertThrows(ReceiverOfflineException.class, () -> sessionsManager.sendChallengeRequest(username1, username2));
-            assertEquals(0, challengeRequestsArchive.size());
-        }
+//        @Test
+//        public void testChallengeRequestSending_ReceiverUnlogged()
+//        {
+//            String username1 = UUID.randomUUID().toString();
+//            char[] password1 = UUID.randomUUID().toString().toCharArray();
+//            char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
+//            AtomicReference<Session> session1 = new AtomicReference<>();
+//
+//            String username2 = UUID.randomUUID().toString();
+//            char[] password2 = UUID.randomUUID().toString().toCharArray();
+//
+//
+//            assertDoesNotThrow(() -> usersManager.registerUser(username1, password1));
+//            assertDoesNotThrow(() -> session1.set(sessionsManager.openSession(username1, passwordCopy1, selector, socketAddress)));
+//            assertEquals(username1, session1.get().getUsername());
+//            assertEquals(1, sessionsArchive.size());
+//
+//            assertDoesNotThrow(() -> usersManager.registerUser(username2, password2));
+//
+//            assertThrows(ReceiverOfflineException.class, () -> sessionsManager.sendChallengeRequest(username1, username2));
+//            assertEquals(0, challengeRequestsArchive.size());
+//        }
 
         @Test
         public void testChallengeRequestSending_UnknownSender_ERROR()
@@ -641,6 +648,12 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
             assertDoesNotThrow(() -> challengesManager.recordChallenge(username1, username3, voidOperation, voidOperation));
 
             assertThrows(ApplicantEngagedInOtherChallengeException.class, () -> sessionsManager.sendChallengeRequest(username1, username2));
@@ -672,6 +685,12 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
             assertDoesNotThrow(() -> challengesManager.recordChallenge(username2, username3, voidOperation, voidOperation));
 
             assertThrows(ReceiverEngagedInOtherChallengeException.class, () -> sessionsManager.sendChallengeRequest(username1, username2));
@@ -700,6 +719,12 @@ public class TestSessionsManager
             assertDoesNotThrow(() -> session2.set(sessionsManager.openSession(username2, passwordCopy2, selector, socketAddress)));
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
 
             assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
             assertThrows(PreviousChallengeRequestSentException.class, () -> sessionsManager.sendChallengeRequest(username1, username2));
@@ -740,6 +765,18 @@ public class TestSessionsManager
             assertEquals(username3, session3.get().getUsername());
             assertEquals(3, sessionsArchive.size());
 
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username2, username3));
+            assertEquals(session3.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username2));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username2, username3));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username3, String.valueOf(0)));
+
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
             assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username2, username3));
             assertThrows(ReceiverEngagedInOtherChallengeRequestException.class, () -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(2, challengeRequestsArchive.size());
@@ -767,6 +804,12 @@ public class TestSessionsManager
             assertDoesNotThrow(() -> session2.set(sessionsManager.openSession(username2, passwordCopy2, selector, socketAddress)));
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
 
             assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
@@ -801,12 +844,20 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
             assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
             assertEquals(2, challengeRequestsArchive.size());
 
             assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
-            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2,
+                    String.valueOf(Settings.CHALLENGE_DURATION_SECONDS),
+                    String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY)));
             assertEquals(2, challengesArchive.size());
             assertEquals(0, challengeRequestsArchive.size());
         }
@@ -890,6 +941,12 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
             assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
             assertEquals(2, challengeRequestsArchive.size());
@@ -929,7 +986,7 @@ public class TestSessionsManager
 
     @Nested
     class TestSessionedChallenges
-    {;
+    {
         private ScheduledThreadPoolExecutor timer;
 
         @BeforeEach
@@ -974,11 +1031,19 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
             assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
 
             assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
-            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2,
+                    String.valueOf(Settings.CHALLENGE_DURATION_SECONDS),
+                    String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY)));
             assertEquals(2, challengesArchive.size());
 
             assertDoesNotThrow(() -> sessionsManager.closeSession(session1.get()));
@@ -1009,11 +1074,19 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
             assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
 
             assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
-            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2,
+                    String.valueOf(Settings.CHALLENGE_DURATION_SECONDS),
+                    String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY)));
             assertEquals(2, challengesArchive.size());
 
             AtomicReference<String> word = new AtomicReference<>(null);
@@ -1056,11 +1129,19 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
             assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
 
             assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
-            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2,
+                    String.valueOf(Settings.CHALLENGE_DURATION_SECONDS),
+                    String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY)));
             assertEquals(2, challengesArchive.size());
 
             AtomicReference<String> word = new AtomicReference<>(null);
@@ -1119,11 +1200,19 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
             assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
 
             assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
-            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2,
+                    String.valueOf(Settings.CHALLENGE_DURATION_SECONDS),
+                    String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY)));
             assertEquals(2, challengesArchive.size());
 
             Challenge challenge = challengesArchive.get(username1);
@@ -1201,11 +1290,19 @@ public class TestSessionsManager
             assertEquals(username2, session2.get().getUsername());
             assertEquals(2, sessionsArchive.size());
 
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
             assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
             assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
 
             assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
-            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2,
+                    String.valueOf(Settings.CHALLENGE_DURATION_SECONDS),
+                    String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY)));
             assertEquals(2, challengesArchive.size());
 
             timer.shutdown();

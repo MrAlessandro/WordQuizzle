@@ -109,7 +109,12 @@ public class Settings
         DICTIONARY_URL = Settings.class.getClassLoader().getResource(PROPERTIES.getProperty("DICTIONARY_PATH"));
 
         // Getting saved files
-        Path serverSaveDir = Paths.get(PROPERTIES.getProperty("SERVER_SAVE_DIR"));
+        Path serverSaveDir;
+        String saveDir = PROPERTIES.getProperty("SERVER_SAVE_DIR");
+        if (saveDir.equals("#"))
+            serverSaveDir = Paths.get(System.getProperty("java.io.tmpdir"), "WordQuizzle");
+        else
+            serverSaveDir = Paths.get(PROPERTIES.getProperty("SERVER_SAVE_DIR"));
         LOG_FILES_DIR_PATH = Paths.get(serverSaveDir.toString(), PROPERTIES.getProperty("LOG_FILES_DIR_PATH"));
         USERS_ARCHIVE_BACKUP_PATH = Paths.get(serverSaveDir.toString(), PROPERTIES.getProperty("USERS_ARCHIVE_BACKUP_PATH"));
         FRIENDSHIP_REQUESTS_ARCHIVE_BACKUP_PATH = Paths.get(serverSaveDir.toString(), PROPERTIES.getProperty("FRIENDSHIP_REQUESTS_ARCHIVE_BACKUP_PATH"));

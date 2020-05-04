@@ -176,7 +176,7 @@ public class TestUsersManager
                 });
             }
 
-            pool.shutdownNow();
+            pool.shutdown();
             assertDoesNotThrow(() -> pool.awaitTermination(10, TimeUnit.SECONDS));
             assertEquals(tasksNum, usersArchive.size());
         }
@@ -199,7 +199,7 @@ public class TestUsersManager
                 });
             }
 
-            pool.shutdownNow();
+            pool.shutdown();
             assertDoesNotThrow(() -> pool.awaitTermination(10, TimeUnit.SECONDS));
             assertEquals(tasksNum, usersArchive.size());
         }
@@ -223,7 +223,7 @@ public class TestUsersManager
                 });
             }
 
-            pool.shutdownNow();
+            pool.shutdown();
             assertDoesNotThrow(() -> pool.awaitTermination(10, TimeUnit.SECONDS));
             assertEquals(tasksNum, usersArchive.size());
         }
