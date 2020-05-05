@@ -14,9 +14,11 @@ import javax.swing.text.Element;
 import javax.swing.text.html.HTMLDocument;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,6 +48,9 @@ public class ChallengePanel extends JPanel
     private final JTextField translationField;
 
     private final AtomicBoolean busy;
+
+    private Timer timer = null;
+    private long timerStartTime;
 
     public String opponent;
 //  public volatile static String opponent = null;
@@ -289,6 +294,11 @@ public class ChallengePanel extends JPanel
         // Empty panel
         this.challengePlayground.removeAll();
 
+        // Eventually stop timer
+        if (this.timer != null)
+            this.timer.stop();
+        this.timerLabel.setVisible(false);
+
         // Setup panel
         this.challengePlayground.setLayout(new BoxLayout(this.challengePlayground, BoxLayout.Y_AXIS));
 
@@ -340,6 +350,22 @@ public class ChallengePanel extends JPanel
         this.opponent = opponent;
         this.challengeWordsQuantity = wordQuantity;
         this.progress.set(1);
+
+        // Initialize timer
+        this.timerLabel.setVisible(true);
+        this.timerStartTime = System.currentTimeMillis();
+        this.timer = new Timer(500, e -> {
+            long now = System.currentTimeMillis();
+            long clockTime = now - timerStartTime;
+            if (clockTime >= timeout * 1000) {
+                clockTime = timeout * 1000;
+                timer.stop();
+            }
+            SimpleDateFormat df = new SimpleDateFormat("mm:ss");
+            timerLabel.setText(df.format(timeout - clockTime));
+            System.out.println(df.format(timeout - clockTime));
+        });
+        this.timer.start();
 
         // Setup challenge playground text area
         this.challengeProgressPanel.setText(Settings.CHALLENGE_PLAYGROUND_MODEL);
@@ -481,6 +507,13 @@ public class ChallengePanel extends JPanel
         this.scoreLabel.setText(String.valueOf(score));
         this.scoreLabel.revalidate();
         this.scoreLabel.repaint();
+    }
+
+    public void setTimer(String timerString)
+    {
+        this.timerLabel.setText(timerString);
+        this.timerLabel.revalidate();
+        this.timerLabel.repaint();
     }
 
     @Override
