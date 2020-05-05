@@ -32,6 +32,7 @@ public enum MessageType
     CHALLENGE_PROVIDE_TRANSLATION((short)13, "ChallengeProvideTranslation"),
     REQUEST_FOR_SCORE_AMOUNT((short)14, "RequestForScoreAmount"),
     REQUEST_FOR_FRIENDS_LIST_WITH_SCORES((short)15, "RequestForFriendsListWithScores"),
+    LOG_OUT((short) 16, "LogOut"),
 
     /*LOG_OUT((short) 2, "LogOut"),
     REQUEST_FOR_FRIENDSHIP((short) 3, "RequestForFriend"),

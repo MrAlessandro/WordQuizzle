@@ -26,6 +26,10 @@ public class FriendsPanel extends JPanel
     private final JLabel friendListLabel;
     private final JButton addFriendButton;
     private final JButton challengeButton;
+    private final JLabel welcomeLabel;
+    private final JLabel usernameLabel;
+    private final JButton logoutButton;
+    private final JPanel panelHeader;
 
     public FriendsPanel(WordQuizzleClientFrame parentFrame, ChallengePanel challengePanel)
     {
@@ -53,9 +57,42 @@ public class FriendsPanel extends JPanel
             }
         });
 
-        // Setup label
+        // Setup labels
         this.friendListLabel = new JLabel("Friends list:");
         this.friendListLabel.setForeground(Settings.MAIN_COLOR);
+        this.friendListLabel.setBackground(Settings.BACKGROUND_COLOR);
+
+        this.welcomeLabel = new JLabel("Welcome");
+        this.welcomeLabel.setForeground(Settings.MAIN_COLOR);
+        this.welcomeLabel.setBackground(Color.RED);
+        this.welcomeLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        this.usernameLabel = new JLabel();
+        this.usernameLabel.setFont(new Font("", Font.PLAIN, 18));
+        this.usernameLabel.setForeground(Settings.MAIN_COLOR);
+        this.usernameLabel.setBackground(Settings.BACKGROUND_COLOR);
+        this.usernameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Setup header subpanels
+        JPanel welcomeLabelSubpanel = new JPanel();
+        welcomeLabelSubpanel.setLayout(new BoxLayout(welcomeLabelSubpanel, BoxLayout.X_AXIS));
+        welcomeLabelSubpanel.setBackground(Settings.BACKGROUND_COLOR);
+
+        JPanel usernameLabelSubpanel = new JPanel();
+        usernameLabelSubpanel.setLayout(new BoxLayout(usernameLabelSubpanel, BoxLayout.X_AXIS));
+        usernameLabelSubpanel.setBackground(Settings.BACKGROUND_COLOR);
+
+        JPanel logoutButtonSubpanel = new JPanel();
+        logoutButtonSubpanel.setLayout(new BoxLayout(logoutButtonSubpanel, BoxLayout.X_AXIS));
+        logoutButtonSubpanel.setBackground(Settings.BACKGROUND_COLOR);
+
+        // Setup header
+        this.panelHeader = new JPanel();
+        this.panelHeader.setBackground(Settings.BACKGROUND_COLOR);
+        this.panelHeader.setLayout(new BoxLayout(panelHeader, BoxLayout.Y_AXIS));
+        this.panelHeader.setAlignmentX(Component.CENTER_ALIGNMENT);
+        this.panelHeader.setPreferredSize(new Dimension(160, 70));
+        this.panelHeader.setMaximumSize(new Dimension(160, 70));
 
         // Setup scroll pane
         this.friendsScrollPane = new JScrollPane(friendsTable);
@@ -89,13 +126,32 @@ public class FriendsPanel extends JPanel
         this.challengeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
         this.challengeButton.setEnabled(false); // Initially disabled
 
+        // Setup logout button
+        this.logoutButton = new JButton("Logout");
+        this.logoutButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
+
+        // Add components to subpanels
+        welcomeLabelSubpanel.add(this.welcomeLabel);
+        welcomeLabelSubpanel.add(Box.createHorizontalGlue());
+
+        usernameLabelSubpanel.add(this.usernameLabel);
+        usernameLabelSubpanel.add(Box.createHorizontalGlue());
+
+        logoutButtonSubpanel.add(Box.createHorizontalGlue());
+        logoutButtonSubpanel.add(this.logoutButton);
+
+        // Add components to panel header
+        this.panelHeader.add(welcomeLabelSubpanel);
+        this.panelHeader.add(usernameLabelSubpanel);
+        this.panelHeader.add(logoutButtonSubpanel);
+
         // Add components to scroll pane header
         this.friendsScrollPaneHeader.add(this.friendListLabel, BorderLayout.WEST);
         this.friendsScrollPaneHeader.add(this.addFriendButton, BorderLayout.EAST);
 
         // Add components (with margins) to friends panel
+        this.add(this.panelHeader);
         this.add(Box.createVerticalGlue());
-        this.add(Box.createRigidArea(new Dimension(0, 10)));
         this.add(this.friendsScrollPaneHeader);
         this.add(Box.createRigidArea(new Dimension(0, 5)));
         this.add(this.friendsScrollPane);
@@ -126,6 +182,13 @@ public class FriendsPanel extends JPanel
     public void updateFriendScore(String friend, int score)
     {
         this.friendsTable.updateRecord(friend, score);
+    }
+
+    public void setUsername(String username)
+    {
+        this.usernameLabel.setText(username);
+        this.usernameLabel.revalidate();
+        this.usernameLabel.repaint();
     }
 
     @Override

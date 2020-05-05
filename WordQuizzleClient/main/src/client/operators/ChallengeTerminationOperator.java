@@ -75,7 +75,7 @@ public class ChallengeTerminationOperator extends Operator
 
         SwingUtilities.invokeLater(() ->
         {
-            this.frame.headerPanel.setScore(Integer.parseInt(String.valueOf(scoreResponse.getFields()[0].getBody())));
+            this.frame.challengePanel.setScore(Integer.parseInt(String.valueOf(scoreResponse.getFields()[0].getBody())));
             this.frame.challengePanel.unemploy();
         });
         return null;

@@ -220,7 +220,7 @@ public class WordQuizzleClientFrame extends JFrame
         }));
 
         // Setup panels
-        this.headerPanel = new HeaderPanel();
+        //this.headerPanel = new HeaderPanel();
         this.challengePanel = new ChallengePanel(this);
         this.friendsPanel = new FriendsPanel(this, this.challengePanel);
     }
@@ -382,13 +382,16 @@ public class WordQuizzleClientFrame extends JFrame
         this.getContentPane().setLayout(new BorderLayout());
 
         // Setup header panel
-        this.headerPanel.setUsername(username);
-        this.headerPanel.setScore(score);
+        //this.headerPanel.setUsername(username);
+        //this.headerPanel.setScore(score);
+        // Setup panels with users' information
+        this.friendsPanel.setUsername(username);
+        this.challengePanel.setScore(score);
 
         // Add components to outer container
         this.getContentPane().add(this.friendsPanel, BorderLayout.WEST);
         this.getContentPane().add(this.challengePanel, BorderLayout.CENTER);
-        this.getContentPane().add(this.headerPanel, BorderLayout.NORTH);
+        //this.getContentPane().add(this.headerPanel, BorderLayout.NORTH);
 
         // Resize accordingly
         this.pack();

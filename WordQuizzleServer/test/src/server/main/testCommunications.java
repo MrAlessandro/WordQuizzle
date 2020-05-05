@@ -88,6 +88,24 @@ public class testCommunications
     }
 
     @Test
+    public void testLogOut()
+    {
+        String username = UUID.randomUUID().toString();
+        char[] password = UUID.randomUUID().toString().toCharArray();
+        char[] passwordCopy = Arrays.copyOf(password, password.length);
+        Client client = new Client();
+
+        assertDoesNotThrow(() -> client.register(username, password));
+
+        AtomicReference<Message> responseMessage = new AtomicReference<>(null);
+        assertDoesNotThrow(() -> responseMessage.set(client.logIn(username, passwordCopy)));
+        assertEquals(MessageType.OK, responseMessage.get().getType());
+
+        assertDoesNotThrow(() -> responseMessage.set(client.require(new Message(MessageType.LOG_OUT))));
+        assertEquals(MessageType.OK, responseMessage.get().getType());
+    }
+
+    @Test
     public void testFriendshipCreation()
     {
         String username1 = UUID.randomUUID().toString();

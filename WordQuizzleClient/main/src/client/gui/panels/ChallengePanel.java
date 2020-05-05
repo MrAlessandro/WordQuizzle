@@ -10,10 +10,10 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.DefaultCaret;
 import javax.swing.text.Element;
 import javax.swing.text.html.HTMLDocument;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.io.IOException;
@@ -24,21 +24,28 @@ public class ChallengePanel extends JPanel
 {
     private WordQuizzleClientFrame parentFrame;
 
-    private JLabel noChallengeInProgressLabel;
-    private JLabel instructionLabel;
-    private JLabel waitingForResponseLabel;
-    private JLabel stopwatchIconLabel;
-    private JLabel failureMessageLabel;
-    private JLabel translateHereLabel;
-    private JLabel loadingChallengeLabel;
-    private JLabel loadingChallengeIconLabel;
+    private final JPanel challengePlayground;
+    private final JPanel headerPanel;
 
-    private JTextPane challengeProgressPanel;
-    private JScrollPane scrollChallengePane;
-    private JButton submitButton;
-    private JTextField translationField;
+    private final JLabel timerLabel;
+    private final JLabel scoreDescriptionLabel;
+    private final JLabel scoreLabel;
 
-    private AtomicBoolean busy;
+    private final JLabel noChallengeInProgressLabel;
+    private final JLabel instructionLabel;
+    private final JLabel waitingForResponseLabel;
+    private final JLabel stopwatchIconLabel;
+    private final JLabel failureMessageLabel;
+    private final JLabel translateHereLabel;
+    private final JLabel loadingChallengeLabel;
+    private final JLabel loadingChallengeIconLabel;
+
+    private final JTextPane challengeProgressPanel;
+    private final JScrollPane scrollChallengePane;
+    private final JButton submitButton;
+    private final JTextField translationField;
+
+    private final AtomicBoolean busy;
 
     public String opponent;
 //  public volatile static String opponent = null;
@@ -54,9 +61,13 @@ public class ChallengePanel extends JPanel
         this.parentFrame = parentFrame;
 
         // Initialize Challenge panel
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        this.setLayout(new BorderLayout());
         this.setBackground(Settings.BACKGROUND_COLOR);
         this.setBorder(new CompoundBorder(new LineBorder(Settings.MAIN_COLOR, 1), new LineBorder(Settings.BACKGROUND_COLOR, 10)));
+
+        this.challengePlayground = new JPanel();
+        this.challengePlayground.setLayout(new BoxLayout(challengePlayground, BoxLayout.Y_AXIS));
+        this.challengePlayground.setBackground(Settings.BACKGROUND_COLOR);
 
         // Setup labels
         this.noChallengeInProgressLabel = new JLabel("No challenge in progress.");
@@ -100,6 +111,18 @@ public class ChallengePanel extends JPanel
         this.loadingChallengeIconLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
         this.loadingChallengeIconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        this.timerLabel = new JLabel("");
+        this.timerLabel.setFont(new Font("", Font.PLAIN, 18));
+        this.timerLabel.setForeground(Settings.MAIN_COLOR);
+        this.timerLabel.setVisible(false);
+
+        this.scoreDescriptionLabel = new JLabel("Your score is: ");
+        this.scoreDescriptionLabel.setForeground(Settings.MAIN_COLOR);
+
+        this.scoreLabel = new JLabel();
+        this.scoreLabel.setFont(new Font("", Font.PLAIN, 18));
+        this.scoreLabel.setForeground(Settings.MAIN_COLOR);
+
         // Setup challenge playground panel
         this.challengeProgressPanel = new JTextPane();
         this.challengeProgressPanel.setContentType("text/html");
@@ -130,6 +153,11 @@ public class ChallengePanel extends JPanel
         this.scrollChallengePane.setAlignmentY(Component.CENTER_ALIGNMENT);
         this.scrollChallengePane.setBorder(new LineBorder(Settings.MAIN_COLOR, 1));
 
+        // Setup header panel
+        this.headerPanel = new JPanel();
+        this.headerPanel.setLayout(new BoxLayout(this.headerPanel, BoxLayout.X_AXIS));
+        this.headerPanel.setBackground(Settings.BACKGROUND_COLOR);
+
         // Setup fields
         this.translationField = new JTextField();
         this.translationField.setColumns(25);
@@ -142,9 +170,18 @@ public class ChallengePanel extends JPanel
         this.submitButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
         this.submitButton.setAlignmentY(Component.CENTER_ALIGNMENT);
 
+        // Add component to header panel
+        this.headerPanel.add(this.timerLabel);
+        this.headerPanel.add(Box.createHorizontalGlue());
+        this.headerPanel.add(this.scoreDescriptionLabel);
+        this.headerPanel.add(this.scoreLabel);
+
+        // Add component to outer container
+        this.add(this.headerPanel, BorderLayout.NORTH);
+        this.add(this.challengePlayground, BorderLayout.CENTER);
+
         // Set translation validation mechanism
-        this.translationField.getDocument().addDocumentListener(new DocumentListener()
-        {
+        this.translationField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e)
             {
@@ -163,11 +200,19 @@ public class ChallengePanel extends JPanel
                 submitButton.setEnabled(!translationField.getText().trim().isEmpty() && progress.get() <= challengeWordsQuantity);
             }
         });
-        this.submitButton.addActionListener(e -> {
-            (new ProvideTranslationOperator(parentFrame, translationField.getText().trim(), progress.get(), challengeWordsQuantity)).execute();
-            progress.incrementAndGet();
-            translationField.setText("");
-        });
+
+        // Set translate action
+        Action action = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                (new ProvideTranslationOperator(parentFrame, translationField.getText().trim(), progress.get(), challengeWordsQuantity)).execute();
+                progress.incrementAndGet();
+                translationField.setText("");
+            }
+        };
+        this.submitButton.addActionListener(action);
+        this.translationField.addActionListener(action);
 
         // Initialize progress
         this.progress = new AtomicInteger(1);
@@ -185,47 +230,47 @@ public class ChallengePanel extends JPanel
     public void waitingReply(String receiver)
     {
         // Empty panel
-        this.removeAll();
+        this.challengePlayground.removeAll();
 
         // Setup panel
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        this.challengePlayground.setLayout(new BoxLayout(this.challengePlayground, BoxLayout.Y_AXIS));
 
         // Set waiting label
         this.waitingForResponseLabel.setText("Waiting reply from \"" + receiver + "\"...");
 
         // Add components to panel
-        this.add(Box.createVerticalGlue());
-        this.add(this.waitingForResponseLabel);
-        this.add(this.loadingChallengeIconLabel);
-        this.add(Box.createVerticalGlue());
+        this.challengePlayground.add(Box.createVerticalGlue());
+        this.challengePlayground.add(this.waitingForResponseLabel);
+        this.challengePlayground.add(this.loadingChallengeIconLabel);
+        this.challengePlayground.add(Box.createVerticalGlue());
 
         // Set busy flag
         this.busy.set(true);
 
         // Repaint
-        this.repaint();
-        this.revalidate();
+        this.challengePlayground.repaint();
+        this.challengePlayground.revalidate();
     }
 
     public void waitingReport()
     {
         // Empty panel
-        this.removeAll();
+        this.challengePlayground.removeAll();
 
         // Setup panel
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        this.challengePlayground.setLayout(new BoxLayout(this.challengePlayground, BoxLayout.Y_AXIS));
 
         // Add components to panel
-        this.add(Box.createVerticalGlue());
-        this.add(this.loadingChallengeIconLabel);
-        this.add(Box.createVerticalGlue());
+        this.challengePlayground.add(Box.createVerticalGlue());
+        this.challengePlayground.add(this.loadingChallengeIconLabel);
+        this.challengePlayground.add(Box.createVerticalGlue());
 
         // Set busy flag
         this.busy.set(true);
 
         // Repaint
-        this.repaint();
-        this.revalidate();
+        this.challengePlayground.repaint();
+        this.challengePlayground.revalidate();
     }
 
     public void unemploy()
@@ -242,54 +287,54 @@ public class ChallengePanel extends JPanel
         this.opponent = null;
 
         // Empty panel
-        this.removeAll();
+        this.challengePlayground.removeAll();
 
         // Setup panel
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        this.challengePlayground.setLayout(new BoxLayout(this.challengePlayground, BoxLayout.Y_AXIS));
 
         // Add components to panel
-        this.add(Box.createVerticalGlue());
-        this.add(this.noChallengeInProgressLabel);
-        this.add(this.instructionLabel);
-        this.add(Box.createVerticalGlue());
+        this.challengePlayground.add(Box.createVerticalGlue());
+        this.challengePlayground.add(this.noChallengeInProgressLabel);
+        this.challengePlayground.add(this.instructionLabel);
+        this.challengePlayground.add(Box.createVerticalGlue());
 
         // Set busy flag
         this.busy.set(false);
 
         // Repaint
-        this.repaint();
-        this.revalidate();
+        this.challengePlayground.repaint();
+        this.challengePlayground.revalidate();
     }
 
     public void challengeLoading(String opponent)
     {
         // Empty panel
-        this.removeAll();
+        this.challengePlayground.removeAll();
 
         // Setup panel
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        this.challengePlayground.setLayout(new BoxLayout(this.challengePlayground, BoxLayout.Y_AXIS));
 
         // Set waiting label
         this.loadingChallengeLabel.setText("Waiting reply from \"" + opponent + "\"...");
 
         // Add components to panel
-        this.add(Box.createVerticalGlue());
-        this.add(this.loadingChallengeLabel);
-        this.add(this.loadingChallengeIconLabel);
-        this.add(Box.createVerticalGlue());
+        this.challengePlayground.add(Box.createVerticalGlue());
+        this.challengePlayground.add(this.loadingChallengeLabel);
+        this.challengePlayground.add(this.loadingChallengeIconLabel);
+        this.challengePlayground.add(Box.createVerticalGlue());
 
         // Set busy flag
         this.busy.set(true);
 
         // Repaint
-        this.repaint();
-        this.revalidate();
+        this.challengePlayground.repaint();
+        this.challengePlayground.revalidate();
     }
 
     public void challenge(String firstWord, String opponent, int wordQuantity, int timeout)
     {
         // Empty panel
-        this.removeAll();
+        this.challengePlayground.removeAll();
 
         // Set challenge details
         this.opponent = opponent;
@@ -301,7 +346,7 @@ public class ChallengePanel extends JPanel
         this.appendTranslationTask(firstWord);
 
         // Set proper layout
-        this.setLayout(new BorderLayout());
+        this.challengePlayground.setLayout(new BorderLayout());
 
         // DownsidePanel
         JPanel downsidePanel = new JPanel();
@@ -332,12 +377,12 @@ public class ChallengePanel extends JPanel
         downsidePanel.add(labelPanel);
         downsidePanel.add(translationPanel);
 
-        this.add(scrollChallengePane, BorderLayout.CENTER);
-        this.add(downsidePanel, BorderLayout.SOUTH);
+        this.challengePlayground.add(scrollChallengePane, BorderLayout.CENTER);
+        this.challengePlayground.add(downsidePanel, BorderLayout.SOUTH);
 
         // Repaint
-        this.repaint();
-        this.revalidate();
+        this.challengePlayground.repaint();
+        this.challengePlayground.revalidate();
     }
 
     public void appendTranslationTask(String word)
@@ -429,6 +474,13 @@ public class ChallengePanel extends JPanel
     public boolean isBusy()
     {
         return this.busy.get();
+    }
+
+    public void setScore(int score)
+    {
+        this.scoreLabel.setText(String.valueOf(score));
+        this.scoreLabel.revalidate();
+        this.scoreLabel.repaint();
     }
 
     @Override

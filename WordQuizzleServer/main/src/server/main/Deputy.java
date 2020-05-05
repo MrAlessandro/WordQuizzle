@@ -360,6 +360,20 @@ public class Deputy extends Thread
 
                 break;
             }
+            case LOG_OUT:
+            {
+                assert session != null;
+
+                // Close session
+                this.logger.print("Closing session with user \"" + session.getUsername() + "\"... ");
+                this.sessionsManager.closeSession(session);
+                this.logger.printlnRed("CLOSED");
+
+                // Associate response message to connection
+                selected.attach(new Message(MessageType.OK));
+
+                break;
+            }
             case REQUEST_FOR_FRIENDSHIP:
             {
                 assert session != null;
