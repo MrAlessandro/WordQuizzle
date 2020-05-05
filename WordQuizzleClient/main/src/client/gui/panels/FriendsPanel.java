@@ -2,6 +2,7 @@ package client.gui.panels;
 
 import client.gui.WordQuizzleClientFrame;
 import client.gui.tables.FriendsTable;
+import client.operators.LogOutOperator;
 import client.operators.SendChallengeRequestOperator;
 import client.operators.SendFriendshipRequestOperator;
 import client.settings.Settings;
@@ -129,6 +130,7 @@ public class FriendsPanel extends JPanel
         // Setup logout button
         this.logoutButton = new JButton("Logout");
         this.logoutButton.setAlignmentX(Component.RIGHT_ALIGNMENT);
+        this.logoutButton.addActionListener(e -> (new LogOutOperator(this.parentFrame)).execute());
 
         // Add components to subpanels
         welcomeLabelSubpanel.add(this.welcomeLabel);
@@ -182,6 +184,11 @@ public class FriendsPanel extends JPanel
     public void updateFriendScore(String friend, int score)
     {
         this.friendsTable.updateRecord(friend, score);
+    }
+
+    public void emptyFriendsList()
+    {
+        this.friendsTable.empty();
     }
 
     public void setUsername(String username)

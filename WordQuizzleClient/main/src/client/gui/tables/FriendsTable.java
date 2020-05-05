@@ -41,6 +41,11 @@ public class FriendsTable extends JList<FriendRecord>
         }
     }
 
+    public void empty()
+    {
+        this.listModel.clear();
+    }
+
     private static class CellRender extends JPanel implements ListCellRenderer<FriendRecord>
     {
         private final JLabel friendLabel;
