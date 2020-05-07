@@ -112,7 +112,7 @@ public class Settings
         Path serverSaveDir;
         String saveDir = PROPERTIES.getProperty("SERVER_SAVE_DIR");
         if (saveDir.equals("#"))
-            serverSaveDir = Paths.get(System.getProperty("java.io.tmpdir"), "WordQuizzle");
+            serverSaveDir = Paths.get(Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath());
         else
             serverSaveDir = Paths.get(PROPERTIES.getProperty("SERVER_SAVE_DIR"));
         LOG_FILES_DIR_PATH = Paths.get(serverSaveDir.toString(), PROPERTIES.getProperty("LOG_FILES_DIR_PATH"));
