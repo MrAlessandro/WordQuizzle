@@ -116,7 +116,7 @@ public class Settings
         if (saveDir.equals("#"))
         {
             // serverSaveDir = Paths.get(Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-            serverSaveDir = Paths.get(System.getProperty("java.io.tmpdir"));
+            serverSaveDir = Paths.get(System.getProperty("java.io.tmpdir"), "WordQuizzle");
         }
         else
             serverSaveDir = Paths.get(PROPERTIES.getProperty("SERVER_SAVE_DIR"));
