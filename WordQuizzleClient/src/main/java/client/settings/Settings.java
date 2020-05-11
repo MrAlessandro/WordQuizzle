@@ -1,5 +1,6 @@
 package client.settings;
 
+import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import java.awt.*;
 import java.io.*;
@@ -58,21 +59,15 @@ public class Settings
 
     public static void loadProperties() throws IOException
     {
-        URL resourcesDirectoryURL;
-        URL propertiesFileURL;
-
-        // Get resources directory URL
-        resourcesDirectoryURL = Settings.class.getClassLoader().getResource("");
-        if (resourcesDirectoryURL == null)
-            throw new FileNotFoundException("RESOURCES DIRECTORY NOT FOUND");
+        InputStream propertiesFileStream;
 
         // Get properties file URL
-        propertiesFileURL = Settings.class.getClassLoader().getResource("config.properties");
-        if (propertiesFileURL == null)
+        propertiesFileStream = Settings.class.getClassLoader().getResourceAsStream("config.properties");
+        if (propertiesFileStream == null)
             throw new FileNotFoundException("PROPERTIES FILE NOT FOUND");
 
-        // Reading properties file
-        PROPERTIES.load(new FileInputStream(propertiesFileURL.getPath()));
+        // Load properties file
+        PROPERTIES.load(propertiesFileStream);
 
         // Getting properties
         CONNECTION_PORT = Integer.parseInt(PROPERTIES.getProperty("CONNECTION_PORT"));
@@ -85,23 +80,63 @@ public class Settings
         FRIENDS_PANE_WIDTH = Integer.parseInt(PROPERTIES.getProperty("FRIENDS_PANE_WIDTH"));
         CHALLENGE_PANE_WIDTH = Integer.parseInt(PROPERTIES.getProperty("CHALLENGE_PANE_WIDTH"));
         SCORE_PANE_WIDTH = Integer.parseInt(PROPERTIES.getProperty("SCORE_PANE_WIDTH"));
-        LOGO_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("LOGO_ICON_PATH"));
-        LOADING_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("LOADING_ICON_PATH"));
-        STOPWATCH_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("STOPWATCH_ICON_PATH"));
-        HANDSHAKE_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("HANDSHAKE_ICON_PATH"));
-        THUMB_UP_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("THUMB_UP_ICON_PATH"));
-        THUMB_DOWN_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("THUMB_DOWN_ICON_PATH"));
-        WARNING_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("WARNING_ICON_PATH"));
-        CHALLENGE_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("CHALLENGE_ICON_PATH"));
-        TIMEOUT_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("TIMEOUT_ICON_PATH"));
-        LOGOUT_ICON = new ImageIcon(resourcesDirectoryURL.getPath() + PROPERTIES.getProperty("LOGOUT_ICON_PATH"));
         MAIN_COLOR = extractColor(PROPERTIES.getProperty("MAIN_COLOR"));
         BACKGROUND_COLOR = extractColor(PROPERTIES.getProperty("BACKGROUND_COLOR"));
         SCROLL_PANE_BACKGROUND_COLOR = extractColor(PROPERTIES.getProperty("SCROLL_PANE_BACKGROUND_COLOR"));
         FOREGROUND_COLOR = extractColor(PROPERTIES.getProperty("FOREGROUND_COLOR"));
 
+        // Load all icons
+        try(
+                InputStream logoIconInputStream = Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("LOGO_ICON_PATH"));
+                InputStream loadingIconInputStream = Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("LOADING_ICON_PATH"));
+                InputStream stopwatchIconInputStream = Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("STOPWATCH_ICON_PATH"));
+                InputStream handshakeIconInputStream = Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("HANDSHAKE_ICON_PATH"));
+                InputStream thumbUpIconInputStream = Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("THUMB_UP_ICON_PATH"));
+                InputStream thumbDownIconInputStream = Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("THUMB_DOWN_ICON_PATH"));
+                InputStream warningIconInputStream = Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("WARNING_ICON_PATH"));
+                InputStream challengeIconInputStream = Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("CHALLENGE_ICON_PATH"));
+                InputStream timeoutIconInputStream = Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("TIMEOUT_ICON_PATH"));
+                InputStream logOutIconInputStream = Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("LOGOUT_ICON_PATH"));
+        )
+        {
+            assert logoIconInputStream != null;
+            assert loadingIconInputStream != null;
+            assert stopwatchIconInputStream != null;
+            assert handshakeIconInputStream != null;
+            assert thumbUpIconInputStream != null;
+            assert thumbDownIconInputStream != null;
+            assert warningIconInputStream != null;
+            assert challengeIconInputStream != null;
+            assert timeoutIconInputStream != null;
+            assert logOutIconInputStream != null;
+
+            LOGO_ICON = new ImageIcon(ImageIO.read(logoIconInputStream));
+            LOADING_ICON = new ImageIcon(ImageIO.read(loadingIconInputStream));
+            STOPWATCH_ICON = new ImageIcon(ImageIO.read(stopwatchIconInputStream));
+            HANDSHAKE_ICON = new ImageIcon(ImageIO.read(handshakeIconInputStream));
+            THUMB_UP_ICON = new ImageIcon(ImageIO.read(thumbUpIconInputStream));
+            THUMB_DOWN_ICON = new ImageIcon(ImageIO.read(thumbDownIconInputStream));
+            WARNING_ICON = new ImageIcon(ImageIO.read(warningIconInputStream));
+            CHALLENGE_ICON = new ImageIcon(ImageIO.read(challengeIconInputStream));
+            TIMEOUT_ICON = new ImageIcon(ImageIO.read(timeoutIconInputStream));
+            LOGOUT_ICON = new ImageIcon(ImageIO.read(logOutIconInputStream));
+        }
+
         // Load challenge playground model
-        CHALLENGE_PLAYGROUND_MODEL = new String(Files.readAllBytes(Paths.get(Settings.class.getClassLoader().getResource(PROPERTIES.getProperty("CHALLENGE_PLAYGROUND_MODEL")).getPath())));
+        try(InputStream challengePlaygroundModelInputStream = Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("CHALLENGE_PLAYGROUND_MODEL")))
+        {
+            assert challengePlaygroundModelInputStream != null;
+
+            StringBuilder builder = new StringBuilder();
+            int bytesRead;
+            byte[] chunk = new byte[1024];
+            while ((bytesRead = challengePlaygroundModelInputStream.read(chunk)) != -1)
+            {
+                builder.append(new String(chunk));
+            }
+
+            CHALLENGE_PLAYGROUND_MODEL = builder.toString();
+        }
     }
 
     private static Color extractColor(String colorStr)

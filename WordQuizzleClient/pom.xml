@@ -35,7 +35,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>wordquizzle.WordQuizzleClient.client.main.WordQuizzleClient</mainClass>
+                            <mainClass>client.main.WordQuizzleClient</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

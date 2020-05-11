@@ -53,8 +53,6 @@ public class ChallengePanel extends JPanel
     private long timerStartTime;
 
     public String opponent;
-//  public volatile static String opponent = null;
-//    private static int challengeTimeout;
     public int challengeWordsQuantity;
     public AtomicInteger progress;
 
@@ -362,8 +360,7 @@ public class ChallengePanel extends JPanel
                 timer.stop();
             }
             SimpleDateFormat df = new SimpleDateFormat("mm:ss");
-            timerLabel.setText(df.format(timeout - clockTime));
-            System.out.println(df.format(timeout - clockTime));
+            timerLabel.setText(df.format(timeout * 1000 - clockTime));
         });
         this.timer.start();
 
