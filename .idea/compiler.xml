@@ -14,7 +14,9 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="WordQuizzleServer" options="-verbose -Xlint:unchecked" />
+      <module name="Commons" options="-Xlint:unchecked" />
+      <module name="WordQuizzleClient" options="-Xlint:unchecked" />
+      <module name="WordQuizzleServer" options="-Xlint:unchecked" />
     </option>
   </component>
 </project>

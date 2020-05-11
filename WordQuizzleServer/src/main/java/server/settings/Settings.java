@@ -1,12 +1,17 @@
 package server.settings;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import java.io.*;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Properties;
 
 public class Settings
@@ -47,7 +52,7 @@ public class Settings
     public static boolean COLORED_LOGS;
 
     // Words dictionary.json
-    public static URL DICTIONARY_URL;
+    public static String[] DICTIONARY;
 
     // Translation service
     public static String TRANSLATION_SERVICE_URL;
@@ -105,14 +110,14 @@ public class Settings
         CHALLENGE_WRONG_TRANSLATION_SCORE = Integer.parseInt(PROPERTIES.getProperty("CHALLENGE_WRONG_TRANSLATION_SCORE"));
         CHALLENGE_WINNER_EXTRA_SCORE = Integer.parseInt(PROPERTIES.getProperty("CHALLENGE_WINNER_EXTRA_SCORE"));
 
-        // Getting dictionary resource
-        DICTIONARY_URL = Settings.class.getClassLoader().getResource(PROPERTIES.getProperty("DICTIONARY_PATH"));
-
         // Getting saved files
         Path serverSaveDir;
         String saveDir = PROPERTIES.getProperty("SERVER_SAVE_DIR");
         if (saveDir.equals("#"))
-            serverSaveDir = Paths.get(Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+        {
+            // serverSaveDir = Paths.get(Settings.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+            serverSaveDir = Paths.get(System.getProperty("java.io.tmpdir"));
+        }
         else
             serverSaveDir = Paths.get(PROPERTIES.getProperty("SERVER_SAVE_DIR"));
         LOG_FILES_DIR_PATH = Paths.get(serverSaveDir.toString(), PROPERTIES.getProperty("LOG_FILES_DIR_PATH"));
@@ -124,5 +129,40 @@ public class Settings
             Files.createDirectory(serverSaveDir);
         if (LOG_FILES && !Files.exists(LOG_FILES_DIR_PATH))
             Files.createDirectory(LOG_FILES_DIR_PATH);
+
+        // Read dictionary
+        try(BufferedReader dictionaryReader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(
+                Settings.class.getClassLoader().getResourceAsStream(PROPERTIES.getProperty("DICTIONARY_PATH"))))))
+        {
+            StringBuilder builder = new StringBuilder();
+            String line;
+            while ((line = dictionaryReader.readLine()) != null)
+            {
+                builder.append(line);
+            }
+
+            String serializedDictionary = builder.toString();
+            JSONParser parser = new JSONParser();
+            JSONArray words = (JSONArray) parser.parse(serializedDictionary);
+            DICTIONARY = new String[words.size()];
+            int i = 0;
+            for (String word : (Iterable<String>) words)
+            {
+                DICTIONARY[i++] = word;
+            }
+        }
+        catch (NoSuchFileException e)
+        {
+            throw new Error("DICTIONARY FILE NOT FOUND", e);
+        }
+        catch (ParseException e)
+        {
+            throw new Error("ERROR PARSING DICTIONARY", e);
+        }
+        catch (IOException e)
+        {
+            throw new Error("ERROR READING DICTIONARY", e);
+        }
+
     }
 }

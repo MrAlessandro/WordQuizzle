@@ -36,9 +36,6 @@ public class ChallengesManager
     public Logger translatorsLogger;
     public Logger timerLogger;
 
-    // Dictionary
-    private String[] dictionary;
-
     // Randomizer
     private Random randomizer;
 
@@ -77,34 +74,6 @@ public class ChallengesManager
             throw new Error("ERROR CREATING LOGGERS", e);
         }
 
-        // Setup challenges words from dictionary
-        try
-        {
-            File dictionaryFile = new File(Settings.DICTIONARY_URL.toURI());
-            String JSONdictionary = new String(Files.readAllBytes(dictionaryFile.toPath()));
-            JSONParser parser = new JSONParser();
-            JSONArray words = (JSONArray) parser.parse(JSONdictionary);
-            this.dictionary = new String[words.size()];
-            int i = 0;
-            for (String word : (Iterable<String>) words)
-            {
-                dictionary[i++] = word;
-            }
-        }
-        catch (NoSuchFileException | URISyntaxException e)
-        {
-            throw new Error("DICTIONARY FILE NOT FOUND", e);
-        }
-        catch (ParseException e)
-        {
-            throw new Error("ERROR PARSING DICTIONARY", e);
-        }
-        catch (IOException e)
-        {
-            throw new Error("ERROR READING DICTIONARY", e);
-        }
-
-
         // Setup randomizer
         this.randomizer = new Random();
 
@@ -121,6 +90,9 @@ public class ChallengesManager
         // Cancel all timeout
         this.timer.shutdownNow();
         this.timer.purge();
+
+        // Shut down translators
+        this.translators.shutdownNow();
     }
 
     public void checkEngagement(String from, String to) throws ApplicantEngagedInOtherChallengeException, ReceiverEngagedInOtherChallengeException
@@ -145,8 +117,8 @@ public class ChallengesManager
         String[] words = new String[Settings.CHALLENGE_WORDS_QUANTITY];
         for (int i = 0; i < words.length; i++)
         {
-            int randomIndex = Math.abs(randomizer.nextInt() % dictionary.length);
-            words[i] = dictionary[randomIndex];
+            int randomIndex = Math.abs(randomizer.nextInt() % Settings.DICTIONARY.length);
+            words[i] = Settings.DICTIONARY[randomIndex];
         }
 
         // Initialize challenge
@@ -244,7 +216,6 @@ public class ChallengesManager
     {
         Challenge consequentialChallenge;
         Challenge challenge;
-        ChallengeReport report;
 
         synchronized (ChallengesManager.class)
         {

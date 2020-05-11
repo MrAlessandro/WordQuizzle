@@ -39,6 +39,8 @@ class WordQuizzleServer
     // Managers
     private final UsersManager usersManager;
     private final FriendshipRequestsManager friendshipRequestsManager;
+    private final ChallengeRequestsManager challengeRequestsManager;
+    private final ChallengesManager challengesManager;
     private final Registry registry;
     private final Deputy[] deputies;
 
@@ -89,12 +91,12 @@ class WordQuizzleServer
 
         // Set up challenge requests manager
         logger.print("Initializing challenge requests manager... ");
-        ChallengeRequestsManager challengeRequestsManager = new ChallengeRequestsManager();
+         this.challengeRequestsManager = new ChallengeRequestsManager();
         logger.printlnGreen("INITIALIZED");
 
         // Setup challenges manager
         logger.print("Initializing challenges manager... ");
-        ChallengesManager challengesManager = new ChallengesManager(Thread.currentThread().getUncaughtExceptionHandler());
+        this.challengesManager = new ChallengesManager(Thread.currentThread().getUncaughtExceptionHandler());
         logger.printlnGreen("INITIALIZED");
 
         // Setup sessions manager
@@ -272,6 +274,12 @@ class WordQuizzleServer
                 deputy.join();
             }
             logger.printlnGreen("DEPUTIES TERMINATED");
+
+            // Stop translators and timers
+            logger.print("Shutting down translators thread and timers... ");
+            this.challengeRequestsManager.timer.shutdownNow();
+            this.challengesManager.shutdown();
+            logger.printlnGreen("SHUTTED DOWN");
 
             // Backup users manager in order to make it persistent
             if (!Settings.DEBUG)
