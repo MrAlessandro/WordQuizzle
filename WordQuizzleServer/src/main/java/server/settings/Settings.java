@@ -73,7 +73,7 @@ public class Settings
     public static int CHALLENGE_WRONG_TRANSLATION_SCORE;
     public static int CHALLENGE_WINNER_EXTRA_SCORE;
 
-
+    @SuppressWarnings("unchecked")
     public static void loadProperties() throws IOException
     {
         InputStream propertiesFileStream;

@@ -22,6 +22,7 @@ public class UsersManager implements commons.remote.Registrable
         this.usersArchive = new ConcurrentHashMap<>(Settings.USERS_ARCHIVE_INITIAL_SIZE);
     }
 
+    @SuppressWarnings("unchecked")
     public UsersManager(JSONArray serializedUsersArchive)
     {
         this.usersArchive = new ConcurrentHashMap<>(Settings.USERS_ARCHIVE_INITIAL_SIZE);
@@ -68,6 +69,7 @@ public class UsersManager implements commons.remote.Registrable
         return user.serializeFriends();
     }
 
+    @SuppressWarnings("unchecked")
     public JSONArray getSerializedFriendsListWithScores(String username)
     {
         User user = getUser(username);
@@ -87,10 +89,10 @@ public class UsersManager implements commons.remote.Registrable
         return serializeList;
     }
 
-    public int updateUserScore(String username, int gain)
+    public void updateUserScore(String username, int gain)
     {
         User user = getUser(username);
-        return user.updateScore(gain);
+        user.updateScore(gain);
     }
 
     public int getUsersScore(String username)
@@ -99,6 +101,7 @@ public class UsersManager implements commons.remote.Registrable
         return user.getScore();
     }
 
+    @SuppressWarnings("unchecked")
     public JSONArray serialize()
     {
         JSONArray users = new JSONArray();

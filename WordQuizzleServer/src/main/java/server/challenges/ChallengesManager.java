@@ -111,6 +111,7 @@ public class ChallengesManager
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void recordChallenge(String from, String to, Consumer<ChallengeReportDelegation> completionOperation, Consumer<ChallengeReportDelegation> timeoutOperation) throws ApplicantEngagedInOtherChallengeException, ReceiverEngagedInOtherChallengeException
     {
         // Retrieve bulk of word associating to this challenge

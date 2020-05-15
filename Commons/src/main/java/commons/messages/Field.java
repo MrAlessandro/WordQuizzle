@@ -193,6 +193,7 @@ public class Field
      * This method generate the {@code JSON} serialization of this {@link Field} represented as a {@link JSONObject}
      * @return The {@link JSONObject} representing the {@code JSON} serialization of this {@link Field}
      */
+    @SuppressWarnings("unchecked")
     protected JSONObject serialize()
     {
         JSONObject serializedThis = new JSONObject();

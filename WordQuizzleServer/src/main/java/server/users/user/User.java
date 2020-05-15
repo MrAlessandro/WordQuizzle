@@ -37,6 +37,7 @@ public class User
         this.backlog = new ConcurrentLinkedDeque<>();
     }
 
+    @SuppressWarnings("unchecked")
     public User(JSONObject serializedUser)
     {
         this.username = (String) serializedUser.get("Username");
@@ -90,9 +91,9 @@ public class User
         return this.score.get();
     }
 
-    public int updateScore(int gain)
+    public void updateScore(int gain)
     {
-        return this.score.updateAndGet((x) -> x + gain);
+        this.score.updateAndGet((x) -> x + gain);
     }
 
     public void checkPassword(char[] password) throws WrongPasswordException
@@ -101,6 +102,7 @@ public class User
             throw new WrongPasswordException();
     }
 
+    @SuppressWarnings("unchecked")
     public JSONArray serializeFriends()
     {
         JSONArray friendsList = new JSONArray();
@@ -110,6 +112,7 @@ public class User
         return friendsList;
     }
 
+    @SuppressWarnings("unchecked")
     public JSONObject serialize()
     {
         JSONObject user = new JSONObject();

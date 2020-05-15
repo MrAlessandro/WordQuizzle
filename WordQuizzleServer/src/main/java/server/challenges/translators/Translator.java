@@ -17,8 +17,8 @@ import java.util.concurrent.Callable;
 
 public class Translator implements Callable<String[]>
 {
-    private Logger translatorsLogger;
-    private String word;
+    private final Logger translatorsLogger;
+    private final String word;
 
     public Translator(Logger translatorsLogger, String word)
     {
@@ -27,6 +27,7 @@ public class Translator implements Callable<String[]>
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public String[] call()
     {
         HttpURLConnection connection;

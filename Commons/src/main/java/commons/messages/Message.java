@@ -65,6 +65,7 @@ public class Message
         this.fields = new LinkedList<>(fields);
     }
 
+    @SuppressWarnings("unchecked")
     public Message(JSONObject serializedMessage)
     {
         // Get message type
@@ -223,6 +224,7 @@ public class Message
      * This method generate the {@code JSON} serialization of this {@link Message} represented as a {@link JSONObject}
      * @return The {@link JSONObject} representing the {@code JSON} serialization of this {@link Message}
      */
+    @SuppressWarnings("unchecked")
     public JSONObject serialize()
     {
         JSONObject retValue = new JSONObject();

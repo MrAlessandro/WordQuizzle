@@ -29,6 +29,7 @@ public class LoginOperator extends Operator
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected Void doInBackground()
     {
         // Prepare login message

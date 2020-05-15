@@ -14,8 +14,8 @@ class Password
 {
     private static final int ITERATIONS = 1000;
 
-    private String password;
-    private String salt;
+    private final String password;
+    private final String salt;
 
     protected Password(char[] password)
     {
@@ -35,12 +35,6 @@ class Password
             throw new RuntimeException("Generating password");
         }
 
-    }
-
-    protected Password(String password, String salt)
-    {
-        this.password = password;
-        this.salt = salt;
     }
 
     protected Password(JSONObject serializedPassword)
@@ -118,6 +112,7 @@ class Password
         return bytes;
     }
 
+    @SuppressWarnings("unchecked")
     protected JSONObject serialize()
     {
         JSONObject retValue = new JSONObject();

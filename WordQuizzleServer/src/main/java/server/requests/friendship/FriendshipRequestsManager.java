@@ -12,13 +12,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FriendshipRequestsManager
 {
-    private ConcurrentHashMap<String, Set<String>> friendshipRequestsArchive;
+    private final ConcurrentHashMap<String, Set<String>> friendshipRequestsArchive;
 
     public FriendshipRequestsManager()
     {
         this.friendshipRequestsArchive = new ConcurrentHashMap<>(Settings.FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE);
     }
 
+    @SuppressWarnings("unchecked")
     public FriendshipRequestsManager(JSONArray serializedFriendshipRequestsArchive)
     {
         this.friendshipRequestsArchive = new ConcurrentHashMap<>(Settings.FRIENDSHIP_REQUESTS_ARCHIVE_INITIAL_SIZE);
@@ -84,6 +85,7 @@ public class FriendshipRequestsManager
         return removed[0];
     }
 
+    @SuppressWarnings("unchecked")
     public JSONArray serialize()
     {
         JSONArray serializedFriendshipRequestsArchive = new JSONArray();
