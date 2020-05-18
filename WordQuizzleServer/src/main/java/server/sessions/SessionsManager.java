@@ -35,13 +35,13 @@ public class SessionsManager
     private final Object challengesMonitor = new Object();
 
     // Sessions archive
-    private ConcurrentHashMap<String, Session> sessionsArchive;
+    private final ConcurrentHashMap<String, Session> sessionsArchive;
 
     // Managers
-    private UsersManager usersManager;
-    private FriendshipRequestsManager friendshipRequestsManager;
-    private ChallengeRequestsManager challengeRequestsManager;
-    private ChallengesManager challengesManager;
+    private final UsersManager usersManager;
+    private final FriendshipRequestsManager friendshipRequestsManager;
+    private final ChallengeRequestsManager challengeRequestsManager;
+    private final ChallengesManager challengesManager;
 
     public SessionsManager(UsersManager usersManager, FriendshipRequestsManager friendshipRequestsManager, ChallengeRequestsManager challengeRequestsManager, ChallengesManager challengesManager)
     {
@@ -158,7 +158,7 @@ public class SessionsManager
             userTo.getBacklog().add(message);
     }
 
-    public void confirmFriendshipRequest(String whoSentRequest, String whoConfirmedRequest) throws UnexpectedMessageException, UnknownUserException
+    public void confirmFriendshipRequest(String whoSentRequest, String whoConfirmedRequest) throws UnexpectedMessageException
     {
         User whoSentRequestUser;
         User whoConfirmedRequestUser;
@@ -379,7 +379,7 @@ public class SessionsManager
         }
     }
 
-    public boolean sendMessageToAllFriends(String username, Message message)
+    public void sendMessageToAllFriends(String username, Message message)
     {
         User user = usersManager.getUser(username);
         Set<String> friends = user.getFriends();
@@ -389,6 +389,5 @@ public class SessionsManager
             sendMessage(friend, message);
         }
 
-        return true;
     }
 }
