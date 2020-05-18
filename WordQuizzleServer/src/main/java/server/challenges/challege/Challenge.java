@@ -116,6 +116,41 @@ public class Challenge implements Runnable
         this.timeoutOperation.accept(challengeReportDelegation);
     }
 
+    public void complete()
+    {
+        stopTranslations();
+
+        int fromStatus;
+        int toStatus;
+        int definitiveFromScore = this.fromScore;
+        int definitiveToScore = this.toScore;
+
+        if (this.fromScore > this.toScore)
+        {
+            fromStatus = 1;
+            definitiveFromScore += Settings.CHALLENGE_WINNER_EXTRA_SCORE;
+
+            toStatus = -1;
+        }
+        else if (this.fromScore < this.toScore)
+        {
+            fromStatus = -1;
+
+            toStatus = 1;
+            definitiveToScore += Settings.CHALLENGE_WINNER_EXTRA_SCORE;
+        }
+        else
+        {
+            fromStatus = 0;
+            toStatus = 0;
+        }
+
+        ChallengeReportDelegation challengeReportDelegation = new ChallengeReportDelegation();
+        challengeReportDelegation.setFromChallengeReport(new ChallengeReport(this.from, fromStatus,this.fromTranslationsProgress, definitiveFromScore));
+        challengeReportDelegation.setToChallengeReport(new ChallengeReport(this.to, toStatus, this.toTranslationsProgress, definitiveToScore));
+        this.completionOperation.accept(challengeReportDelegation);
+    }
+
     public ChallengeReport[] getReports()
     {
         ChallengeReport[] reports = new ChallengeReport[2];
@@ -246,7 +281,7 @@ public class Challenge implements Runnable
         // Check if challenge is completed
         if (this.fromTranslationsProgress == Settings.CHALLENGE_WORDS_QUANTITY - 1 &&
                 this.toTranslationsProgress == Settings.CHALLENGE_WORDS_QUANTITY - 1)
-            this.run();
+            this.complete();
 
         return checked;
     }
