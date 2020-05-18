@@ -17,80 +17,37 @@ import java.util.HashMap;
 public enum MessageType
 {
     // Request messages
-    /**
-     * Login request message type
-     */
     LOG_IN((short) 1, "LogIn"),
-    REQUEST_FOR_FRIENDSHIP((short) 3, "RequestForFriendship"),
-    CONFIRM_FRIENDSHIP_REQUEST((short) 8, "ConfirmFriendshipRequest"),
-    DECLINE_FRIENDSHIP_REQUEST((short) 9, "DeclineFriendshipRequest"),
-    REQUEST_FOR_FRIENDS_LIST((short) 4, "RequestForFriendsList"),
-    REQUEST_FOR_CHALLENGE((short) 5, "RequestForChallenge"),
-    CONFIRM_CHALLENGE_REQUEST((short) 6, "ConfirmChallengeRequest"),
-    DECLINE_CHALLENGE_REQUEST((short) 7, "DeclineChallengeRequest"),
-    CHALLENGE_GET_WORD((short) 12, "ChallengeGetWord"),
-    CHALLENGE_PROVIDE_TRANSLATION((short)13, "ChallengeProvideTranslation"),
-    REQUEST_FOR_SCORE_AMOUNT((short)14, "RequestForScoreAmount"),
-    REQUEST_FOR_FRIENDS_LIST_WITH_SCORES((short)15, "RequestForFriendsListWithScores"),
-    LOG_OUT((short) 16, "LogOut"),
-
-    /*LOG_OUT((short) 2, "LogOut"),
-    REQUEST_FOR_FRIENDSHIP((short) 3, "RequestForFriend"),
-    REQUEST_FOR_FRIENDS_LIST((short) 4, "FriendList"),
-    REQUEST_FOR_CHALLENGE((short) 5, "RequestForChallenge"),
-    CONFIRM_CHALLENGE((short) 6, "ConfirmChallenge"),
-    DECLINE_CHALLENGE((short) 7, "DeclineChallenge"),
-    CONFIRM_FRIENDSHIP((short) 8, "ConfirmFriendship"),
-    DECLINE_FRIENDSHIP((short) 9, "DeclineFriendship"),
-    PROVIDE_TRANSLATION((short) 10, "NextWord"),
-    REQUEST_FOR_FRIENDS_SCORES((short) 11, "FriendsScore"),*/
+    REQUEST_FOR_FRIENDSHIP((short) 2, "RequestForFriendship"),
+    CONFIRM_FRIENDSHIP_REQUEST((short) 3, "ConfirmFriendshipRequest"),
+    DECLINE_FRIENDSHIP_REQUEST((short) 4, "DeclineFriendshipRequest"),
+    REQUEST_FOR_FRIENDS_LIST((short) 5, "RequestForFriendsList"),
+    REQUEST_FOR_CHALLENGE((short) 6, "RequestForChallenge"),
+    CONFIRM_CHALLENGE_REQUEST((short) 7, "ConfirmChallengeRequest"),
+    DECLINE_CHALLENGE_REQUEST((short) 8, "DeclineChallengeRequest"),
+    CHALLENGE_GET_WORD((short) 9, "ChallengeGetWord"),
+    CHALLENGE_PROVIDE_TRANSLATION((short) 10, "ChallengeProvideTranslation"),
+    REQUEST_FOR_SCORE_AMOUNT((short) 11, "RequestForScoreAmount"),
+    REQUEST_FOR_FRIENDS_LIST_WITH_SCORES((short) 12, "RequestForFriendsListWithScores"),
+    LOG_OUT((short) 13, "LogOut"),
 
     // Notifications,
     REQUEST_FOR_FRIENDSHIP_CONFIRMATION((short) 100, "RequestForFriendshipConfirmation"),
     FRIENDSHIP_REQUEST_CONFIRMED((short) 101, "FriendshipRequestConfirmed"),
     FRIENDSHIP_REQUEST_DECLINED((short)102, "FriendshipRequestDeclined"),
-    REQUEST_FOR_CHALLENGE_CONFIRMATION((short) 112, "RequestForChallengeConfirmation"),
+    REQUEST_FOR_CHALLENGE_CONFIRMATION((short) 103, "RequestForChallengeConfirmation"),
     CHALLENGE_REQUEST_CONFIRMED((short) 104, "ChallengeRequestConfirmed"),
     CHALLENGE_REQUEST_DECLINED((short) 105, "ChallengeRequestDeclined"),
     CHALLENGE_REQUEST_EXPIRED_APPLICANT((short) 106, "ChallengeRequestExpiredApplicant"),
-    CHALLENGE_REQUEST_EXPIRED_RECEIVER((short) 117, "ChallengeRequestExpiredReceiver"),
-    CHALLENGE_REQUEST_OPPONENT_LOGGED_OUT((short)114, "ChallengeRequestOpponentLoggedOut"),
-    CHALLENGE_EXPIRED((short)110, "ChallengeExpired"),
-    CHALLENGE_REPORT((short)111,"ChallengeReport"),
-    CHALLENGE_OPPONENT_LOGGED_OUT((short)113, "ChallengeOpponentLoggedOut"),
-    FRIEND_SCORE_UPDATE((short)120, "FriendScoreUpdate"),
-    /*
-    REQUEST_FOR_CHALLENGE_CONFIRMATION((short) 103, "NotifyChallenge"),
-    CHALLENGE_CONFIRMED((short) 104, "ChallengeConfirmed"),
-    CHALLENGE_REQUEST_TIMEOUT_EXPIRED((short) 106, "ChallengeRequestTimeoutExpired"),
-    OPPONENT_WENT_OFFLINE_DURING_REQUEST((short) 107, "OpponentWentOfflineDuringRequest"),
-    APPLICANT_WENT_OFFLINE_DURING_REQUEST((short) 108, "ApplicantWentOfflineDuringRequest"),
-    OPPONENT_DID_NOT_REPLY((short) 109, "OpponentDidNotReply"),
-    CHALLENGE_TIMEOUT_EXPIRED((short)110, "ChallengeTimeoutExpired"),
-    CHALLENGE_REPORT((short) 111, "Challenge report"),
-    OPPONENT_CANCELED_CHALLENGE((short)112, "OpponentCanceledChallenge"),
-    APPLICANT_WENT_OFFLINE_DURING_CHALLENGE ((short)113, "ApplicantWentOfflineDuringChallenge"),
-    OPPONENT_WENT_OFFLINE_DURING_CHALLENGE ((short)114, "OpponentWentOfflineDuringChallenge"),
-    SCORE_UPDATE ((short) 115, "ScoreUpdate"),
-    */
+    CHALLENGE_REQUEST_EXPIRED_RECEIVER((short) 107, "ChallengeRequestExpiredReceiver"),
+    CHALLENGE_REQUEST_OPPONENT_LOGGED_OUT((short)108, "ChallengeRequestOpponentLoggedOut"),
+    CHALLENGE_EXPIRED((short)109, "ChallengeExpired"),
+    CHALLENGE_REPORT((short)110,"ChallengeReport"),
+    CHALLENGE_OPPONENT_LOGGED_OUT((short)111, "ChallengeOpponentLoggedOut"),
+    FRIEND_SCORE_UPDATE((short)112, "FriendScoreUpdate"),
+
 
     // Response messages
-    /*
-    OK((short) 200, "Ok"),
-    FRIENDS_LIST((short) 201, "YourFriendList"),
-    ALREADY_FRIENDS((short) 203, "AlreadyFriends"),
-    USERNAME_UNKNOWN((short) 204, "UsernameUnknown"),
-    PASSWORD_WRONG((short) 205, "PasswordWrong"),
-    INVALID_MESSAGE_FORMAT((short) 206, "InvalidMessageFormat"),
-    UNEXPECTED_MESSAGE((short) 207, "UnexpectedMessage"),
-    FRIENDSHIP_REQUEST_ALREADY_SENT ((short) 208, "FriendshipRequestAlreadySent"),
-    OPPONENT_OFFLINE ((short) 209, "OpponentOffline"),
-    OPPONENT_ALREADY_ENGAGED ((short) 210, "OpponentAlreadyEngaged"),
-    APPLICANT_ALREADY_ENGAGED ((short) 221, "ApplicantAlreadyEngaged"),
-    OPPONENT_NOT_FRIEND ((short) 212, "OpponentNotFriend"),
-    TRANSLATION_WRONG((short) 213, "TranslationWrong"),
-    FRIENDS_SCORES((short) 214, "FriendsScores"),
-    USERNAME_ALREADY_USED((short) 215, "UsernameAlreadyUsed");*/
     OK((short) 200, "Ok"),
     FRIENDS_LIST((short) 201, "YourFriendList"),
     USER_ALREADY_LOGGED((short) 202, "UserAlreadyLogged"),
@@ -109,16 +66,16 @@ public enum MessageType
     UNEXPECTED_MESSAGE((short) 215, "UnexpectedMessage"),
     TRANSLATION_CORRECT((short) 216, "TranslationCorrect"),
     TRANSLATION_WRONG((short) 217, "TranslationWrong"),
-    SCORE_AMOUNT((short)220, "ScoreAmount"),
-    FRIENDS_LIST_WITH_SCORES((short)221, "FriendsListWithScores");
+    SCORE_AMOUNT((short)218, "ScoreAmount"),
+    FRIENDS_LIST_WITH_SCORES((short)219, "FriendsListWithScores");
 
 
     /**
      * The map containing the associations between codes and names
      */
-    private static HashMap<Short, MessageType> map = new HashMap<>(50);
-    private short value;
-    private String name;
+    private static final HashMap<Short, MessageType> map = new HashMap<>(50);
+    private final short value;
+    private final String name;
 
     static
     {
