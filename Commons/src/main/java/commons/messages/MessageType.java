@@ -46,7 +46,6 @@ public enum MessageType
     CHALLENGE_OPPONENT_LOGGED_OUT((short)111, "ChallengeOpponentLoggedOut"),
     FRIEND_SCORE_UPDATE((short)112, "FriendScoreUpdate"),
 
-
     // Response messages
     OK((short) 200, "Ok"),
     FRIENDS_LIST((short) 201, "YourFriendList"),
