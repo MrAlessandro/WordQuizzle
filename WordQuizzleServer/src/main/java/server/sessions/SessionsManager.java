@@ -252,6 +252,7 @@ public class SessionsManager
 
         // Send challenge request message to receiver
         receiverSession.appendMessage(new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, from));
+        receiverSession.wakeUp();
     }
 
     public void confirmChallengeRequest(String whoSentRequest, String whoConfirmedRequest) throws UnexpectedMessageException
