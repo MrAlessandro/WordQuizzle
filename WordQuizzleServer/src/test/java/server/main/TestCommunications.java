@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class testCommunications
+public class TestCommunications
 {
     private static WordQuizzleServer server;
 
@@ -188,6 +188,7 @@ public class testCommunications
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testFriendsListRetrieval()
     {
         String username1 = UUID.randomUUID().toString();
@@ -321,6 +322,9 @@ public class testCommunications
     @Test
     public void testChallenge()
     {
+        // Set longer timeouts for both challenge request and roper challenge
+        Settings.CHALLENGE_DURATION_SECONDS = 1000;
+
         String username1 = UUID.randomUUID().toString();
         char[] password1 = UUID.randomUUID().toString().toCharArray();
         char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
@@ -389,10 +393,8 @@ public class testCommunications
             // Get word to translate
             assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.CHALLENGE_GET_WORD))));
             assertEquals(MessageType.OK, responseMessage1.get().getType());
-            System.out.println("User1 received \"" + String.valueOf(responseMessage1.get().getFields()[0].getBody()) + "\" to translate");
             assertDoesNotThrow(() -> responseMessage2.set(client2.require(new Message(MessageType.CHALLENGE_GET_WORD, username1))));
             assertEquals(MessageType.OK, responseMessage2.get().getType());
-            System.out.println("User2 received \"" + String.valueOf(responseMessage2.get().getFields()[0].getBody()) + "\" to translate");
 
             // Send translation
             assertDoesNotThrow(() -> responseMessage1.set(client1.require(new Message(MessageType.CHALLENGE_PROVIDE_TRANSLATION, "A"))));

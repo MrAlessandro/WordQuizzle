@@ -39,6 +39,7 @@ public class TestChallengeRequestsManager
     }
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUpChallengeRequestsManager()
     {
         try

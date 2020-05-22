@@ -612,8 +612,7 @@ public class Deputy extends Thread
                 break;
             }
             case CHALLENGE_GET_WORD:
-            {
-                assert session != null;
+            { assert session != null;
 
                 Message response;
                 String word;

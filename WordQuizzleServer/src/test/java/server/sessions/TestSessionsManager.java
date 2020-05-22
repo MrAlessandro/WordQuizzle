@@ -21,6 +21,7 @@ import server.requests.friendship.FriendshipRequestsManager;
 import server.requests.friendship.exceptions.FriendshipRequestAlreadyReceived;
 import server.requests.friendship.exceptions.FriendshipRequestAlreadySent;
 import server.sessions.exceptions.AlreadyFriendsException;
+import server.sessions.exceptions.ReceiverOfflineException;
 import server.sessions.exceptions.UnknownReceiverException;
 import server.sessions.exceptions.UserAlreadyLoggedException;
 import server.sessions.session.Session;
@@ -81,6 +82,7 @@ public class TestSessionsManager
     }
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUpSessionsManager()
     {
         try
@@ -166,6 +168,7 @@ public class TestSessionsManager
     class TestSessionedFriendshipRequests
     {
         @BeforeEach
+        @SuppressWarnings("unchecked")
         public void setUp()
         {
             try
@@ -505,9 +508,10 @@ public class TestSessionsManager
     @Nested
     class TestSessionedChallengeRequests
     {
-        private Consumer<ChallengeReportDelegation> voidOperation = challengeReportDelegation -> {};
+        private final Consumer<ChallengeReportDelegation> voidOperation = challengeReportDelegation -> {};
 
         @BeforeEach
+        @SuppressWarnings("unchecked")
         public void setUp()
         {
             try
@@ -563,28 +567,41 @@ public class TestSessionsManager
             assertEquals(2, challengeRequestsArchive.size());
         }
 
-//        @Test
-//        public void testChallengeRequestSending_ReceiverUnlogged()
-//        {
-//            String username1 = UUID.randomUUID().toString();
-//            char[] password1 = UUID.randomUUID().toString().toCharArray();
-//            char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
-//            AtomicReference<Session> session1 = new AtomicReference<>();
-//
-//            String username2 = UUID.randomUUID().toString();
-//            char[] password2 = UUID.randomUUID().toString().toCharArray();
-//
-//
-//            assertDoesNotThrow(() -> usersManager.registerUser(username1, password1));
-//            assertDoesNotThrow(() -> session1.set(sessionsManager.openSession(username1, passwordCopy1, selector, socketAddress)));
-//            assertEquals(username1, session1.get().getUsername());
-//            assertEquals(1, sessionsArchive.size());
-//
-//            assertDoesNotThrow(() -> usersManager.registerUser(username2, password2));
-//
-//            assertThrows(ReceiverOfflineException.class, () -> sessionsManager.sendChallengeRequest(username1, username2));
-//            assertEquals(0, challengeRequestsArchive.size());
-//        }
+       @Test
+       public void testChallengeRequestSending_ReceiverUnlogged()
+       {
+           String username1 = UUID.randomUUID().toString();
+           char[] password1 = UUID.randomUUID().toString().toCharArray();
+           char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
+           AtomicReference<Session> session1 = new AtomicReference<>();
+
+           String username2 = UUID.randomUUID().toString();
+           char[] password2 = UUID.randomUUID().toString().toCharArray();
+           char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
+           AtomicReference<Session> session2 = new AtomicReference<>();
+
+
+           assertDoesNotThrow(() -> usersManager.registerUser(username1, password1));
+           assertDoesNotThrow(() -> session1.set(sessionsManager.openSession(username1, passwordCopy1, selector, socketAddress)));
+           assertEquals(username1, session1.get().getUsername());
+           assertEquals(1, sessionsArchive.size());
+
+           assertDoesNotThrow(() -> usersManager.registerUser(username2, password2));
+           assertDoesNotThrow(() -> session2.set(sessionsManager.openSession(username2, passwordCopy2, selector, socketAddress)));
+           assertEquals(username2, session2.get().getUsername());
+           assertEquals(2, sessionsArchive.size());
+
+           assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+           assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+           assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+           assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
+           assertDoesNotThrow(() -> sessionsManager.closeSession(session2.get()));
+
+           assertThrows(ReceiverOfflineException.class, () -> sessionsManager.sendChallengeRequest(username1, username2));
+           assertEquals(0, challengeRequestsArchive.size());
+       }
 
         @Test
         public void testChallengeRequestSending_UnknownSender_ERROR()
@@ -989,6 +1006,7 @@ public class TestSessionsManager
         private ScheduledThreadPoolExecutor timer;
 
         @BeforeEach
+        @SuppressWarnings("unchecked")
         public void setUp()
         {
             try
@@ -1105,166 +1123,166 @@ public class TestSessionsManager
             assertEquals(0, fromWordsProgress);
         }
 
-//        @Test
-//        public void testChallengeProgress_TranslationProvision()
-//        {
-//            String username1 = UUID.randomUUID().toString();
-//            char[] password1 = UUID.randomUUID().toString().toCharArray();
-//            char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
-//            AtomicReference<Session> session1 = new AtomicReference<>();
-//
-//            String username2 = UUID.randomUUID().toString();
-//            char[] password2 = UUID.randomUUID().toString().toCharArray();
-//            char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
-//            AtomicReference<Session> session2 = new AtomicReference<>();
-//
-//            assertDoesNotThrow(() -> usersManager.registerUser(username1, password1));
-//            assertDoesNotThrow(() -> session1.set(sessionsManager.openSession(username1, passwordCopy1, selector, socketAddress)));
-//            assertEquals(username1, session1.get().getUsername());
-//            assertEquals(1, sessionsArchive.size());
-//
-//            assertDoesNotThrow(() -> usersManager.registerUser(username2, password2));
-//            assertDoesNotThrow(() -> session2.set(sessionsManager.openSession(username2, passwordCopy2, selector, socketAddress)));
-//            assertEquals(username2, session2.get().getUsername());
-//            assertEquals(2, sessionsArchive.size());
-//
-//            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
-//            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
-//
-//            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
-//            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
-//
-//            assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
-//            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
-//
-//            assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
-//            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2,
-//                    String.valueOf(Settings.CHALLENGE_DURATION_SECONDS),
-//                    String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY)));
-//            assertEquals(2, challengesArchive.size());
-//
-//            AtomicReference<String> word = new AtomicReference<>(null);
-//            assertDoesNotThrow(() -> word.set(sessionsManager.retrieveNextWord(username1)));
-//            assertNotNull(word.get());
-//            int fromWordsProgress = Integer.MIN_VALUE;
-//            try
-//            {
-//                Field fromWordsProgressField = Challenge.class.getDeclaredField("fromWordsProgress");
-//                fromWordsProgressField.setAccessible(true);
-//                fromWordsProgress = (int) fromWordsProgressField.get(challengesArchive.get(username1));
-//            }
-//            catch (NoSuchFieldException | IllegalAccessException e)
-//            {
-//                fail("ERROR GETTING PRIVATE FIELD");
-//            }
-//            assertEquals(0, fromWordsProgress);
-//
-//            assertDoesNotThrow(() -> sessionsManager.provideTranslation(username1, "a"));
-//            int fromTranslationsProgress = Integer.MIN_VALUE;
-//            try
-//            {
-//                Field fromTranslationsProgressField = Challenge.class.getDeclaredField("fromTranslationsProgress");
-//                fromTranslationsProgressField.setAccessible(true);
-//                fromTranslationsProgress = (int) fromTranslationsProgressField.get(challengesArchive.get(username1));
-//            }
-//            catch (NoSuchFieldException | IllegalAccessException e)
-//            {
-//                fail("ERROR GETTING PRIVATE FIELD");
-//            }
-//            assertEquals(0, fromTranslationsProgress);
-//        }
+        @Test
+        public void testChallengeProgress_TranslationProvision()
+        {
+            String username1 = UUID.randomUUID().toString();
+            char[] password1 = UUID.randomUUID().toString().toCharArray();
+            char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
+            AtomicReference<Session> session1 = new AtomicReference<>();
 
-//        @Test
-//        public void testChallengeProgress_ChallengeCompletion()
-//        {
-//            AtomicBoolean completionFlag = new AtomicBoolean(false);
-//
-//            String username1 = UUID.randomUUID().toString();
-//            char[] password1 = UUID.randomUUID().toString().toCharArray();
-//            char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
-//            AtomicReference<Session> session1 = new AtomicReference<>();
-//
-//            String username2 = UUID.randomUUID().toString();
-//            char[] password2 = UUID.randomUUID().toString().toCharArray();
-//            char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
-//            AtomicReference<Session> session2 = new AtomicReference<>();
-//
-//            assertDoesNotThrow(() -> usersManager.registerUser(username1, password1));
-//            assertDoesNotThrow(() -> session1.set(sessionsManager.openSession(username1, passwordCopy1, selector, socketAddress)));
-//            assertEquals(username1, session1.get().getUsername());
-//            assertEquals(1, sessionsArchive.size());
-//
-//            assertDoesNotThrow(() -> usersManager.registerUser(username2, password2));
-//            assertDoesNotThrow(() -> session2.set(sessionsManager.openSession(username2, passwordCopy2, selector, socketAddress)));
-//            assertEquals(username2, session2.get().getUsername());
-//            assertEquals(2, sessionsArchive.size());
-//
-//            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
-//            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
-//
-//            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
-//            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
-//
-//            assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
-//            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
-//
-//            assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
-//            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2,
-//                    String.valueOf(Settings.CHALLENGE_DURATION_SECONDS),
-//                    String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY)));
-//            assertEquals(2, challengesArchive.size());
-//
-//            Challenge challenge = challengesArchive.get(username1);
-//            int user1WordsProgress = Integer.MIN_VALUE;
-//            int user2WordsProgress = Integer.MIN_VALUE;
-//            int user1TranslationsProgress = Integer.MIN_VALUE;
-//            int user2TranslationsProgress = Integer.MIN_VALUE;
-//
-//            for (int i = 0; i < Settings.CHALLENGE_WORDS_QUANTITY; i++)
-//            {
-//                AtomicReference<String> user1Word = new AtomicReference<>(null);
-//                AtomicReference<String> user2Word = new AtomicReference<>(null);
-//
-//                assertDoesNotThrow(() -> user1Word.set(sessionsManager.retrieveNextWord(username1)));
-//
-//                assertDoesNotThrow(() -> user2Word.set(sessionsManager.retrieveNextWord(username2)));
-//
-//                assertEquals(user1Word.get(), user2Word.get());
-//
-//                assertDoesNotThrow(() -> sessionsManager.provideTranslation(username1, "a"));
-//
-//                assertDoesNotThrow(() -> sessionsManager.provideTranslation(username2, "a"));
-//
-//
-//                try
-//                {
-//                    Field user1WordsProgressField = Challenge.class.getDeclaredField("fromWordsProgress");
-//                    Field user2WordsProgressField = Challenge.class.getDeclaredField("toWordsProgress");
-//                    Field user1TranslationsProgressField = Challenge.class.getDeclaredField("fromTranslationsProgress");
-//                    Field user2TranslationsProgressField = Challenge.class.getDeclaredField("toTranslationsProgress");
-//                    user1WordsProgressField.setAccessible(true);
-//                    user2WordsProgressField.setAccessible(true);
-//                    user1TranslationsProgressField.setAccessible(true);
-//                    user2TranslationsProgressField.setAccessible(true);
-//                    user1WordsProgress = (int) user1WordsProgressField.get(challenge);
-//                    user2WordsProgress = (int) user2WordsProgressField.get(challenge);
-//                    user1TranslationsProgress = (int) user1TranslationsProgressField.get(challenge);
-//                    user2TranslationsProgress = (int) user2TranslationsProgressField.get(challenge);
-//                }
-//                catch (NoSuchFieldException | IllegalAccessException e)
-//                {
-//                    fail("ERROR GETTING PRIVATE FIELD");
-//                }
-//
-//                assertEquals(i, user1WordsProgress);
-//                assertEquals(i, user2WordsProgress);
-//                assertEquals(i, user1TranslationsProgress);
-//                assertEquals(i, user2TranslationsProgress);
-//            }
-//
-//            assertEquals(MessageType.CHALLENGE_REPORT, session1.get().getMessage().getType());
-//            assertEquals(MessageType.CHALLENGE_REPORT, session2.get().getMessage().getType());
-//        }
+            String username2 = UUID.randomUUID().toString();
+            char[] password2 = UUID.randomUUID().toString().toCharArray();
+            char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
+            AtomicReference<Session> session2 = new AtomicReference<>();
+
+            assertDoesNotThrow(() -> usersManager.registerUser(username1, password1));
+            assertDoesNotThrow(() -> session1.set(sessionsManager.openSession(username1, passwordCopy1, selector, socketAddress)));
+            assertEquals(username1, session1.get().getUsername());
+            assertEquals(1, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> usersManager.registerUser(username2, password2));
+            assertDoesNotThrow(() -> session2.set(sessionsManager.openSession(username2, passwordCopy2, selector, socketAddress)));
+            assertEquals(username2, session2.get().getUsername());
+            assertEquals(2, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
+            assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2,
+                    String.valueOf(Settings.CHALLENGE_DURATION_SECONDS),
+                    String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY)));
+            assertEquals(2, challengesArchive.size());
+
+            AtomicReference<String> word = new AtomicReference<>(null);
+            assertDoesNotThrow(() -> word.set(sessionsManager.retrieveNextWord(username1)));
+            assertNotNull(word.get());
+            int fromWordsProgress = Integer.MIN_VALUE;
+            try
+            {
+                Field fromWordsProgressField = Challenge.class.getDeclaredField("fromWordsProgress");
+                fromWordsProgressField.setAccessible(true);
+                fromWordsProgress = (int) fromWordsProgressField.get(challengesArchive.get(username1));
+            }
+            catch (NoSuchFieldException | IllegalAccessException e)
+            {
+                fail("ERROR GETTING PRIVATE FIELD");
+            }
+            assertEquals(0, fromWordsProgress);
+
+            assertDoesNotThrow(() -> sessionsManager.provideTranslation(username1, "a"));
+            int fromTranslationsProgress = Integer.MIN_VALUE;
+            try
+            {
+                Field fromTranslationsProgressField = Challenge.class.getDeclaredField("fromTranslationsProgress");
+                fromTranslationsProgressField.setAccessible(true);
+                fromTranslationsProgress = (int) fromTranslationsProgressField.get(challengesArchive.get(username1));
+            }
+            catch (NoSuchFieldException | IllegalAccessException e)
+            {
+                fail("ERROR GETTING PRIVATE FIELD");
+            }
+            assertEquals(0, fromTranslationsProgress);
+        }
+
+        @Test
+        public void testChallengeProgress_ChallengeCompletion()
+        {
+            AtomicBoolean completionFlag = new AtomicBoolean(false);
+
+            String username1 = UUID.randomUUID().toString();
+            char[] password1 = UUID.randomUUID().toString().toCharArray();
+            char[] passwordCopy1 = Arrays.copyOf(password1, password1.length);
+            AtomicReference<Session> session1 = new AtomicReference<>();
+
+            String username2 = UUID.randomUUID().toString();
+            char[] password2 = UUID.randomUUID().toString().toCharArray();
+            char[] passwordCopy2 = Arrays.copyOf(password2, password2.length);
+            AtomicReference<Session> session2 = new AtomicReference<>();
+
+            assertDoesNotThrow(() -> usersManager.registerUser(username1, password1));
+            assertDoesNotThrow(() -> session1.set(sessionsManager.openSession(username1, passwordCopy1, selector, socketAddress)));
+            assertEquals(username1, session1.get().getUsername());
+            assertEquals(1, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> usersManager.registerUser(username2, password2));
+            assertDoesNotThrow(() -> session2.set(sessionsManager.openSession(username2, passwordCopy2, selector, socketAddress)));
+            assertEquals(username2, session2.get().getUsername());
+            assertEquals(2, sessionsArchive.size());
+
+            assertDoesNotThrow(() -> sessionsManager.sendFriendshipRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_FRIENDSHIP_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmFriendshipRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.FRIENDSHIP_REQUEST_CONFIRMED, username2, String.valueOf(0)));
+
+            assertDoesNotThrow(() -> sessionsManager.sendChallengeRequest(username1, username2));
+            assertEquals(session2.get().getMessage(), new Message(MessageType.REQUEST_FOR_CHALLENGE_CONFIRMATION, username1));
+
+            assertDoesNotThrow(() -> sessionsManager.confirmChallengeRequest(username1, username2));
+            assertEquals(session1.get().getMessage(), new Message(MessageType.CHALLENGE_REQUEST_CONFIRMED, username2,
+                    String.valueOf(Settings.CHALLENGE_DURATION_SECONDS),
+                    String.valueOf(Settings.CHALLENGE_WORDS_QUANTITY)));
+            assertEquals(2, challengesArchive.size());
+
+            Challenge challenge = challengesArchive.get(username1);
+            int user1WordsProgress = Integer.MIN_VALUE;
+            int user2WordsProgress = Integer.MIN_VALUE;
+            int user1TranslationsProgress = Integer.MIN_VALUE;
+            int user2TranslationsProgress = Integer.MIN_VALUE;
+
+            for (int i = 0; i < Settings.CHALLENGE_WORDS_QUANTITY; i++)
+            {
+                AtomicReference<String> user1Word = new AtomicReference<>(null);
+                AtomicReference<String> user2Word = new AtomicReference<>(null);
+
+                assertDoesNotThrow(() -> user1Word.set(sessionsManager.retrieveNextWord(username1)));
+
+                assertDoesNotThrow(() -> user2Word.set(sessionsManager.retrieveNextWord(username2)));
+
+                assertEquals(user1Word.get(), user2Word.get());
+
+                assertDoesNotThrow(() -> sessionsManager.provideTranslation(username1, "a"));
+
+                assertDoesNotThrow(() -> sessionsManager.provideTranslation(username2, "a"));
+
+
+                try
+                {
+                    Field user1WordsProgressField = Challenge.class.getDeclaredField("fromWordsProgress");
+                    Field user2WordsProgressField = Challenge.class.getDeclaredField("toWordsProgress");
+                    Field user1TranslationsProgressField = Challenge.class.getDeclaredField("fromTranslationsProgress");
+                    Field user2TranslationsProgressField = Challenge.class.getDeclaredField("toTranslationsProgress");
+                    user1WordsProgressField.setAccessible(true);
+                    user2WordsProgressField.setAccessible(true);
+                    user1TranslationsProgressField.setAccessible(true);
+                    user2TranslationsProgressField.setAccessible(true);
+                    user1WordsProgress = (int) user1WordsProgressField.get(challenge);
+                    user2WordsProgress = (int) user2WordsProgressField.get(challenge);
+                    user1TranslationsProgress = (int) user1TranslationsProgressField.get(challenge);
+                    user2TranslationsProgress = (int) user2TranslationsProgressField.get(challenge);
+                }
+                catch (NoSuchFieldException | IllegalAccessException e)
+                {
+                    fail("ERROR GETTING PRIVATE FIELD");
+                }
+
+                assertEquals(i, user1WordsProgress);
+                assertEquals(i, user2WordsProgress);
+                assertEquals(i, user1TranslationsProgress);
+                assertEquals(i, user2TranslationsProgress);
+            }
+
+            assertEquals(MessageType.CHALLENGE_REPORT, session1.get().getMessage().getType());
+            assertEquals(MessageType.CHALLENGE_REPORT, session2.get().getMessage().getType());
+        }
 
         @Test
         public void testChallengeExpiration()

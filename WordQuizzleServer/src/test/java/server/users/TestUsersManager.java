@@ -44,6 +44,7 @@ public class TestUsersManager
     }
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUpUsersManager()
     {
         try

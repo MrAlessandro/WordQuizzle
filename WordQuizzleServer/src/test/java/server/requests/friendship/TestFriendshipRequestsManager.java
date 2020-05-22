@@ -40,6 +40,7 @@ public class TestFriendshipRequestsManager
     }
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUpFriendshipRequestsManager()
     {
         try
